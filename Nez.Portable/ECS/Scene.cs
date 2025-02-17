@@ -230,6 +230,16 @@ public class Scene
 			_defaultDesignBleedSize = new Point(horizontalBleed, verticalBleed);
 	}
 
+	#region Events
+
+	public event Action OnSceneBegin;
+
+	public void InvokeSceneBegin()
+	{
+		OnSceneBegin?.Invoke();
+	}
+
+	#endregion
 
 	#region Scene creation helpers
 
@@ -240,21 +250,6 @@ public class Scene
 	public static Scene CreateWithDefaultRenderer(Color? clearColor = null)
 	{
 		var scene = new Scene();
-
-		if (clearColor.HasValue)
-			scene.ClearColor = clearColor.Value;
-		scene.AddRenderer(new DefaultRenderer());
-		return scene;
-	}
-
-	/// <summary>
-	/// helper that creates a scene of type T with the DefaultRenderer attached and ready for use
-	/// </summary>
-	/// <returns>The with default renderer.</returns>
-	[Obsolete("use new Scene() instead")]
-	public static T CreateWithDefaultRenderer<T>(Color? clearColor = null) where T : Scene, new()
-	{
-		var scene = new T();
 
 		if (clearColor.HasValue)
 			scene.ClearColor = clearColor.Value;
@@ -355,6 +350,7 @@ public class Scene
 		Core.Emitter.AddObserver(CoreEvents.OrientationChanged, OnOrientationChanged);
 
 		_didSceneBegin = true;
+		InvokeSceneBegin();
 		OnStart();
 	}
 

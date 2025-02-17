@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 
@@ -38,10 +40,22 @@ public class EntityList
 	// used in updateLists to double buffer so that the original lists can be modified elsewhere
 	private HashSet<Entity> _tempEntityList = new();
 
+	private bool _isSceneStarted = false;
 
 	public EntityList(Scene scene)
 	{
 		Scene = scene;
+		Scene.OnSceneBegin += SceneStarted;
+	}
+
+	~EntityList()
+	{
+		Scene.OnSceneBegin -= SceneStarted;
+	}
+
+	private void SceneStarted()
+	{
+		_isSceneStarted = true;
 	}
 
 	#region array access
@@ -52,6 +66,16 @@ public class EntityList
 
 	#endregion
 
+	#region Events
+
+	public event Action OnFinishedAddingEntities;
+
+	private void InvokeFinishedAddingEntities()
+	{
+		OnFinishedAddingEntities?.Invoke();
+	}
+
+	#endregion
 
 	public void MarkEntityListUnsorted()
 	{
@@ -206,6 +230,12 @@ public class EntityList
 			// now that all entities are added to the scene, we loop through again and call onAddedToScene
 			foreach (var entity in _tempEntityList)
 				entity.OnAddedToScene();
+
+			if (_isSceneStarted) //Make sure all entities are added properly before executing the event 
+			{
+				InvokeFinishedAddingEntities();
+				_isSceneStarted = false;
+			}
 
 			_tempEntityList.Clear();
 			_isEntityListUnsorted = true;

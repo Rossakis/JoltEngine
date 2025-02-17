@@ -2,10 +2,10 @@
 	<PropertyGroup>
 		<BaseIntermediateOutputPath>obj\Nez.MG38</BaseIntermediateOutputPath>
 	</PropertyGroup>
-	<Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+	<Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props"/>
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0</TargetFrameworks>
+		<TargetFramework>net8.0</TargetFramework>
 		<AssemblyName>Nez</AssemblyName>
 		<RootNamespace>Nez</RootNamespace>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -21,11 +21,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<Compile Remove="Graphics\SVG\Shapes\Paths\SvgPathBuilder.cs" />
+		<Compile Remove="Graphics\SVG\Shapes\Paths\SvgPathBuilder.cs"/>
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Remove="Content\NezDefaultBMFont.xnb" />
+		<None Remove="Content\NezDefaultBMFont.xnb"/>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -34,13 +34,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.2.1105" />
-		<PackageReference Include="System.Drawing.Common" Version="9.0.1" />
+		<PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.2.1105"/>
+		<PackageReference Include="System.Drawing.Common" Version="9.0.1"/>
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Nez.Persistence\Nez.MG38.Persistence.csproj" />
+		<ProjectReference Include="..\Nez.Persistence\Nez.MG38.Persistence.csproj"/>
 	</ItemGroup>
 
-	<Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+	<Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets"/>
 </Project>
