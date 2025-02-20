@@ -232,7 +232,7 @@ public class Scene
 
 	#region Events
 
-	public event Action OnSceneBegin;
+	public static event Action OnSceneBegin;
 
 	public void InvokeSceneBegin()
 	{
@@ -350,8 +350,8 @@ public class Scene
 		Core.Emitter.AddObserver(CoreEvents.OrientationChanged, OnOrientationChanged);
 
 		_didSceneBegin = true;
-		InvokeSceneBegin();
 		OnStart();
+		InvokeSceneBegin();
 	}
 
 	public virtual void End()
@@ -385,6 +385,9 @@ public class Scene
 		Unload();
 	}
 
+	/// <summary>
+	/// If in EditMode, will only update the Transform of entities
+	/// </summary>
 	public virtual void Update()
 	{
 		// we set the RenderTarget here so that the Viewport will match the RenderTarget properly
@@ -399,7 +402,8 @@ public class Scene
 				_sceneComponents.Buffer[i].Update();
 
 		// update our Entities
-		Entities.Update();
+		if (!Core.IsEditMode)
+			Entities.Update();
 
 		// we update our renderables after entity.update in case any new Renderables were added
 		RenderableComponents.UpdateLists();

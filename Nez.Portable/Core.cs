@@ -21,6 +21,11 @@ namespace Nez;
 public class Core : Game
 {
 	/// <summary>
+	/// In EditMode, Entities' components aren't updated, and instead, user can use the ImGui inspector to move the objects in the scene manually.
+	/// </summary>
+	public static bool IsEditMode { get; set; }
+
+	/// <summary>
 	/// core emitter. emits only Core level events.
 	/// </summary>
 	public static Emitter<CoreEvents> Emitter;

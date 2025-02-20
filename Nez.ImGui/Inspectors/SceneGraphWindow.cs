@@ -56,6 +56,17 @@ public class SceneGraphWindow
 
 		if (ImGui.Begin("Scene Graph", ref isOpen))
 		{
+			NezImGui.SmallVerticalSpace();
+			if (Core.IsEditMode)
+			{
+				if (NezImGui.CenteredButton("Edit Mode", 0.8f)) Core.IsEditMode = false;
+			}
+			else
+			{
+				if (NezImGui.CenteredButton("Play Mode", 0.8f)) Core.IsEditMode = true;
+			}
+
+			NezImGui.MediumVerticalSpace();
 			if (ImGui.CollapsingHeader("Post Processors"))
 				_postProcessorsPane.Draw();
 
