@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Nez.Persistence;
 using Nez.Textures;
-
 
 namespace Nez.Sprites;
 
@@ -110,10 +108,6 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 	/// </summary>
 	public float FrameTimeLeft { get; private set; }
 
-	/// <summary>
-	/// At which point of the animation the current frame is, from 0 (start) to 1 (end)
-	/// </summary>
-	public float NormalizedTime { get; private set; }
 
 	public PingPongLoopStates PingPongLoopState { get; set; }
 
@@ -126,6 +120,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 	public SpriteAnimator(Sprite sprite)
 	{
 		SetSprite(sprite);
+
 	}
 
 	public virtual void Update()
@@ -135,7 +130,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 
 		CurrentElapsedTime += Time.DeltaTime;
 		FrameTimeLeft -= Time.DeltaTime;
-		NormalizedTime = CurrentFrame / (float)FrameCount;
+
 		if (ShouldChangeFrame()) NextFrame();
 	}
 
@@ -239,6 +234,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 	/// </summary>
 	public void Play(string name, LoopMode loopMode = LoopMode.Loop)
 	{
+		CurrentElapsedTime = 0;
 		CurrentAnimation = Animations[name];
 		CurrentAnimationName = name;
 		FrameCount = CurrentAnimation.FrameRates.Length;
@@ -362,5 +358,19 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 		{
 			SetFrame(newFrame);
 		}
+	}
+
+	/// <summary>
+	/// WARNING: Can't calculate NormalizedTime for PingPong type of loop! Will return NULL in that case!
+	/// </summary>
+	public float? GetNormalizedTime()
+	{
+		if (CurrentLoopMode == LoopMode.PingPong || CurrentLoopMode == LoopMode.PingPongOnce)
+		{
+			System.Console.WriteLine($"Can't calculate NormalizedTime for PingPong type of Loop! Animation: {CurrentAnimationName}");
+			return null;
+		}
+
+		return (CurrentFrame + 1) / (float)CurrentAnimation.Sprites.Length;
 	}
 }
