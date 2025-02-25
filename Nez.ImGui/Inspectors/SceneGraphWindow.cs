@@ -17,6 +17,8 @@ public class SceneGraphWindow
 	public event Action OnSaveSceneChanges;
 	public event Action OnSaveAllChanges;
 	public event Action OnCancelChanges;
+	public event Action OnResetScene;
+	public event Action<bool> OnSwitchEditMode;
 
 	public void InvokeSaveEntityChanges()
 	{
@@ -38,6 +40,16 @@ public class SceneGraphWindow
 		OnCancelChanges?.Invoke();
 	}
 
+	public void InvokeResetScene()
+	{
+		OnResetScene?.Invoke();
+	}
+
+	public void InvokeSwitchEditMode(bool isEditMode)
+	{
+		OnSwitchEditMode?.Invoke(isEditMode);
+	}
+	
 	#endregion
 
 	public void OnSceneChanged()
@@ -59,11 +71,17 @@ public class SceneGraphWindow
 			NezImGui.SmallVerticalSpace();
 			if (Core.IsEditMode)
 			{
-				if (NezImGui.CenteredButton("Edit Mode", 0.8f)) Core.IsEditMode = false;
+				if (NezImGui.CenteredButton("Edit Mode", 0.8f))
+					InvokeSwitchEditMode(Core.IsEditMode = false);
+				
+				NezImGui.SmallVerticalSpace();
+				if (NezImGui.CenteredButton("Reset Scene", 0.8f)) 
+					InvokeResetScene();
 			}
 			else
 			{
-				if (NezImGui.CenteredButton("Play Mode", 0.8f)) Core.IsEditMode = true;
+				if (NezImGui.CenteredButton("Play Mode", 0.8f))
+					InvokeSwitchEditMode(Core.IsEditMode = true);
 			}
 
 			NezImGui.MediumVerticalSpace();
@@ -103,6 +121,9 @@ public class SceneGraphWindow
 				InvokeSaveEntityChanges();
 				ImGui.CloseCurrentPopup();
 			}
+
+			if (!Core.IsEditMode)
+				return;
 
 			NezImGui.SmallVerticalSpace();
 			if (NezImGui.CenteredButton("Save SCENE", 1f))
