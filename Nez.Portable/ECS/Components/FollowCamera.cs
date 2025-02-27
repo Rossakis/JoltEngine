@@ -61,6 +61,8 @@ namespace Nez
 		/// </summary>
 		public Vector2 MapSize;
 
+		public bool IsDebugEnabled;
+
 		Entity _targetEntity;
 		Collider _targetCollider;
 		Vector2 _desiredPositionDelta;
@@ -152,6 +154,9 @@ namespace Nez
 
 		public override void DebugRender(Batcher batcher)
 		{
+			if(!IsDebugEnabled)
+				return;
+
 			if (_cameraStyle == CameraStyle.LockOn)
 				batcher.DrawHollowRect(_worldSpaceDeadzone.X - 5, _worldSpaceDeadzone.Y - 5, 10, 10, Color.DarkRed);
 			else
