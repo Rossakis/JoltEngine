@@ -234,12 +234,12 @@ public class Core : Game
 		Time.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
 		Input.Update();
 
-		// if (ExitOnEscapeKeypress &&
-		//     (Input.IsKeyDown(Keys.Escape) || Input.GamePads[0].IsButtonReleased(Buttons.Back)))
-		// {
-		// 	base.Exit();
-		// 	return;
-		// }
+		if (ExitOnEscapeKeypress &&
+		    (Input.IsKeyDown(Keys.Escape) || Input.GamePads[0].IsButtonReleased(Buttons.Back)))
+		{
+			base.Exit();
+			return;
+		}
 
 		if (_scene != null)
 		{
