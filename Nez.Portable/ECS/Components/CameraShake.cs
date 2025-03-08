@@ -6,28 +6,27 @@ namespace Nez
 {
 	public class CameraShake : Component, IUpdatable
 	{
+		// New properties for duration calculation
+		public float TimePerFrame { get; set; } = 1f / 60f; // Default to 60 FPS
+		public float TotalShakeDuration { get; private set; }
+		public float FinishedThreshold { get; set; }
+
+		public event Action ShakeFinished;
+
+
 		Vector2 _shakeDirection;
 		Vector2 _shakeOffset;
 		float _shakeIntensity = 0f;
 		float _shakeDegredation = 0.95f;
-
-		// New properties for duration calculation
-		public float TimePerFrame { get; set; } = 1f / 60f; // Default to 60 FPS
-		public float TotalShakeDuration { get; private set; }
-
-		public event Action ShakeFinished;
-
-		public float NearlyFinishedThreshold = 0.1f;
-		public event Action ShakeNearlyFinished;
 
 		public void OnShakeFinished()
 		{
 			ShakeFinished?.Invoke();
 		}
 
-		public void OnShakeNearlyFinished()
+		public CameraShake(float finishedThreshold = 0.01f, float nearlyFinishedThreshold = 0.1f)
 		{
-			ShakeNearlyFinished?.Invoke();
+			FinishedThreshold = finishedThreshold;
 		}
 
 		public void Shake(
@@ -85,15 +84,9 @@ namespace Nez
 
 				_shakeOffset *= _shakeIntensity;
 				_shakeIntensity *= -_shakeDegredation;
-				
-				//Nearly Finished
-				if (Math.Abs(_shakeIntensity) <= NearlyFinishedThreshold)
-				{
-					OnShakeNearlyFinished();
-				}
 
-				//Finsihed
-				if (Math.Abs(_shakeIntensity) <= 0.01f)
+				//Finished
+				if (Math.Abs(_shakeIntensity) <= FinishedThreshold)
 				{
 					_shakeIntensity = 0f;
 					OnShakeFinished();

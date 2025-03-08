@@ -8,7 +8,6 @@ using Nez.Persistence;
 
 namespace Nez;
 
-[JsonSerializable(typeof(Transform))]
 public class Transform
 {
 	[Flags]
@@ -33,13 +32,12 @@ public class Transform
 	/// <summary>
 	/// the Entity associated with this transform
 	/// </summary>
-	[JsonExclude] public readonly Entity Entity;
+	public readonly Entity Entity;
 
 	/// <summary>
 	/// the parent Transform of this Transform
 	/// </summary>
 	/// <value>The parent.</value>
-	[JsonExclude]
 	public Transform Parent
 	{
 		get => _parent;
@@ -58,7 +56,6 @@ public class Transform
 	/// position of the transform in world space
 	/// </summary>
 	/// <value>The position.</value>
-	[Persistence.JsonInclude]
 	public Vector2 Position
 	{
 		get
@@ -234,7 +231,7 @@ public class Transform
 
 	private Transform _parent;
 
-	[JsonExclude] private DirtyType hierarchyDirty;
+	private DirtyType hierarchyDirty;
 
 	private bool _localDirty;
 	private bool _localPositionDirty;
@@ -264,7 +261,7 @@ public class Transform
 	private Vector2 _localScale;
 	private float _localRotation;
 
-	[JsonExclude] private List<Transform> _children = new();
+	private List<Transform> _children = new();
 
 	#endregion
 

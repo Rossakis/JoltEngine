@@ -18,7 +18,7 @@ public class Entity : IComparable<Entity>
 	/// <summary>
 	/// the scene this entity belongs to
 	/// </summary>
-	[JsonExclude] public Scene Scene;
+	public Scene Scene;
 
 	/// <summary>
 	/// entity name. useful for doing scene-wide searches for an entity
@@ -38,12 +38,11 @@ public class Entity : IComparable<Entity>
 	/// <summary>
 	/// list of all the components currently attached to this entity
 	/// </summary>
-	[JsonExclude] public readonly ComponentList Components;
+	public readonly ComponentList Components;
 
 	/// <summary>
 	/// use this however you want to. It can later be used to query the scene for all Entities with a specific tag
 	/// </summary>
-	[JsonExclude]
 	public int Tag
 	{
 		get => _tag;
@@ -53,12 +52,11 @@ public class Entity : IComparable<Entity>
 	/// <summary>
 	/// specifies how often this entitys update method should be called. 1 means every frame, 2 is every other, etc
 	/// </summary>
-	[JsonExclude] public uint UpdateInterval = 1;
+	public uint UpdateInterval = 1;
 
 	/// <summary>
 	/// enables/disables the Entity. When disabled colliders are removed from the Physics system and components methods will not be called
 	/// </summary>
-	[JsonExclude]
 	public bool Enabled
 	{
 		get => _enabled;
@@ -69,7 +67,6 @@ public class Entity : IComparable<Entity>
 	/// update order of this Entity. updateOrder is also used to sort tag lists on scene.entities
 	/// </summary>
 	/// <value>The order.</value>
-	[JsonExclude]
 	public int UpdateOrder
 	{
 		get => _updateOrder;
@@ -79,7 +76,6 @@ public class Entity : IComparable<Entity>
 	/// <summary>
 	/// if destroy was called, this will be true until the next time Entitys are processed
 	/// </summary>
-	[JsonExclude]
 	public bool IsDestroyed => _isDestroyed;
 
 	/// <summary>

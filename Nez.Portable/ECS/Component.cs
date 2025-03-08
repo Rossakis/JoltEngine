@@ -19,13 +19,12 @@ public class Component : IComparable<Component>
 	/// <summary>
 	/// the Entity this Component is attached to
 	/// </summary>
-	[JsonExclude] public Entity Entity;
+	public Entity Entity;
 
 	/// <summary>
 	/// shortcut to entity.transform
 	/// </summary>
 	/// <value>The transform.</value>
-	[JsonExclude]
 	public Transform Transform
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -37,7 +36,6 @@ public class Component : IComparable<Component>
 	/// Changes in state result in onEnabled/onDisable being called.
 	/// </summary>
 	/// <value><c>true</c> if enabled; otherwise, <c>false</c>.</value>
-	[JsonExclude]
 	public bool Enabled
 	{
 		get => Entity != null ? Entity.Enabled && _enabled : _enabled;
@@ -48,16 +46,15 @@ public class Component : IComparable<Component>
 	/// update order of the Components on this Entity
 	/// </summary>
 	/// <value>The order.</value>
-	[JsonExclude]
 	public int UpdateOrder
 	{
 		get => _updateOrder;
 		set => SetUpdateOrder(value);
 	}
 
-	[JsonExclude] private bool _enabled = true;
+	private bool _enabled = true;
 
-	[JsonExclude] internal int _updateOrder = 0;
+	internal int _updateOrder = 0;
 
 
 	#region Component Lifecycle
