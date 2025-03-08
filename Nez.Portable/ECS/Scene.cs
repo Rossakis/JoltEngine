@@ -257,36 +257,6 @@ public class Scene
 		return scene;
 	}
 
-	/// <summary>
-	/// helper that creates a scene with no Renderer
-	/// </summary>
-	/// <returns>The with default renderer.</returns>
-	[Obsolete("use new Scene() instead")]
-	public static Scene Create(Color? clearColor = null)
-	{
-		var scene = new Scene();
-
-		if (clearColor.HasValue)
-			scene.ClearColor = clearColor.Value;
-
-		return scene;
-	}
-
-	/// <summary>
-	/// helper that creates a scene of type T with no Renderer
-	/// </summary>
-	/// <returns>The with default renderer.</returns>
-	[Obsolete("use new Scene() instead")]
-	public static T Create<T>(Color? clearColor = null) where T : Scene, new()
-	{
-		var scene = new T();
-
-		if (clearColor.HasValue)
-			scene.ClearColor = clearColor.Value;
-
-		return scene;
-	}
-
 	#endregion
 
 

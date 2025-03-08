@@ -32,12 +32,14 @@ public class Transform
 	/// <summary>
 	/// the Entity associated with this transform
 	/// </summary>
+	[JsonExclude]
 	public readonly Entity Entity;
 
 	/// <summary>
 	/// the parent Transform of this Transform
 	/// </summary>
 	/// <value>The parent.</value>
+	[JsonExclude]
 	public Transform Parent
 	{
 		get => _parent;
@@ -230,7 +232,6 @@ public class Transform
 
 
 	private Transform _parent;
-
 	private DirtyType hierarchyDirty;
 
 	private bool _localDirty;

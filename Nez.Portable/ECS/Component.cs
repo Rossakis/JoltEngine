@@ -19,12 +19,14 @@ public class Component : IComparable<Component>
 	/// <summary>
 	/// the Entity this Component is attached to
 	/// </summary>
+	[JsonExclude]
 	public Entity Entity;
 
 	/// <summary>
 	/// shortcut to entity.transform
 	/// </summary>
 	/// <value>The transform.</value>
+	[JsonExclude]
 	public Transform Transform
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -18,6 +18,7 @@ public class Entity : IComparable<Entity>
 	/// <summary>
 	/// the scene this entity belongs to
 	/// </summary>
+	[JsonExclude]
 	public Scene Scene;
 
 	/// <summary>
@@ -38,6 +39,7 @@ public class Entity : IComparable<Entity>
 	/// <summary>
 	/// list of all the components currently attached to this entity
 	/// </summary>
+	[JsonExclude]
 	public readonly ComponentList Components;
 
 	/// <summary>
