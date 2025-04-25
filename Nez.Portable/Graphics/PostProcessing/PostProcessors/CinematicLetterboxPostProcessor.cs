@@ -1,7 +1,8 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework;
 using System.Collections;
-using Nez.Tweens;
+using Nez.Utils;
+using Nez.Utils.Tweens.Easing;
 
 
 namespace Nez

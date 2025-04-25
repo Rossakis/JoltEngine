@@ -1,9 +1,8 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System.Text;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System.Text;
 
-
-namespace Nez
+namespace Nez.Utils.Fonts
 {
 	public interface IFont
 	{

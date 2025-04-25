@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Nez.UI;
+using Nez.Utils;
 
 
 #if DEBUG

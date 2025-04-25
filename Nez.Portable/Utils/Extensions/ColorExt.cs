@@ -1,8 +1,7 @@
 ﻿using System;
 using Microsoft.Xna.Framework;
 
-
-namespace Nez
+namespace Nez.Utils.Extensions
 {
 	public static class ColorExt
 	{

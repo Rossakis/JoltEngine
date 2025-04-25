@@ -1,9 +1,8 @@
-﻿using Microsoft.Xna.Framework;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-
-namespace Nez
+namespace Nez.Utils.Extensions
 {
 	public static class SpriteBatchExt
 	{

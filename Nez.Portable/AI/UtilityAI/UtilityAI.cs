@@ -1,4 +1,6 @@
-﻿namespace Nez.AI.UtilityAI
+﻿using Nez.Utils;
+
+namespace Nez.AI.UtilityAI
 {
 	public class UtilityAI<T>
 	{

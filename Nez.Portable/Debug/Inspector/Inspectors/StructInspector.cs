@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.Xna.Framework;
-using Nez.IEnumerableExtensions;
 using Nez.UI;
+using Nez.Utils;
+using Nez.Utils.Extensions;
 
 
 #if DEBUG

@@ -2,6 +2,8 @@
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using Nez.Utils;
+using Nez.Utils.Collections;
 
 
 namespace Nez.Particles

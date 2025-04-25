@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
+using Nez.Utils;
 
 
 namespace Nez

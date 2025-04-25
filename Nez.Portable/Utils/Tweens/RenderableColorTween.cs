@@ -1,7 +1,9 @@
 ﻿using Microsoft.Xna.Framework;
+using Nez.Utils.Collections;
+using Nez.Utils.Tweens.Easing;
+using Nez.Utils.Tweens.Interfaces;
 
-
-namespace Nez.Tweens
+namespace Nez.Utils.Tweens
 {
 	public class RenderableColorTween : ColorTween, ITweenTarget<Color>
 	{

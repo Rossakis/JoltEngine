@@ -1,8 +1,9 @@
-﻿using Nez;
-using Nez.IEnumerableExtensions;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using Nez.Utils.Extensions;
 
-
-namespace System.Collections.Generic
+namespace Nez.Utils.Collections
 {
 	/// <summary>
 	/// sourced from: https://github.com/tejacques/Deque

@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 
-
-namespace Nez
+namespace Nez.Utils.Collections
 {
 	/// <summary>
 	/// simple static class that can be used to pool Lists

@@ -5,6 +5,8 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Num = System.Numerics;
 using Nez.Persistence.Binary;
+using Nez.Utils;
+using Nez.Utils.Extensions;
 
 
 namespace Nez.ImGuiTools;

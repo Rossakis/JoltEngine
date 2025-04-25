@@ -2,7 +2,7 @@
 using System.Reflection;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
-using Nez.IEnumerableExtensions;
+using Nez.Utils;
 
 
 namespace Nez.ImGuiTools.TypeInspectors

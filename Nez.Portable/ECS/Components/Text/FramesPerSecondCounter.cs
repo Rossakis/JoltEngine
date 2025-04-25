@@ -2,6 +2,8 @@
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Nez.BitmapFonts;
+using Nez.Utils;
+using Nez.Utils.Fonts;
 
 
 namespace Nez

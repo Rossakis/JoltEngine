@@ -1,8 +1,8 @@
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
+using Nez.Utils.Collections;
 
-
-namespace Nez.Systems
+namespace Nez.Utils.Coroutines
 {
 	/// <summary>
 	/// basic CoroutineManager. Coroutines can do the following:

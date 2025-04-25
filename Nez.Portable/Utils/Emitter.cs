@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-
-namespace Nez.Systems
+namespace Nez.Utils
 {
 	/// <summary>
 	/// simple event emitter that is designed to have its generic contraint be either an int or an enum

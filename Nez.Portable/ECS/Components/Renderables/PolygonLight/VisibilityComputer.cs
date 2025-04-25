@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Nez.PhysicsShapes;
 using System.Runtime.CompilerServices;
+using Nez.Utils.Collections;
 
 
 namespace Nez.Shadows

@@ -1,8 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input.Touch;
 
-
-namespace Nez
+namespace Nez.Utils.Extensions
 {
 	public static class GestureSampleExt
 	{

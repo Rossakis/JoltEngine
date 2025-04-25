@@ -1,5 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Nez.PhysicsShapes;
+using Nez.Utils;
+using Nez.Utils.Extensions;
 
 
 namespace Nez.Particles

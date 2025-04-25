@@ -14,6 +14,7 @@ using Nez.Tiled;
 using Microsoft.Xna.Framework.Audio;
 using Nez.BitmapFonts;
 using Nez.Aseprite;
+using Nez.Utils;
 
 
 namespace Nez.Systems;
@@ -261,7 +262,7 @@ public class NezContentManager : ContentManager
 	/// <typeparam name="T">The 1st type parameter.</typeparam>
 	public T LoadNezEffect<T>() where T : Effect, new()
 	{
-		var cacheKey = typeof(T).Name + "-" + Utils.RandomString(5);
+		var cacheKey = typeof(T).Name + "-" + Utils.Utils.RandomString(5);
 		var effect = new T();
 		effect.Name = cacheKey;
 		_loadedEffects[cacheKey] = effect;
@@ -297,7 +298,7 @@ public class NezContentManager : ContentManager
 	public T LoadEffect<T>(string name, byte[] effectCode) where T : Effect
 	{
 		var effect = Activator.CreateInstance(typeof(T), Core.GraphicsDevice, effectCode) as T;
-		effect.Name = name + "-" + Utils.RandomString(5);
+		effect.Name = name + "-" + Utils.Utils.RandomString(5);
 		_loadedEffects[effect.Name] = effect;
 
 		return effect;
@@ -313,7 +314,7 @@ public class NezContentManager : ContentManager
 	public T LoadMonoGameEffect<T>() where T : Effect
 	{
 		var effect = Activator.CreateInstance(typeof(T), Core.GraphicsDevice) as T;
-		effect.Name = typeof(T).Name + "-" + Utils.RandomString(5);
+		effect.Name = typeof(T).Name + "-" + Utils.Utils.RandomString(5);
 		_loadedEffects[effect.Name] = effect;
 
 		return effect;

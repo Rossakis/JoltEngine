@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using Nez.Utils.Extensions;
 
-
-namespace Nez
+namespace Nez.Utils
 {
 	/// <summary>
 	/// simple ear clipping triangulator. the final triangles will be present in the triangleIndices list

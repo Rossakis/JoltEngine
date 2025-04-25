@@ -2,6 +2,8 @@ using System;
 using System.Runtime.InteropServices;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
+using Nez.Utils;
+using Nez.Utils.Extensions;
 using Num = System.Numerics;
 
 

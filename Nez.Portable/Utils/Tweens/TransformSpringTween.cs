@@ -1,8 +1,8 @@
-﻿using Microsoft.Xna.Framework;
-using System;
+﻿using System;
+using Microsoft.Xna.Framework;
+using Nez.Utils.Tweens.Easing;
 
-
-namespace Nez.Tweens
+namespace Nez.Utils.Tweens
 {
 	public class TransformSpringTween : AbstractTweenable
 	{

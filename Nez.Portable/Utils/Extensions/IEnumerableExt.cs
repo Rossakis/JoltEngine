@@ -1,8 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Collections;
+﻿using System.Collections;
+using System.Collections.Generic;
 
-
-namespace Nez.IEnumerableExtensions
+namespace Nez.Utils.Extensions
 {
 	public static class IEnumerableExt
 	{

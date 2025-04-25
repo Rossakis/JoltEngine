@@ -164,7 +164,7 @@ public class EntityPane
 				ImGui.PushStyleColor(ImGuiCol.Button, Color.Green.PackedValue);
 				if (ImGui.Button("Create"))
 				{
-					_newEntityName = _newEntityName.Length > 0 ? _newEntityName : Utils.RandomString(8);
+					_newEntityName = _newEntityName.Length > 0 ? _newEntityName : Utils.Utils.RandomString(8);
 					var newEntity = new Entity(_newEntityName);
 					newEntity.Transform.SetParent(entity.Transform);
 					entity.Scene.AddEntity(newEntity);
@@ -200,7 +200,7 @@ public class EntityPane
 			ImGui.PushStyleColor(ImGuiCol.Button, Color.Green.PackedValue);
 			if (ImGui.Button("Create"))
 			{
-				_newEntityName = _newEntityName.Length > 0 ? _newEntityName : Utils.RandomString(8);
+				_newEntityName = _newEntityName.Length > 0 ? _newEntityName : Utils.Utils.RandomString(8);
 				var newEntity = new Entity(_newEntityName);
 				newEntity.Transform.Position = Core.Scene.Camera.Transform.Position;
 				Core.Scene.AddEntity(newEntity);

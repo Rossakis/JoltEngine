@@ -1,6 +1,8 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using Nez.PhysicsShapes;
+using Nez.Utils;
+using Nez.Utils.Collections;
 
 
 namespace Nez.Verlet

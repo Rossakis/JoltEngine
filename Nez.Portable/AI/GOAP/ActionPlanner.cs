@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Collections.Generic;
+using Nez.Utils.Collections;
 
 
 namespace Nez.AI.GOAP

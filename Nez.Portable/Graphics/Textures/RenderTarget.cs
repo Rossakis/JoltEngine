@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
+using Nez.Utils;
 
 
 namespace Nez.Textures

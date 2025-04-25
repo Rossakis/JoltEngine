@@ -1,11 +1,12 @@
 using System.Collections.Generic;
-using Nez.IEnumerableExtensions;
 using System.Reflection;
 using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using TI = Nez.ImGuiTools.TypeInspectors;
 using System.Collections;
+using Nez.Utils;
+using Nez.Utils.Extensions;
 
 
 namespace Nez.ImGuiTools.TypeInspectors

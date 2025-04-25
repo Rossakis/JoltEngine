@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using Nez.PhysicsShapes;
+using Nez.Utils;
+using Nez.Utils.Extensions;
 
 
 namespace Nez.Spatial
@@ -271,15 +273,29 @@ namespace Nez.Spatial
 		/// <param name="layerMask">Layer mask.</param>
 		public int Linecast(Vector2 start, Vector2 end, RaycastHit[] hits, int layerMask)
 		{
+			if (MathUtils.IsVectorNaN(start))
+				start = Vector2.Zero;
+			if (MathUtils.IsVectorNaN(end))
+				end = start + Vector2.UnitX; // Default direction
+
 			var ray = new Ray2D(start, end);
+
+			// Validate direction vector
+			if (MathUtils.IsVectorNaN(ray.Direction))
+		
+			{
+				Debug.Error("Invalid ray direction - using fallback");
+				ray = new Ray2D(start, start + Vector2.UnitX);
+			}
+
 			_raycastParser.Start(ref ray, hits, layerMask);
 
 			// get our start/end position in the same space as our grid
 			var currentCell = CellCoords(start.X, start.Y);
 			var lastCell = CellCoords(end.X, end.Y);
 
-			if (Double.IsNaN(ray.Direction.X) || Double.IsNaN(ray.Direction.Y))
-				throw new Exception("ray Direction values are NaN!");
+			if (float.IsNaN(ray.Direction.X) || float.IsNaN(ray.Direction.Y))
+				throw new Exception("'start' ray Direction values are NaN!");
 
 			// what direction are we incrementing the cell checks?
 			var stepX = Math.Sign(ray.Direction.X);

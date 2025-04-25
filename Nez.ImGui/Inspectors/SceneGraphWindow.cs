@@ -1,6 +1,7 @@
 using System;
 using ImGuiNET;
 using Nez.ImGuiTools.SceneGraphPanes;
+using Nez.Utils;
 using Num = System.Numerics;
 
 namespace Nez.ImGuiTools;

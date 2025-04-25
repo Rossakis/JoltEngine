@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using Nez.Systems;
 using System.Runtime.CompilerServices;
 using Nez.Console;
+using Nez.Utils;
+using Nez.Utils.Collections;
 
 
 namespace Nez;

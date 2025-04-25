@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using Nez.Persistence;
+using Nez.Utils.Extensions;
 
 
 namespace Nez;

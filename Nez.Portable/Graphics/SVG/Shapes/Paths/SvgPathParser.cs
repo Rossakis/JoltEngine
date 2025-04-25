@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Xna.Framework;
+using Nez.Utils.Extensions;
 
 
 namespace Nez.Svg

@@ -2,6 +2,8 @@
 using Microsoft.Xna.Framework;
 using Nez.BitmapFonts;
 using Microsoft.Xna.Framework.Graphics;
+using Nez.Utils;
+using Nez.Utils.Fonts;
 
 
 namespace Nez
@@ -125,7 +127,7 @@ namespace Nez
 					batcher.DrawPixel(X, Y, Color, Size);
 					break;
 				case DebugDrawType.BitmapFontText:
-					batcher.DrawString(BitmapFont, Text, Position, Color, 0f, Vector2.Zero, Scale,
+					BatcherIFontExt.DrawString(batcher, BitmapFont, Text, Position, Color, 0f, Vector2.Zero, Scale,
 						SpriteEffects.None, 0f);
 					break;
 				case DebugDrawType.SpriteFontText:
@@ -133,7 +135,7 @@ namespace Nez
 						SpriteEffects.None, 0f);
 					break;
 				case DebugDrawType.ConsoleText:
-					batcher.DrawString(BitmapFont, Text, Position, Color, 0f, Vector2.Zero, Scale,
+					BatcherIFontExt.DrawString(batcher, BitmapFont, Text, Position, Color, 0f, Vector2.Zero, Scale,
 						SpriteEffects.None, 0f);
 					break;
 			}

@@ -7,6 +7,8 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Nez.Utils;
+using Nez.Utils.Fonts;
 
 
 namespace Nez

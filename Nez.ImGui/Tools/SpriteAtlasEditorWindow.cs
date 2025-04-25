@@ -6,6 +6,8 @@ using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Nez.Sprites;
+using Nez.Utils;
+using Nez.Utils.Extensions;
 using Num = System.Numerics;
 
 namespace Nez.ImGuiTools
@@ -560,7 +562,7 @@ namespace Nez.ImGuiTools
 				ImGui.PushStyleColor(ImGuiCol.Button, Color.Green.PackedValue);
 				if (ImGui.Button("Create"))
 				{
-					_stringBuffer = _stringBuffer.Length > 0 ? _stringBuffer : Utils.RandomString(8);
+					_stringBuffer = _stringBuffer.Length > 0 ? _stringBuffer : Utils.Utils.RandomString(8);
 					_spriteAtlasData.AnimationNames.Add(_stringBuffer);
 					_spriteAtlasData.AnimationFps.Add(8);
 					_spriteAtlasData.AnimationFrames.Add(new List<int>());

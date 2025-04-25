@@ -2,6 +2,8 @@
 using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Nez.Utils.Collections;
+using Nez.Utils.Extensions;
 
 
 namespace Nez.Shadows

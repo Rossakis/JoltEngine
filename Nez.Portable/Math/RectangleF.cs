@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
+using Nez.Utils;
+using Nez.Utils.Extensions;
 
 
 namespace Nez;

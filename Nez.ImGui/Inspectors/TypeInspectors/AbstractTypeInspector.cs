@@ -1,6 +1,8 @@
 using System;
 using System.Reflection;
 using ImGuiNET;
+using Nez.Utils;
+using Nez.Utils.Extensions;
 
 
 namespace Nez.ImGuiTools.TypeInspectors

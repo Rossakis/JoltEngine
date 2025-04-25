@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Nez.BitmapFonts;
 using System.Diagnostics;
+using Nez.Utils.Fonts;
 
 namespace Nez
 {

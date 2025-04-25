@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using Nez.Utils.Extensions;
 
-namespace Nez
+namespace Nez.Utils
 {
 	/// <summary>
 	/// helper class to fetch property delegates

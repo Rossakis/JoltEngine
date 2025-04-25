@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 
-
-namespace Nez
+namespace Nez.Utils.Extensions
 {
 	public static class ArrayExt
 	{

@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Nez.BitmapFonts;
 using System;
+using Nez.Utils.Extensions;
 
 
 namespace Nez.UI

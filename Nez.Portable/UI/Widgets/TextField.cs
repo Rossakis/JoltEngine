@@ -4,6 +4,10 @@ using Nez.BitmapFonts;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Nez.Utils;
+using Nez.Utils.Extensions;
+using Nez.Utils.Fonts;
+using Nez.Utils.Timers;
 
 
 namespace Nez.UI
@@ -631,7 +635,7 @@ namespace Nez.UI
 						? style.MessageFontColor.Value
 						: new Color(180, 180, 180, (int)(color.A * parentAlpha));
 					var messageFont = style.MessageFont != null ? style.MessageFont : font;
-					batcher.DrawString(messageFont, messageText,
+					BatcherIFontExt.DrawString(batcher, messageFont, messageText,
 						new Vector2(x + bgLeftWidth, y + textY + yOffset), messageFontColor);
 
 					//messageFont.draw( batcher.batcher, messageText, x + bgLeftWidth, y + textY + yOffset, 0, messageText.length(),
@@ -642,7 +646,7 @@ namespace Nez.UI
 			{
 				var col = ColorExt.Create(fontColor, (int)(fontColor.A * parentAlpha));
 				var t = displayText.Substring(visibleTextStart, visibleTextEnd - visibleTextStart);
-				batcher.DrawString(font, t, new Vector2(x + bgLeftWidth + textOffset, y + textY + yOffset),
+				BatcherIFontExt.DrawString(batcher, font, t, new Vector2(x + bgLeftWidth + textOffset, y + textY + yOffset),
 					col);
 			}
 

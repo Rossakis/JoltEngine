@@ -5,11 +5,14 @@ using Microsoft.Xna.Framework.Graphics;
 using System.Collections;
 using Nez.Systems;
 using Nez.Console;
-using Nez.Tweens;
-using Nez.Timers;
 using Nez.BitmapFonts;
 using Nez.Textures;
 using System.Diagnostics;
+using Nez.Utils;
+using Nez.Utils.Collections;
+using Nez.Utils.Coroutines;
+using Nez.Utils.Timers;
+using Nez.Utils.Tweens;
 
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Nez.ImGui")]

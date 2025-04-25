@@ -1,6 +1,9 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
+using Nez.Utils;
+using Nez.Utils.Extensions;
+using Nez.Utils.Timers;
 
 
 namespace Nez.UI

@@ -4,6 +4,8 @@ using Nez.Textures;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework.Graphics;
 using System.Runtime.CompilerServices;
+using Nez.Utils;
+using Nez.Utils.Extensions;
 
 
 namespace Nez.Sprites

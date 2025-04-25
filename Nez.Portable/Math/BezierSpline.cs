@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Nez.Utils.Collections;
 
 
 namespace Nez.Splines

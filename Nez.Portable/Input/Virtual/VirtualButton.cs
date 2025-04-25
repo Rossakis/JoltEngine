@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework.Input;
+using Nez.Utils;
 
 
 namespace Nez

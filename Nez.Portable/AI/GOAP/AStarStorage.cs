@@ -1,4 +1,5 @@
 ﻿using System;
+using Nez.Utils.Collections;
 
 
 namespace Nez.AI.GOAP

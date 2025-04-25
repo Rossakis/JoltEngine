@@ -2,6 +2,8 @@
 using System.Xml.Serialization;
 using Microsoft.Xna.Framework;
 using Nez.Splines;
+using Nez.Utils.Collections;
+using Nez.Utils.Extensions;
 
 
 namespace Nez.Svg

@@ -1,6 +1,7 @@
 ﻿using Nez.Textures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Nez.Utils.Extensions;
 
 
 namespace Nez.UI

@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Nez.Sprites;
 using Nez.Textures;
+using Nez.Utils.Extensions;
 
 namespace Nez.Aseprite;
 

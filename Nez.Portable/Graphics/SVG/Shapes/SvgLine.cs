@@ -1,5 +1,6 @@
 ﻿using System.Xml.Serialization;
 using Microsoft.Xna.Framework;
+using Nez.Utils.Extensions;
 
 
 namespace Nez.Svg

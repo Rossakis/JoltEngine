@@ -2,6 +2,8 @@
 using Microsoft.Xna.Framework;
 using Nez.PhysicsShapes;
 using System.Runtime.CompilerServices;
+using Nez.Utils.Collections;
+using Nez.Utils.Extensions;
 
 
 namespace Nez
@@ -471,7 +473,7 @@ namespace Nez
 				}
 				else
 				{
-					Utils.Swap(ref _firstSegment, ref _secondSegment);
+					Utils.Utils.Swap(ref _firstSegment, ref _secondSegment);
 					if (hasThirdPoint)
 						_secondSegment.SetPoints(ref secondPoint, ref thirdPoint);
 				}

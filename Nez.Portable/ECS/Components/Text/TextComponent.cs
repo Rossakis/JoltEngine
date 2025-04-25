@@ -1,5 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Nez.Sprites;
+using Nez.Utils;
+using Nez.Utils.Fonts;
 
 
 namespace Nez

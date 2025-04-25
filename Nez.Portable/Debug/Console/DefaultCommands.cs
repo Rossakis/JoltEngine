@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Text;
 using System.Collections.Generic;
+using Nez.Utils;
+using Nez.Utils.Timers;
 
 
 namespace Nez.Console

@@ -1,8 +1,7 @@
 using System;
 using System.Reflection;
 
-
-namespace Nez
+namespace Nez.Utils.Extensions
 {
 	public static class MemberInfoExt
 	{

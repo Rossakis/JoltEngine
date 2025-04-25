@@ -3,6 +3,8 @@ using Nez.BitmapFonts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Nez.Utils.Extensions;
+using Nez.Utils.Fonts;
 
 
 namespace Nez.UI
@@ -120,7 +122,7 @@ namespace Nez.UI
 				}
 
 				fontColor = ColorExt.Create(fontColor, (int)(fontColor.A * parentAlpha));
-				batcher.DrawString(font, str, new Vector2(x, y), fontColor);
+				BatcherIFontExt.DrawString(batcher, font, str, new Vector2(x, y), fontColor);
 			}
 		}
 

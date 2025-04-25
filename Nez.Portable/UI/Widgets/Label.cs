@@ -1,6 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
 using Nez.BitmapFonts;
 using Microsoft.Xna.Framework.Graphics;
+using Nez.Utils.Extensions;
+using Nez.Utils.Fonts;
 
 
 namespace Nez.UI
@@ -365,7 +367,7 @@ namespace Nez.UI
 			var color = ColorExt.Create(this.color, (int)(this.color.A * parentAlpha));
 			_style.Background?.Draw(batcher, x, y, width == 0 ? _prefSize.X : width, height, color);
 
-			batcher.DrawString(_style.Font, _wrappedString, new Vector2(x, y) + _textPosition,
+			BatcherIFontExt.DrawString(batcher, _style.Font, _wrappedString, new Vector2(x, y) + _textPosition,
 				_style.FontColor, 0, Vector2.Zero, new Vector2(_style.FontScaleX, _style.FontScaleY), SpriteEffects.None, 0);
 		}
 	}

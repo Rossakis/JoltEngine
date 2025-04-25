@@ -2,8 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-
-namespace Nez
+namespace Nez.Utils.Fonts
 {
 	/// <summary>
 	/// helper methods for drawing text with NezSpriteFonts

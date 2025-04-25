@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-
-namespace Nez
+namespace Nez.Utils.Collections
 {
 	/// <summary>
 	/// simple DTO for managing a pair of objects

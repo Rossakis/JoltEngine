@@ -5,6 +5,9 @@ using Nez.Systems;
 using Nez.Textures;
 using Microsoft.Xna.Framework.Graphics;
 using Nez.Persistence;
+using Nez.Utils;
+using Nez.Utils.Collections;
+using Nez.Utils.Extensions;
 
 
 namespace Nez;

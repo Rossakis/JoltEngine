@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using ImGuiNET;
 using Nez.ImGuiTools.TypeInspectors;
+using Nez.Utils.Extensions;
 
 
 namespace Nez.ImGuiTools.ObjectInspectors

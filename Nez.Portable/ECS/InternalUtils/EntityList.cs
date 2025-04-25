@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Nez.Utils;
+using Nez.Utils.Collections;
 
 
 namespace Nez;
@@ -199,7 +201,7 @@ public class EntityList
 		// handle removals
 		if (_entitiesToRemove.Count > 0)
 		{
-			Utils.Swap(ref _entitiesToRemove, ref _tempEntityList);
+			Utils.Utils.Swap(ref _entitiesToRemove, ref _tempEntityList);
 			foreach (var entity in _tempEntityList)
 			{
 				// handle the tagList
@@ -217,7 +219,7 @@ public class EntityList
 		// handle additions
 		if (_entitiesToAdd.Count > 0)
 		{
-			Utils.Swap(ref _entitiesToAdd, ref _tempEntityList);
+			Utils.Utils.Swap(ref _entitiesToAdd, ref _tempEntityList);
 			foreach (var entity in _tempEntityList)
 			{
 				_entities.Add(entity);

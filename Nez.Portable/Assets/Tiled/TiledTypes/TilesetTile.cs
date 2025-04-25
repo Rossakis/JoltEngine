@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Nez.Utils;
 
 namespace Nez.Tiled
 {

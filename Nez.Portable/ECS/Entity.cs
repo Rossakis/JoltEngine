@@ -201,7 +201,7 @@ public class Entity : IComparable<Entity>
 		Id = _idGenerator++;
 	}
 
-	public Entity() : this(Utils.RandomString(8))
+	public Entity() : this(Utils.Utils.RandomString(8))
 	{
 	}
 

@@ -1,4 +1,4 @@
-﻿namespace Nez
+﻿namespace Nez.Utils
 {
 	public class GlobalManager
 	{

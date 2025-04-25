@@ -3,6 +3,8 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Nez.PhysicsShapes;
 using Nez.Textures;
+using Nez.Utils;
+using Nez.Utils.Extensions;
 
 namespace Nez
 {
@@ -94,7 +96,7 @@ namespace Nez
 		{
 			// fetch all the Colliders in range
 			var colliders = Physics.BoxcastBroadphase(renderable.Bounds, CollidesWithLayers);
-			var colliderCount = IEnumerableExtensions.IEnumerableExt.Count(colliders);
+			var colliderCount = IEnumerableExt.Count(colliders);
 
 			if (colliderCount > 0)
 			{

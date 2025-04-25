@@ -3,6 +3,8 @@
 using System;
 using Microsoft.Xna.Framework;
 using System.Collections.Generic;
+using Nez.Utils;
+using Nez.Utils.Extensions;
 
 
 namespace Nez.Tiled

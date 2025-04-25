@@ -6,7 +6,9 @@ using Microsoft.Xna.Framework;
 using System.Text.RegularExpressions;
 using Microsoft.Xna.Framework.Graphics;
 using System.Linq;
-using Nez.IEnumerableExtensions;
+using Nez.Utils;
+using Nez.Utils.Extensions;
+using Nez.Utils.Fonts;
 
 
 namespace Nez.Console

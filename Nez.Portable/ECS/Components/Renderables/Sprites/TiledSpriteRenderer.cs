@@ -2,6 +2,7 @@
 using Nez.Textures;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework;
+using Nez.Utils.Extensions;
 
 
 namespace Nez

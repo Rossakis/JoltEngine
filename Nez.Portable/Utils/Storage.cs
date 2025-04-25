@@ -2,8 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-
-namespace Nez
+namespace Nez.Utils
 {
 	public static class Storage
 	{
