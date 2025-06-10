@@ -65,6 +65,12 @@ public class Entity : IComparable<Entity>
 		set => SetEnabled(value);
 	}
 
+	public bool DebugRenderEnabled
+	{
+		get => _debugRenderEnabled;
+		set => _debugRenderEnabled = value;
+	}
+
 	/// <summary>
 	/// update order of this Entity. updateOrder is also used to sort tag lists on scene.entities
 	/// </summary>
@@ -87,6 +93,7 @@ public class Entity : IComparable<Entity>
 
 	private int _tag = 0;
 	private bool _enabled = true;
+	private bool _debugRenderEnabled = true;
 	internal int _updateOrder = 0;
 
 	#endregion
@@ -199,6 +206,7 @@ public class Entity : IComparable<Entity>
 		Transform = new Transform(this);
 		Name = name;
 		Id = _idGenerator++;
+		DebugRenderEnabled = Core.DebugRenderEnabled;
 	}
 
 	public Entity() : this(Utils.Utils.RandomString(8))

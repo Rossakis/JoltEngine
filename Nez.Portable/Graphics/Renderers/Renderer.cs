@@ -169,7 +169,7 @@ namespace Nez
 			for (var i = 0; i < scene.Entities.Count; i++)
 			{
 				var entity = scene.Entities[i];
-				if (entity.Enabled)
+				if (entity.Enabled && entity.DebugRenderEnabled)
 					entity.DebugRender(Graphics.Instance.Batcher);
 			}
 		}

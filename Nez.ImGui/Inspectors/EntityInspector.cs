@@ -77,6 +77,10 @@ namespace Nez.ImGuiTools
 				if (ImGui.InputInt("Tag", ref tag))
 					Entity.Tag = tag;
 
+				var debugEnabled = Entity.DebugRenderEnabled;
+				if (ImGui.Checkbox("Debug Render Enabled", ref debugEnabled))
+					Entity.DebugRenderEnabled = debugEnabled;
+
 				NezImGui.MediumVerticalSpace();
 				_transformInspector.Draw();
 				NezImGui.MediumVerticalSpace();
