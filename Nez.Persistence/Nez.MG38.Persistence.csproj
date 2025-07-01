@@ -32,5 +32,10 @@
 		<DefaultItemExcludes>$(DefaultItemExcludes);Tests\**\*.*</DefaultItemExcludes>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.4"/>
+		<PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4"/>
+	</ItemGroup>
+
 	<Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets"/>
 </Project>

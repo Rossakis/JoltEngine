@@ -11,14 +11,14 @@ public class SceneGraphWindow
 	/// <summary>
 	/// A copy of a component that can be pasted to another entity
 	/// </summary>
-	public Component CopiedComponent { get; set; } 
+	public Component CopiedComponent { get; set; }
 
 	private PostProcessorsPane _postProcessorsPane = new();
 	private RenderersPane _renderersPane = new();
 	private EntityPane _entityPane = new();
 	private ImGuiManager _imGuiManager;
 
-	string _entityFilterName;
+	private string _entityFilterName;
 
 
 	#region Event Handlers
@@ -53,7 +53,7 @@ public class SceneGraphWindow
 	{
 		OnSwitchEditMode?.Invoke(isEditMode);
 	}
-	
+
 	#endregion
 
 	public void OnSceneChanged()
@@ -67,7 +67,7 @@ public class SceneGraphWindow
 		if (Core.Scene == null || !isOpen)
 			return;
 
-		if(_imGuiManager == null)
+		if (_imGuiManager == null)
 			_imGuiManager = Core.GetGlobalManager<ImGuiManager>();
 
 		ImGui.SetNextWindowPos(new Num.Vector2(0, 25), ImGuiCond.FirstUseEver);
@@ -80,9 +80,9 @@ public class SceneGraphWindow
 			{
 				if (NezImGui.CenteredButton("Edit Mode", 0.8f))
 					InvokeSwitchEditMode(Core.IsEditMode = false);
-				
+
 				NezImGui.SmallVerticalSpace();
-				if (NezImGui.CenteredButton("Reset Scene", 0.8f)) 
+				if (NezImGui.CenteredButton("Reset Scene", 0.8f))
 					InvokeResetScene();
 			}
 			else
@@ -125,22 +125,24 @@ public class SceneGraphWindow
 				if (NezImGui.CenteredButton("Clear Copied Component", 0.8f))
 					_imGuiManager.SceneGraphWindow.CopiedComponent = null;
 			}
-			
+
 
 			DrawSaveChangesPopup();
 
 			ImGui.End();
 		}
 	}
+
 	private string GetUniqueEntityName(string baseName)
 	{
-		int counter = 1;
-		string uniqueName = baseName;
+		var counter = 1;
+		var uniqueName = baseName;
 		while (Core.Scene.Entities.FindEntity(uniqueName) != null)
 		{
 			uniqueName = $"{baseName}{counter}";
 			counter++;
 		}
+
 		return uniqueName;
 	}
 
@@ -153,7 +155,6 @@ public class SceneGraphWindow
 
 			var isNezType = false;
 			foreach (var subclassType in InspectorCache.GetAllEntitySubclassTypes())
-			{
 				if (string.IsNullOrEmpty(_entityFilterName) ||
 				    subclassType.Name.ToLower().Contains(_entityFilterName.ToLower()))
 				{
@@ -167,8 +168,8 @@ public class SceneGraphWindow
 					if (ImGui.Selectable(subclassType.Name))
 					{
 						// Generate a unique name for the new entity
-						string baseName = subclassType.Name;
-						string uniqueName = GetUniqueEntityName(baseName);
+						var baseName = subclassType.Name;
+						var uniqueName = GetUniqueEntityName(baseName);
 
 						// Create an instance of the selected Entity subclass and set its name
 						var entity = (Entity)Activator.CreateInstance(subclassType);
@@ -178,7 +179,6 @@ public class SceneGraphWindow
 						ImGui.CloseCurrentPopup();
 					}
 				}
-			}
 
 			ImGui.EndPopup();
 		}
