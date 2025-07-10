@@ -375,8 +375,7 @@ public class Scene
 				_sceneComponents.Buffer[i].Update();
 
 		// update our Entities
-		if (!Core.IsEditMode)
-			Entities.Update();
+		Entities.Update();
 
 		// we update our renderables after entity.update in case any new Renderables were added
 		RenderableComponents.UpdateLists();
@@ -986,7 +985,8 @@ public class Scene
 	/// <param name="entity">The Entity to add</param>
 	public virtual T AddEntity<T>(T entity) where T : Entity
 	{
-		Insist.IsFalse(Entities.Contains(entity), "You are attempting to add the same entity to a scene twice: {0}", entity);
+		Insist.IsFalse(Entities.Contains(entity), "You are attempting to add the same entity to a scene twice: {0}",
+			entity);
 		Entities.Add(entity);
 		entity.Scene = this;
 
