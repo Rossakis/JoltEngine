@@ -1061,7 +1061,7 @@ public class Scene
 		string uniqueName = baseName;
 		while (Entities.FindEntity(uniqueName) != null)
 		{
-			uniqueName = $"{baseName}_{counter}";
+			uniqueName = $"{baseName}" + "_" + "{counter}";
 			counter++;
 		}
 		return uniqueName;

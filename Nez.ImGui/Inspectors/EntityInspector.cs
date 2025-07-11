@@ -13,11 +13,20 @@ public class EntityInspector
 {
 	public Entity Entity { get; }
 
+	/// <summary>
+	/// Main inspector is the one that persists to the right side of the screen, unlike the ones that are spawned wherever.
+	/// </summary>
+	public bool IsMainInspector { get; set; } 
+
 	private string _entityWindowId = "entity-" + NezImGui.GetScopeId().ToString();
 	private bool _shouldFocusWindow;
 	private string _componentNameFilter;
 	private TransformInspector _transformInspector;
 	private List<IComponentInspector> _componentInspectors = new();
+
+	private float _mainInspectorWidth = 700f;
+	private float _minInspectorWidth = 400f;
+	private float _maxInspectorWidth = Screen.MonitorWidth;
 
 	public EntityInspector(Entity entity)
 	{
@@ -55,12 +64,41 @@ public class EntityInspector
 					_componentInspectors.Insert(0, new ComponentInspector(component));
 			}
 
-		ImGui.SetNextWindowSize(new Num.Vector2(335, 400), ImGuiCond.FirstUseEver);
-		ImGui.SetNextWindowSizeConstraints(new Num.Vector2(335, 200), new Num.Vector2(Screen.Width, Screen.Height));
+		ImGuiWindowFlags windowFlags = ImGuiWindowFlags.None;
+
+		string InspectorName = IsMainInspector ? "MAIN Entity Inspector" : $"Entity Inspector";
+		if (IsMainInspector)
+		{
+			float topMargin = 33f;
+			float rightMargin = 10f;
+
+			// Calculate left edge so right edge is always at Screen.Width - rightMargin
+			float windowPosX = Screen.Width - _mainInspectorWidth - rightMargin;
+			float windowPosY = topMargin;
+			float windowHeight = Screen.Height - topMargin;
+
+			// Set position every frame, but size only once
+			ImGui.SetNextWindowPos(new Num.Vector2(windowPosX, windowPosY), ImGuiCond.Always);
+			ImGui.SetNextWindowSize(new Num.Vector2(_mainInspectorWidth, windowHeight), ImGuiCond.Once);
+		}
+		else
+		{
+			// Use a reasonable default size and let ImGui auto-size after first use
+			ImGui.SetNextWindowSize(new Num.Vector2(335, 400), ImGuiCond.FirstUseEver);
+			ImGui.SetNextWindowSizeConstraints(new Num.Vector2(335, 200), new Num.Vector2(800, 800)); // or whatever max you want
+		}
 
 		var open = true;
-		if (ImGui.Begin($"Entity Inspector: {Entity.Name}###" + _entityWindowId, ref open))
+		if (ImGui.Begin($"{InspectorName}: {Entity.Name}###{_entityWindowId}", ref open, windowFlags))
 		{
+			if (IsMainInspector)
+			{
+				// Get the current window width and update _mainInspectorWidth
+				float currentWidth = ImGui.GetWindowSize().X;
+				if (Math.Abs(-_mainInspectorWidth) > 0.01f)
+					_mainInspectorWidth = Math.Clamp(currentWidth, _minInspectorWidth, _maxInspectorWidth);
+			}
+
 			var enabled = Entity.Enabled;
 			if (ImGui.Checkbox("Enabled", ref enabled))
 				Entity.Enabled = enabled;

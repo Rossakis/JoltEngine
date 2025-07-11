@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -79,12 +80,15 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	/// </summary>
 	private void LayoutGui()
 	{
+		ImGui.GetIO().ConfigWindowsResizeFromEdges = true;
+
 		if (ShowMenuBar)
 			DrawMainMenuBar();
 
 		if (ShowSeperateGameWindow)
 			DrawGameWindow();
-		DrawEntityInspectors();
+		
+		DrawEntityInspectors(); 
 
 		for (var i = _drawCommands.Count - 1; i >= 0; i--)
 			_drawCommands[i]();
@@ -210,7 +214,9 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	private void DrawEntityInspectors()
 	{
 		for (var i = _entityInspectors.Count - 1; i >= 0; i--)
+		{
 			_entityInspectors[i].Draw();
+		}
 	}
 
 
@@ -260,18 +266,13 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	/// <param name="entity"></param>
 	public void StartInspectingEntity(Entity entity)
 	{
-		// if we are already inspecting the Entity focus the window
-		foreach (var inspector in _entityInspectors)
-			if (inspector.Entity == entity)
-			{
-				inspector.SetWindowFocus();
-				return;
-			}
+		// Only add if not already present as a pop-out
+		if (_entityInspectors.Any(i => !i.IsMainInspector && i.Entity == entity))
+			return;
 
-		var entityInspector = new EntityInspector(entity);
-
-		entityInspector.SetWindowFocus();
-		_entityInspectors.Add(entityInspector);
+		var inspector = new EntityInspector(entity) { IsMainInspector = false };
+		inspector.SetWindowFocus();
+		_entityInspectors.Add(inspector);
 	}
 
 	/// <summary>
@@ -298,6 +299,16 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	public void StopInspectingEntity(EntityInspector entityInspector)
 	{
 		_entityInspectors.RemoveAt(_entityInspectors.IndexOf(entityInspector));
+	}
+
+	public void InspectEntity(Entity entity)
+	{
+		// Remove previous main inspector if present
+		_entityInspectors.RemoveAll(i => i.IsMainInspector);
+
+		// Always create a new main inspector for the selected entity
+		var inspector = new EntityInspector(entity) { IsMainInspector = true };
+		_entityInspectors.Add(inspector);
 	}
 
 	#endregion

@@ -1,7 +1,5 @@
 using System;
-using System.Collections;
 using ImGuiNET;
-using Microsoft.Xna.Framework;
 using Nez.ECS;
 
 namespace Nez.ImGuiTools.SceneGraphPanes;
@@ -66,10 +64,19 @@ public class EntityPane
 		ImGui.OpenPopupOnItemClick("entityContextMenu", ImGuiPopupFlags.MouseButtonRight);
 		DrawEntityContextMenuPopup(entity);
 
-		// we are looking for a double-click that is not on the arrow
+		// Double-click (not on arrow): open pop-out inspector
 		if (ImGui.IsMouseDoubleClicked(0) && ImGui.IsItemClicked() &&
 		    ImGui.GetMousePos().X - ImGui.GetItemRectMin().X > ImGui.GetTreeNodeToLabelSpacing())
+		{
 			Core.GetGlobalManager<ImGuiManager>().StartInspectingEntity(entity);
+		}
+		// Single-click (not on arrow): open constant inspector, but NOT if double-click
+		else if (ImGui.IsItemClicked(ImGuiMouseButton.Left) &&
+		         !ImGui.IsMouseDoubleClicked(0) &&
+		         ImGui.GetMousePos().X - ImGui.GetItemRectMin().X > ImGui.GetTreeNodeToLabelSpacing())
+		{
+			Core.GetGlobalManager<ImGuiManager>().InspectEntity(entity);
+		}
 
 		// Move camera to the entity for inspection
 		if (ImGui.IsMouseClicked(0) && ImGui.IsItemClicked() &&
@@ -145,8 +152,9 @@ public class EntityPane
 					if (EntityFactoryRegistry.TryCreate(typeName, out var clone))
 					{
 						clone.IsPrefab = true;
-						clone.Name = Core.Scene.GetUniqueEntityName(typeName); // You may need to implement this utility
+						clone.Name = Core.Scene.GetUniqueEntityName(typeName);
 						clone.Transform.Position = Core.Scene.Camera.Position;
+						EntityFactoryRegistry.EntityCreated(clone);
 					}
 					else
 					{

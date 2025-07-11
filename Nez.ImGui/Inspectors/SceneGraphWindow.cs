@@ -21,6 +21,9 @@ public class SceneGraphWindow
 
 	string _entityFilterName;
 
+	private float _sceneGraphWidth = 420f;
+	private readonly float _minSceneGraphWidth = 300f;
+	private readonly float _maxSceneGraphWidth = Screen.MonitorWidth;
 
 	#region Event Handlers
 
@@ -71,14 +74,32 @@ public class SceneGraphWindow
 		if(_imGuiManager == null)
 			_imGuiManager = Core.GetGlobalManager<ImGuiManager>();
 
-		ImGui.SetNextWindowPos(new Num.Vector2(0, 25), ImGuiCond.FirstUseEver);
-		ImGui.SetNextWindowSize(new Num.Vector2(300, Screen.Height / 2), ImGuiCond.FirstUseEver);
+		float topMargin = 33f;
+		float rightMargin = 10f;
+		float leftMargin = 0f;
+		float windowHeight = Screen.Height - topMargin;
 
-		if (ImGui.Begin("Scene Graph", ref isOpen))
+		// Calculate left edge so right edge is always at Screen.Width - rightMargin
+		float windowPosY = topMargin;
+
+		ImGui.SetNextWindowPos(new Num.Vector2(0, windowPosY), ImGuiCond.Always);
+		ImGui.SetNextWindowSize(new Num.Vector2(_sceneGraphWidth, windowHeight), ImGuiCond.Once);
+
+		ImGuiWindowFlags windowFlags = ImGuiWindowFlags.NoMove;
+
+		if (ImGui.Begin("Scene Graph", ref isOpen, windowFlags))
 		{
+			// Update width after user resizes
+			float currentWidth = ImGui.GetWindowSize().X;
+			if (Math.Abs(currentWidth - _sceneGraphWidth) > 0.01f)
+				_sceneGraphWidth = Math.Clamp(currentWidth, _minSceneGraphWidth, _maxSceneGraphWidth);
+
 			NezImGui.SmallVerticalSpace();
 			if (Core.IsEditMode)
 			{
+				ImGui.TextWrapped("Press F1/F2 to switch to Play mode.");
+				NezImGui.SmallVerticalSpace();
+
 				if (NezImGui.CenteredButton("Edit Mode", 0.8f))
 					InvokeSwitchEditMode(Core.IsEditMode = false);
 				
@@ -88,6 +109,9 @@ public class SceneGraphWindow
 			}
 			else
 			{
+				ImGui.TextWrapped("Press F1/F2 to switch to Edit mode.");
+				NezImGui.SmallVerticalSpace();
+
 				if (NezImGui.CenteredButton("Play Mode", 0.8f))
 					InvokeSwitchEditMode(Core.IsEditMode = true);
 			}
@@ -201,4 +225,5 @@ public class SceneGraphWindow
 			}
 		}
 	}
+
 }
