@@ -30,6 +30,9 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 	private CoreWindow _coreWindow = new();
 	public SceneGraphWindow SceneGraphWindow { get; private set; }
+	public EntityInspector MainEntityInspector { get; private set; }
+	public float GameWindowWidth { get; private set; }
+
 	private SpriteAtlasEditorWindow _spriteAtlasEditorWindow;
 
 	private List<EntityInspector> _entityInspectors = new();
@@ -54,6 +57,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		_gameWindowFirstPosition = options._gameWindowFirstPosition;
 		_gameWindowTitle = options._gameWindowTitle;
 		_gameWindowFlags = options._gameWindowFlags;
+		_gameViewForcedPos = WindowPosition.Top;
 
 		LoadSettings();
 		_renderer = new ImGuiRenderer(Core.Instance);
@@ -74,6 +78,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		                                            System.Reflection.BindingFlags.Public);
 		SceneGraphWindow = new SceneGraphWindow();
 
+		// Create default Main Entity Inspector window when current scene is finished loading the entities
 		Scene.OnFinishedAddingEntitiesWithData += InspectEntity;
 	}
 
@@ -90,7 +95,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		if (ShowSeperateGameWindow)
 			DrawGameWindow();
 
-		DrawEntityInspectors(); 
+		DrawEntityInspectors();
 
 		for (var i = _drawCommands.Count - 1; i >= 0; i--)
 			_drawCommands[i]();
@@ -216,9 +221,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	private void DrawEntityInspectors()
 	{
 		for (var i = _entityInspectors.Count - 1; i >= 0; i--)
-		{
 			_entityInspectors[i].Draw();
-		}
 	}
 
 
@@ -276,6 +279,8 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		var inspector = new EntityInspector(entity) { IsMainInspector = false };
 		inspector.SetWindowFocus();
 		_entityInspectors.Add(inspector);
+		if (inspector.IsMainInspector)
+			MainEntityInspector = inspector;
 	}
 
 	/// <summary>
@@ -302,16 +307,22 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	public void StopInspectingEntity(EntityInspector entityInspector)
 	{
 		_entityInspectors.RemoveAt(_entityInspectors.IndexOf(entityInspector));
+		if (entityInspector.IsMainInspector)
+			MainEntityInspector = null;
 	}
 
 	public void InspectEntity(Entity entity = null)
 	{
+		if (entity == null) entity = Core.Scene.Camera.Entity;
 		// Remove previous main inspector if present
 		_entityInspectors.RemoveAll(i => i.IsMainInspector);
 
 		// Always create a new main inspector for the selected entity
 		var inspector = new EntityInspector(entity) { IsMainInspector = true };
 		_entityInspectors.Add(inspector);
+
+		if (inspector.IsMainInspector)
+			MainEntityInspector = inspector;
 	}
 
 	#endregion

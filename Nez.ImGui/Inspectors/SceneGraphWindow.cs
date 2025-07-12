@@ -12,19 +12,20 @@ public class SceneGraphWindow
 	/// <summary>
 	/// A copy of a component that can be pasted to another entity
 	/// </summary>
-	public Component CopiedComponent { get; set; } 
+	public Component CopiedComponent { get; set; }
 
 	private PostProcessorsPane _postProcessorsPane = new();
 	private RenderersPane _renderersPane = new();
 	private EntityPane _entityPane = new();
 	private ImGuiManager _imGuiManager;
 	public float SceneGraphWidth => _sceneGraphWidth;
+	public float SceneGraphPosY { get; private set; }
 
 
-	string _entityFilterName;
+	private string _entityFilterName;
 
 	private float _sceneGraphWidth = 420f;
-	private readonly float _minSceneGraphWidth = 300f;
+	private readonly float _minSceneGraphWidth = 1f;
 	private readonly float _maxSceneGraphWidth = Screen.MonitorWidth;
 
 	#region Event Handlers
@@ -59,40 +60,41 @@ public class SceneGraphWindow
 	{
 		OnSwitchEditMode?.Invoke(isEditMode);
 	}
-	
+
 	#endregion
 
 	public void OnSceneChanged()
 	{
 		_postProcessorsPane.OnSceneChanged();
 		_renderersPane.OnSceneChanged();
-		}
+	}
 
 	public void Show(ref bool isOpen)
 	{
 		if (Core.Scene == null || !isOpen)
 			return;
 
-		if(_imGuiManager == null)
+		if (_imGuiManager == null)
 			_imGuiManager = Core.GetGlobalManager<ImGuiManager>();
 
-		float topMargin = 33f;
-		float rightMargin = 10f;
-		float leftMargin = 0f;
-		float windowHeight = Screen.Height - topMargin;
+		var topMargin = 20f;
+		var rightMargin = 10f;
+		var leftMargin = 0f;
+		var windowHeight = Screen.Height - topMargin;
 
 		// Calculate left edge so right edge is always at Screen.Width - rightMargin
-		float windowPosY = topMargin;
+		var windowPosY = topMargin;
+		SceneGraphPosY = windowPosY;
 
 		ImGui.SetNextWindowPos(new Num.Vector2(0, windowPosY), ImGuiCond.Always);
-		ImGui.SetNextWindowSize(new Num.Vector2(_sceneGraphWidth, windowHeight), ImGuiCond.Once);
+		ImGui.SetNextWindowSize(new Num.Vector2(_sceneGraphWidth, windowHeight), ImGuiCond.FirstUseEver);
 
-		ImGuiWindowFlags windowFlags = ImGuiWindowFlags.NoMove;
+		var windowFlags = ImGuiWindowFlags.NoMove;
 
 		if (ImGui.Begin("Scene Graph", ref isOpen, windowFlags))
 		{
 			// Update width after user resizes
-			float currentWidth = ImGui.GetWindowSize().X;
+			var currentWidth = ImGui.GetWindowSize().X;
 			if (Math.Abs(currentWidth - _sceneGraphWidth) > 0.01f)
 				_sceneGraphWidth = Math.Clamp(currentWidth, _minSceneGraphWidth, _maxSceneGraphWidth);
 
@@ -104,9 +106,9 @@ public class SceneGraphWindow
 
 				if (NezImGui.CenteredButton("Edit Mode", 0.8f))
 					InvokeSwitchEditMode(Core.IsEditMode = false);
-				
+
 				NezImGui.SmallVerticalSpace();
-				if (NezImGui.CenteredButton("Reset Scene", 0.8f)) 
+				if (NezImGui.CenteredButton("Reset Scene", 0.8f))
 					InvokeResetScene();
 			}
 			else
@@ -152,7 +154,7 @@ public class SceneGraphWindow
 				if (NezImGui.CenteredButton("Clear Copied Component", 0.8f))
 					_imGuiManager.SceneGraphWindow.CopiedComponent = null;
 			}
-			
+
 
 			DrawSaveChangesPopup();
 
@@ -160,7 +162,7 @@ public class SceneGraphWindow
 		}
 	}
 
-	
+
 	private void DrawEntitySelectorPopup()
 	{
 		if (ImGui.BeginPopup("entity-selector"))
@@ -169,14 +171,12 @@ public class SceneGraphWindow
 			ImGui.Separator();
 
 			foreach (var typeName in EntityFactoryRegistry.GetRegisteredTypes())
-			{
 				if (string.IsNullOrEmpty(_entityFilterName) ||
 				    typeName.ToLower().Contains(_entityFilterName.ToLower()))
-				{
 					if (ImGui.Selectable(typeName))
 					{
 						// Generate a unique name for the new entity
-						string uniqueName = Core.Scene.GetUniqueEntityName(typeName);
+						var uniqueName = Core.Scene.GetUniqueEntityName(typeName);
 
 						// Use the factory registry to create the entity
 						if (EntityFactoryRegistry.TryCreate(typeName, out var entity))
@@ -189,8 +189,6 @@ public class SceneGraphWindow
 
 						ImGui.CloseCurrentPopup();
 					}
-				}
-			}
 
 			ImGui.EndPopup();
 		}
@@ -230,6 +228,6 @@ public class SceneGraphWindow
 
 	public void SetWidth(float width)
 	{
-	    _sceneGraphWidth = Math.Clamp(width, _minSceneGraphWidth, _maxSceneGraphWidth);
+		_sceneGraphWidth = Math.Clamp(width, _minSceneGraphWidth, _maxSceneGraphWidth);
 	}
 }

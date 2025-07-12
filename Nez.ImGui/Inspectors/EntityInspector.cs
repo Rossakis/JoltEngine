@@ -22,7 +22,7 @@ public class EntityInspector
 	private TransformInspector _transformInspector;
 	private List<IComponentInspector> _componentInspectors = new();
 
-	private float _mainInspectorWidth = 700f;
+	private float _mainInspectorWidth = 500f;
 	private float _minInspectorWidth = 1f;
 	private float _maxInspectorWidth = Screen.MonitorWidth;
 
@@ -39,19 +39,18 @@ public class EntityInspector
 
 	public void Draw()
 	{
-		ImGuiWindowFlags windowFlags = ImGuiWindowFlags.None;
-		string InspectorName = IsMainInspector ? "MAIN Entity Inspector" : $"Entity Inspector";
+		var inspectorName = IsMainInspector ? "MAIN Entity Inspector" : $"Entity Inspector";
 
 		if (IsMainInspector)
 		{
-			float topMargin = 33f;
-			float rightMargin = 10f;
-			float windowPosX = Screen.Width - _mainInspectorWidth - rightMargin;
-			float windowPosY = topMargin;
-			float windowHeight = Screen.Height - topMargin;
+			var topMargin = 20f;
+			var rightMargin = 0f;
+			var windowPosX = Screen.Width - _mainInspectorWidth - rightMargin;
+			var windowPosY = topMargin;
+			var windowHeight = Screen.Height - topMargin;
 
 			ImGui.SetNextWindowPos(new Num.Vector2(windowPosX, windowPosY), ImGuiCond.Always);
-			ImGui.SetNextWindowSize(new Num.Vector2(_mainInspectorWidth, windowHeight), ImGuiCond.Once);
+			ImGui.SetNextWindowSize(new Num.Vector2(_mainInspectorWidth, windowHeight), ImGuiCond.FirstUseEver);
 		}
 		else
 		{
@@ -60,7 +59,7 @@ public class EntityInspector
 		}
 
 		var open = true;
-		if (ImGui.Begin($"{InspectorName}###{_entityWindowId}", ref open, windowFlags))
+		if (ImGui.Begin($"{inspectorName}###{_entityWindowId}", ref open))
 		{
 			if (Entity == null)
 			{
@@ -71,7 +70,7 @@ public class EntityInspector
 
 			if (IsMainInspector)
 			{
-				float currentWidth = ImGui.GetWindowSize().X;
+				var currentWidth = ImGui.GetWindowSize().X;
 				if (Math.Abs(currentWidth - _mainInspectorWidth) > 0.01f)
 					_mainInspectorWidth = Math.Clamp(currentWidth, _minInspectorWidth, _maxInspectorWidth);
 			}
@@ -175,6 +174,6 @@ public class EntityInspector
 
 	public void SetWidth(float width)
 	{
-	    _mainInspectorWidth = Math.Clamp(width, _minInspectorWidth, _maxInspectorWidth);
+		_mainInspectorWidth = Math.Clamp(width, _minInspectorWidth, _maxInspectorWidth);
 	}
 }

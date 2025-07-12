@@ -111,9 +111,12 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			});
 		}
 
-		ImGui.SetNextWindowPos(_gameWindowFirstPosition, ImGuiCond.FirstUseEver);
-		ImGui.SetNextWindowSize(new Num.Vector2(Screen.Width / 2, Screen.Width / 2 / rtAspectRatio),
-			ImGuiCond.FirstUseEver);
+		var finalWidth = Screen.Width - SceneGraphWindow.SceneGraphWidth - MainEntityInspector.MainInspectorWidth;
+		var finalPos = new Num.Vector2(SceneGraphWindow.SceneGraphWidth, SceneGraphWindow.SceneGraphPosY);
+
+		ImGui.SetNextWindowPos(finalPos, ImGuiCond.Always);
+		ImGui.SetNextWindowSize(new Num.Vector2(finalWidth, Screen.Width / 2 / rtAspectRatio),
+			ImGuiCond.Always);
 
 		HandleForcedGameViewParams();
 
@@ -126,6 +129,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		if (!ImGui.IsWindowFocused())
 		{
 			var focusedWindow = false;
+			Mouse.SetCursor(MouseCursor.Arrow);
 
 			// if the window's being hovered and we click on it with any mouse button, optionally focus the window.
 			if (ImGui.IsWindowHovered())
