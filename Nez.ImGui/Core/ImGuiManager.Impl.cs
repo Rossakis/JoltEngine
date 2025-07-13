@@ -111,12 +111,40 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			});
 		}
 
-		var finalWidth = Screen.Width - SceneGraphWindow.SceneGraphWidth - MainEntityInspector.MainInspectorWidth;
-		var finalPos = new Num.Vector2(SceneGraphWindow.SceneGraphWidth, SceneGraphWindow.SceneGraphPosY);
+		// Adjust game window size based on available panels around it
+		if (MainEntityInspector != null && SceneGraphWindow.IsOpen)
+		{
+			var finalWidth = Screen.Width - SceneGraphWindow.SceneGraphWidth - MainEntityInspector.MainInspectorWidth;
+			var finalPos = new Num.Vector2(SceneGraphWindow.SceneGraphWidth, SceneGraphWindow.SceneGraphPosY);
 
-		ImGui.SetNextWindowPos(finalPos, ImGuiCond.Always);
-		ImGui.SetNextWindowSize(new Num.Vector2(finalWidth, Screen.Width / 2 / rtAspectRatio),
-			ImGuiCond.Always);
+			ImGui.SetNextWindowPos(finalPos, ImGuiCond.Always);
+			ImGui.SetNextWindowSize(new Num.Vector2(finalWidth, Screen.Width / 2 / rtAspectRatio),
+				ImGuiCond.Always);
+		}
+		else if (MainEntityInspector == null && SceneGraphWindow.IsOpen)
+		{
+			var finalWidth = Screen.Width - SceneGraphWindow.SceneGraphWidth;
+			var finalPos = new Num.Vector2(SceneGraphWindow.SceneGraphWidth, SceneGraphWindow.SceneGraphPosY);
+
+			ImGui.SetNextWindowPos(finalPos, ImGuiCond.Always);
+			ImGui.SetNextWindowSize(new Num.Vector2(finalWidth, Screen.Width / 2 / rtAspectRatio),
+				ImGuiCond.Always);
+		}
+		else if (MainEntityInspector != null && !SceneGraphWindow.IsOpen)
+		{
+			var finalWidth = Screen.Width - MainEntityInspector.MainInspectorWidth;
+			var finalPos = new Num.Vector2(0, MainEntityInspector.MainInspectorPosY);
+
+			ImGui.SetNextWindowPos(finalPos, ImGuiCond.Always);
+			ImGui.SetNextWindowSize(new Num.Vector2(finalWidth, Screen.Width / 2 / rtAspectRatio),
+				ImGuiCond.Always);
+		}
+		else
+		{
+			ImGui.SetNextWindowPos(_gameWindowFirstPosition, ImGuiCond.FirstUseEver);
+			ImGui.SetNextWindowSize(new Num.Vector2(Screen.Width / 2, Screen.Width / 2 / rtAspectRatio),
+				ImGuiCond.FirstUseEver);
+		}
 
 		HandleForcedGameViewParams();
 

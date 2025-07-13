@@ -20,7 +20,7 @@ public class SceneGraphWindow
 	private ImGuiManager _imGuiManager;
 	public float SceneGraphWidth => _sceneGraphWidth;
 	public float SceneGraphPosY { get; private set; }
-
+	public bool IsOpen { get; private set; }
 
 	private string _entityFilterName;
 
@@ -71,6 +71,8 @@ public class SceneGraphWindow
 
 	public void Show(ref bool isOpen)
 	{
+		IsOpen = isOpen;
+
 		if (Core.Scene == null || !isOpen)
 			return;
 
@@ -83,10 +85,9 @@ public class SceneGraphWindow
 		var windowHeight = Screen.Height - topMargin;
 
 		// Calculate left edge so right edge is always at Screen.Width - rightMargin
-		var windowPosY = topMargin;
-		SceneGraphPosY = windowPosY;
+		SceneGraphPosY = topMargin;
 
-		ImGui.SetNextWindowPos(new Num.Vector2(0, windowPosY), ImGuiCond.Always);
+		ImGui.SetNextWindowPos(new Num.Vector2(0, SceneGraphPosY), ImGuiCond.Always);
 		ImGui.SetNextWindowSize(new Num.Vector2(_sceneGraphWidth, windowHeight), ImGuiCond.FirstUseEver);
 
 		var windowFlags = ImGuiWindowFlags.NoMove;

@@ -31,10 +31,8 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	private CoreWindow _coreWindow = new();
 	public SceneGraphWindow SceneGraphWindow { get; private set; }
 	public EntityInspector MainEntityInspector { get; private set; }
-	public float GameWindowWidth { get; private set; }
 
 	private SpriteAtlasEditorWindow _spriteAtlasEditorWindow;
-
 	private List<EntityInspector> _entityInspectors = new();
 	private List<Action> _drawCommands = new();
 	private ImGuiRenderer _renderer;

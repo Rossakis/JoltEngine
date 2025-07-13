@@ -15,6 +15,7 @@ public class EntityInspector
 
 	public bool IsMainInspector { get; set; }
 	public float MainInspectorWidth => _mainInspectorWidth;
+	public float MainInspectorPosY { get; private set; }
 
 	private string _entityWindowId = "entity-" + NezImGui.GetScopeId().ToString();
 	private bool _shouldFocusWindow;
@@ -44,12 +45,11 @@ public class EntityInspector
 		if (IsMainInspector)
 		{
 			var topMargin = 20f;
-			var rightMargin = 0f;
-			var windowPosX = Screen.Width - _mainInspectorWidth - rightMargin;
-			var windowPosY = topMargin;
+			var windowPosX = Screen.Width - _mainInspectorWidth;
+			MainInspectorPosY = topMargin;
 			var windowHeight = Screen.Height - topMargin;
 
-			ImGui.SetNextWindowPos(new Num.Vector2(windowPosX, windowPosY), ImGuiCond.Always);
+			ImGui.SetNextWindowPos(new Num.Vector2(windowPosX, MainInspectorPosY), ImGuiCond.Always);
 			ImGui.SetNextWindowSize(new Num.Vector2(_mainInspectorWidth, windowHeight), ImGuiCond.FirstUseEver);
 		}
 		else
@@ -71,6 +71,8 @@ public class EntityInspector
 			if (IsMainInspector)
 			{
 				var currentWidth = ImGui.GetWindowSize().X;
+
+				//If resizing the window manually
 				if (Math.Abs(currentWidth - _mainInspectorWidth) > 0.01f)
 					_mainInspectorWidth = Math.Clamp(currentWidth, _minInspectorWidth, _maxInspectorWidth);
 			}
