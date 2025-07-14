@@ -11,6 +11,33 @@ namespace Nez;
 [JsonSerializable(typeof(Entity))]
 public class Entity : IComparable<Entity>
 {
+	public enum InstanceType
+	{
+		/// <summary>
+		/// Only created via code (e.g., Player). 
+		/// Usually reserved for entities that exist only once in a scene, or those that need tight data integration with other entities (e.g. Camera with Player)
+		/// Perfect for predefined child entities that can't exist without their parent (e.g. ArrowPointer for Player)
+		/// NOTE: Cannot be created in the Editor.
+		/// </summary>
+		HardCoded,
+
+		/// <summary>
+		/// Can be created at runtime via the Editor,
+		/// and can be later turned into Prefabs.
+		/// NOTE: Usually uses ISceneDataOnly for per-instance parameters.
+		/// </summary>
+		Dynamic,
+
+		/// <summary>
+		/// Saved in Prefabs.json.
+		/// Created and configured in advance (e.g., a shorter Platform variant,
+		/// or a high-speed moving version of it).
+		/// </summary>
+		Prefab,
+	}
+	
+	public InstanceType Type = InstanceType.HardCoded;
+	
 	private static uint _idGenerator;
 
 	#region properties and fields
@@ -20,13 +47,6 @@ public class Entity : IComparable<Entity>
 	/// </summary>
 	[JsonExclude]
 	public Scene Scene;
-
-	/// <summary>
-	/// Indicates if the entity is a prefab (reusable template) or not.
-	/// Hard-coded entities such as player are NOT prefabs, while platforms are for example.
-	/// If it's a prefab, we create a new instance of it when loading the scene, otherwise we only use its entity data for the existing entities.
-	/// </summary>
-	public bool IsPrefab;
 
 	/// <summary>
 	/// entity name. useful for doing scene-wide searches for an entity

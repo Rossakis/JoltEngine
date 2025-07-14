@@ -77,6 +77,9 @@ public class MainEntityInspector
 				_mainInspectorWidth = Math.Clamp(currentWidth, _minInspectorWidth, _maxInspectorWidth);
 
 			// Draw main entity UI
+			var type = Entity.Type.ToString();
+			ImGui.InputText("InstanceType", ref type, 30);
+
 			var enabled = Entity.Enabled;
 			if (ImGui.Checkbox("Enabled", ref enabled))
 				Entity.Enabled = enabled;

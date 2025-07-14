@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Nez.Systems;
 using Nez.Textures;
 using Microsoft.Xna.Framework.Graphics;
+using Nez.ECS;
 using Nez.Persistence;
 using Nez.Utils;
 using Nez.Utils.Collections;
@@ -207,6 +208,7 @@ public class Scene
 	private RenderTarget2D _sceneRenderTarget;
 	private RenderTarget2D _destinationRenderTarget;
 	private Action<Texture2D> _screenshotRequestCallback;
+	private readonly Dictionary<Type, List<Delegate>> _entityAddedCallbacks = new();
 
 	internal readonly FastList<SceneComponent> _sceneComponents = new();
 	internal readonly FastList<Renderer> _renderers = new();
@@ -269,7 +271,7 @@ public class Scene
 		RenderableComponents = new RenderableComponentList();
 		Content = new NezContentManager();
 
-		var cameraEntity = CreateEntity("camera");
+		var cameraEntity = SimpleCreateEntity("camera");
 		Camera = cameraEntity.AddComponent(new Camera());
 
 		// setup our resolution policy. we'll commit it in begin
@@ -965,7 +967,7 @@ public class Scene
 	/// add the Entity to this Scene, and return it
 	/// </summary>
 	/// <returns></returns>
-	public Entity CreateEntity(string name)
+	public Entity SimpleCreateEntity(string name)
 	{
 		var entity = new Entity(name);
 		return AddEntity(entity);
@@ -982,6 +984,65 @@ public class Scene
 		var entity = new Entity(name);
 		entity.Transform.Position = position;
 		return AddEntity(entity);
+	}
+	
+	/// <summary>
+	/// Registers a callback that will be invoked whenever an entity of type <typeparamref name="T"/> is added to the scene,
+	/// including entities already present when the callback is registered.
+	/// <para>
+	/// This is useful for systems or scripts that need to automatically act on new entities as they are added,
+	/// such as setting up components, event hooks, or performing initialization logic.
+	/// </para>
+	/// </summary>
+	/// <typeparam name="T">The type of entity to listen for. Must inherit from <see cref="Entity"/>.</typeparam>
+	/// <param name="onAdded">
+	/// The function to execute when an entity of type <typeparamref name="T"/> is added to the scene.
+	/// The entity instance will be passed as the parameter.
+	/// </param>
+	public void OnEntityAdded<T>(Action<T> onAdded) where T : Entity
+	{
+		var type = typeof(T);
+		if (!_entityAddedCallbacks.TryGetValue(type, out var list))
+		{
+			list = new List<Delegate>();
+			_entityAddedCallbacks[type] = list;
+		}
+		list.Add(onAdded);
+	}
+	
+	/// <summary>
+	/// Registers a callback that will be called **once** for the first entity of type T added to the scene,
+	/// then the callback is automatically removed.
+	/// </summary>
+	public void OnEntityAddedOnce<T>(Action<T> onAdded) where T : Entity
+	{
+		var oneShot = new OneShotDelegate<T>(onAdded);
+		OnEntityAdded<T>(oneShot.Invoke);
+	}
+
+	private void TriggerEntityAddedCallbacks(Entity entity)
+	{
+		var type = entity.GetType();
+		var delegatesToRemove = new List<(Type, Delegate)>();
+
+		foreach (var kvp in _entityAddedCallbacks)
+		{
+			if (kvp.Key.IsAssignableFrom(type))
+			{
+				foreach (var del in kvp.Value.ToArray()) // ToArray avoids modification during enumeration
+				{
+					del.DynamicInvoke(entity);
+
+					// Remove if this is a one-shot delegate
+					if (del.Target is IOneShotDelegate)
+						delegatesToRemove.Add((kvp.Key, del));
+				}
+			}
+		}
+
+		// Remove one-shot delegates after invoking
+		foreach (var (t, d) in delegatesToRemove)
+			_entityAddedCallbacks[t].Remove(d);
 	}
 
 	/// <summary>
@@ -1005,10 +1066,10 @@ public class Scene
 			entity);
 		Entities.Add(entity);
 		entity.Scene = this;
-
 		for (var i = 0; i < entity.Transform.ChildCount; i++)
 			AddEntity<Entity>(entity.Transform.GetChild(i).Entity);
 
+		TriggerEntityAddedCallbacks(entity);
 		return entity;
 	}
 

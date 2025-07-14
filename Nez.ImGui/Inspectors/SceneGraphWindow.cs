@@ -186,7 +186,7 @@ public class SceneGraphWindow
 						// Use the factory registry to create the entity
 						if (EntityFactoryRegistry.TryCreate(typeName, out var entity))
 						{
-							entity.IsPrefab = true;
+							entity.Type = Entity.InstanceType.Dynamic;
 							entity.Name = uniqueName;
 							entity.Transform.Position = Core.Scene.Camera.Transform.Position;
 							EntityFactoryRegistry.InvokeEntityCreated(entity);

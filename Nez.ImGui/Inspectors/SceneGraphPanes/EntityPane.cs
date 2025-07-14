@@ -136,14 +136,30 @@ public class EntityPane
 
 			// Check for parameterless constructor (and no non-parameterless children)
 			var hasParameterlessCtor = entity.GetType().GetConstructor(Type.EmptyTypes) != null;
-			if (hasParameterlessCtor && !InspectorCache.HasNonParameterlessChildEntity(entity))
+			
+			bool canClone = hasParameterlessCtor 
+			                && !InspectorCache.HasNonParameterlessChildEntity(entity) 
+			                && entity.Type != Entity.InstanceType.HardCoded;
+
+			string reason = null;
+			if (!canClone)
+			{
+				if (entity.Type == Entity.InstanceType.HardCoded)
+					reason = "Can't clone a Hard-Coded Entity!";
+				else if (!hasParameterlessCtor)
+					reason = "Can't clone a Non-parameterless Entity!";
+				else if (InspectorCache.HasNonParameterlessChildEntity(entity))
+					reason = "Can't clone Entity with Non-parameterless children!";
+			}
+
+			if (canClone)
 			{
 				if (ImGui.Selectable("Clone Entity " + entity.Name))
 				{
 					var typeName = entity.GetType().Name;
 					if (EntityFactoryRegistry.TryCreate(typeName, out var clone))
 					{
-						clone.IsPrefab = true;
+						clone.Type = entity.Type;
 						clone.Name = Core.Scene.GetUniqueEntityName(typeName);
 						clone.Transform.Position = Core.Scene.Camera.Position;
 						EntityFactoryRegistry.InvokeEntityCreated(clone);
@@ -156,18 +172,13 @@ public class EntityPane
 					}
 				}
 			}
-			else if (hasParameterlessCtor && InspectorCache.HasNonParameterlessChildEntity(entity))
-			{
-				ImGui.BeginDisabled(true);
-				ImGui.Selectable("Can't clone Entity with Non-parameterless children!");
-				ImGui.EndDisabled();
-			}
 			else
 			{
 				ImGui.BeginDisabled(true);
-				ImGui.Selectable("Can't clone a Non-parameterless Entity!");
+				ImGui.Selectable(reason);
 				ImGui.EndDisabled();
 			}
+
 
 			if (ImGui.Selectable("Destroy Entity"))
 				entity.Destroy();
