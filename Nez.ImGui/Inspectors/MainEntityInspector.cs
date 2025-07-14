@@ -42,8 +42,7 @@ public class MainEntityInspector
 		if (!IsOpen)
 			return;
 
-		var topMargin = 20f;
-		var fixedHeight = Screen.Height - topMargin;
+		var topMargin = 20f * ImGui.GetIO().FontGlobalScale;
 
 		ImGui.PushStyleVar(ImGuiStyleVar.GrabMinSize, 0.0f); // makes grip almost invisible
 		ImGui.PushStyleColor(ImGuiCol.ResizeGrip, new Num.Vector4(0, 0, 0, 0)); // transparent grip

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using ImGuiNET;
 using Nez.ECS;
 using Nez.ImGuiTools.SceneGraphPanes;
@@ -27,6 +28,14 @@ public class SceneGraphWindow
 	private float _sceneGraphWidth = 420f;
 	private readonly float _minSceneGraphWidth = 1f;
 	private readonly float _maxSceneGraphWidth = Screen.MonitorWidth;
+
+	// Key Hold duration params
+	private float _upKeyHoldTime = 0f;
+	private float _downKeyHoldTime = 0f;
+	private double _lastRepeatTime = 0f;
+	private const float RepeatDelay = 0.3f; // seconds before repeat starts
+	private const float RepeatRate = 0.08f; // seconds between repeats
+	public HashSet<Entity> ExpandedEntities = new();
 
 	#region Event Handlers
 
@@ -79,7 +88,7 @@ public class SceneGraphWindow
 		if (_imGuiManager == null)
 			_imGuiManager = Core.GetGlobalManager<ImGuiManager>();
 
-		var topMargin = 20f;
+		var topMargin = 20f * ImGui.GetIO().FontGlobalScale;
 		var rightMargin = 10f;
 		var leftMargin = 0f;
 		var windowHeight = Screen.Height - topMargin;
@@ -165,6 +174,8 @@ public class SceneGraphWindow
 			ImGui.PopStyleVar();
 			ImGui.PopStyleColor();
 		}
+
+		HandleEntitySelectionNavigation();
 	}
 
 
@@ -231,8 +242,169 @@ public class SceneGraphWindow
 		}
 	}
 
-	public void SetWidth(float width)
+	private void HandleEntitySelectionNavigation()
 	{
-		_sceneGraphWidth = Math.Clamp(width, _minSceneGraphWidth, _maxSceneGraphWidth);
+		var hierarchyList = BuildHierarchyList();
+		var currentEntity = _imGuiManager?.MainEntityInspector?.Entity;
+		if (currentEntity == null || hierarchyList.Count == 0)
+			return;
+
+		bool upPressed = ImGui.IsKeyPressed(ImGuiKey.UpArrow);
+		bool downPressed = ImGui.IsKeyPressed(ImGuiKey.DownArrow);
+		bool upHeld = ImGui.IsKeyDown(ImGuiKey.UpArrow);
+		bool downHeld = ImGui.IsKeyDown(ImGuiKey.DownArrow);
+
+		double now = ImGui.GetTime();
+
+		// Up key logic
+		if (upPressed)
+		{
+			_upKeyHoldTime = (float)now;
+			var next = NavigateUp(currentEntity, hierarchyList);
+			if (next != null)
+			{
+				_imGuiManager.OpenMainEntityInspector(next);
+				_entityPane.SelectedEntity = next;
+				ExpandParentsAndChildren(next);
+			}
+			_lastRepeatTime = now;
+		}
+		else if (upHeld)
+		{
+			if (now - _upKeyHoldTime > RepeatDelay && now - _lastRepeatTime > RepeatRate)
+			{
+				var next = NavigateUp(currentEntity, hierarchyList);
+				if (next != null)
+				{
+					_imGuiManager.OpenMainEntityInspector(next);
+					_entityPane.SelectedEntity = next;
+					ExpandParentsAndChildren(next);
+				}
+				_lastRepeatTime = now;
+			}
+		}
+		else if (!upHeld)
+		{
+			_upKeyHoldTime = 0f;
+		}
+
+		// Down key logic
+		if (downPressed)
+		{
+			_downKeyHoldTime = (float)now;
+			var next = NavigateDown(currentEntity, hierarchyList);
+			if (next != null)
+			{
+				_imGuiManager.OpenMainEntityInspector(next);
+				_entityPane.SelectedEntity = next;
+				ExpandParentsAndChildren(next);
+			}
+			_lastRepeatTime = now;
+		}
+		else if (downHeld)
+		{
+			if (now - _downKeyHoldTime > RepeatDelay && now - _lastRepeatTime > RepeatRate)
+			{
+				var next = NavigateDown(currentEntity, hierarchyList);
+				if (next != null)
+				{
+					_imGuiManager.OpenMainEntityInspector(next);
+					_entityPane.SelectedEntity = next;
+					ExpandParentsAndChildren(next);
+				}
+				_lastRepeatTime = now;
+			}
+		}
+		else if (!downHeld)
+		{
+			_downKeyHoldTime = 0f;
+		}
+	}
+
+	private List<Entity> BuildHierarchyList()
+	{
+		var result = new List<Entity>();
+		var entities = Core.Scene?.Entities;
+		if (entities == null) return result;
+
+		for (int i = 0; i < entities.Count; i++)
+		{
+			var entity = entities[i];
+			if (entity.Transform.Parent == null)
+				AddEntityAndChildren(entity, result);
+		}
+		return result;
+	}
+
+	private void AddEntityAndChildren(Entity entity, List<Entity> result)
+	{
+		result.Add(entity);
+		for (int i = 0; i < entity.Transform.ChildCount; i++)
+		{
+			AddEntityAndChildren(entity.Transform.GetChild(i).Entity, result);
+		}
+	}
+
+	private Entity GetLastDescendant(Entity entity)
+	{
+		while (entity.Transform.ChildCount > 0)
+			entity = entity.Transform.GetChild(entity.Transform.ChildCount - 1).Entity;
+		return entity;
+	}
+
+	private Entity NavigateUp(Entity current, List<Entity> hierarchyList)
+	{
+		int idx = hierarchyList.IndexOf(current);
+		if (idx <= 0)
+			return null; // Already at top
+
+		Entity prev = hierarchyList[idx - 1];
+
+
+		// If current is the first child of its parent, and prev is that parent, just select the parent
+		if (current.Transform.Parent != null && prev == current.Transform.Parent.Entity)
+			return prev;
+
+		// Otherwise, if prev has children, descend into its last descendant
+		if (prev.Transform.ChildCount > 0)
+			return GetLastDescendant(prev);
+
+		return prev;
+	}
+
+	private Entity NavigateDown(Entity current, List<Entity> hierarchyList)
+	{
+		int idx = hierarchyList.IndexOf(current);
+		if (idx < 0 || idx >= hierarchyList.Count - 1)
+			return null; // Already at bottom
+		return hierarchyList[idx + 1];
+	}
+
+	private void ExpandParentsAndChildren(Entity entity)
+	{
+		// Expand all parents up to the root
+		var parent = entity.Transform.Parent;
+		while (parent != null)
+		{
+			ExpandedEntities.Add(parent.Entity);
+			parent = parent.Parent;
+		}
+
+		// Expand all children (non-recursive using a stack)
+		var stack = new Stack<Entity>();
+		stack.Push(entity);
+
+		while (stack.Count > 0)
+		{
+			var current = stack.Pop();
+			ExpandedEntities.Add(current);
+
+			for (int i = 0; i < current.Transform.ChildCount; i++)
+			{
+				var child = current.Transform.GetChild(i).Entity;
+				if (!ExpandedEntities.Contains(child))
+					stack.Push(child);
+			}
+		}
 	}
 }

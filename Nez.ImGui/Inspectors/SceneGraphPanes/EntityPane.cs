@@ -17,11 +17,24 @@ public class EntityPane
 	private string _newEntityName = "";
 
 	private Entity _previousEntity; //Used for rendering a collider box for the currently selected entity
+	private Entity _selectedEntity;
+	public Entity SelectedEntity
+	{
+		get => _selectedEntity;
+		set
+		{
+			_selectedEntity = value;
+			_selectedEntityCollider = _selectedEntity?.GetComponent<Collider>();
+		}
+	}
 
 	private ImGuiManager _imGuiManager;
 
 	public unsafe void Draw()
 	{
+		if(_imGuiManager == null)
+			_imGuiManager = Core.GetGlobalManager<ImGuiManager>();
+
 		if (Core.Scene.Entities.Count > MIN_ENTITIES_FOR_CLIPPER)
 		{
 			var clipperPtr = ImGuiNative.ImGuiListClipper_ImGuiListClipper();
@@ -50,14 +63,20 @@ public class EntityPane
 		if (onlyDrawRoots && entity.Transform.Parent != null)
 			return;
 
+		bool isSelected = entity == _selectedEntity;
 		ImGui.PushID((int)entity.Id);
 		bool treeNodeOpened;
+		var flags = isSelected ? ImGuiTreeNodeFlags.Selected : 0;
+		bool isExpanded = _imGuiManager.SceneGraphWindow.ExpandedEntities.Contains(entity);
+		if (entity.Transform.ChildCount > 0)
+			ImGui.SetNextItemOpen(isExpanded, ImGuiCond.Always);
+
 		if (entity.Transform.ChildCount > 0)
 			treeNodeOpened = ImGui.TreeNodeEx($"{entity.Name} ({entity.Transform.ChildCount})###{entity.Id}",
-				ImGuiTreeNodeFlags.OpenOnArrow);
+				ImGuiTreeNodeFlags.OpenOnArrow | flags);
 		else
 			treeNodeOpened = ImGui.TreeNodeEx($"{entity.Name} ({entity.Transform.ChildCount})###{entity.Id}",
-				ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.OpenOnArrow);
+				ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.OpenOnArrow | flags);
 
 		NezImGui.ShowContextMenuTooltip();
 
@@ -67,7 +86,7 @@ public class EntityPane
 
 		if (ImGui.IsItemClicked(ImGuiMouseButton.Left) &&
 		    ImGui.GetMousePos().X - ImGui.GetItemRectMin().X > ImGui.GetTreeNodeToLabelSpacing())
-			Core.GetGlobalManager<ImGuiManager>().OpenMainEntityInspector(entity);
+				Core.GetGlobalManager<ImGuiManager>().OpenMainEntityInspector(entity);
 
 		// Move camera to the entity for inspection
 		if (ImGui.IsMouseClicked(0) && ImGui.IsItemClicked() &&
@@ -96,6 +115,7 @@ public class EntityPane
 		}
 
 		ImGui.PopID();
+
 	}
 
 	private void DrawEntityContextMenuPopup(Entity entity)

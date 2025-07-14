@@ -285,6 +285,12 @@ public class Transform
 		return _children[index];
 	}
 
+	public int GetChildIndex(Transform child)
+	{
+		if (child == null)
+			return -1;
+		return _children.IndexOf(child);
+	}
 
 	#region Fluent setters
 

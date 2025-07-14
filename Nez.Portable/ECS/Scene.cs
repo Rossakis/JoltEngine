@@ -1062,8 +1062,6 @@ public class Scene
 	/// <param name="entity">The Entity to add</param>
 	public virtual T AddEntity<T>(T entity) where T : Entity
 	{
-		Insist.IsFalse(Entities.Contains(entity), "You are attempting to add the same entity to a scene twice: {0}",
-			entity);
 		Entities.Add(entity);
 		entity.Scene = this;
 		for (var i = 0; i < entity.Transform.ChildCount; i++)
