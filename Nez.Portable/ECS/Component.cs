@@ -55,7 +55,7 @@ public class Component : IComparable<Component>
 	}
 
 	/// <summary>
-	/// Show the desited name of the component in the ImGui inspector. If null, the type name will be used.
+	/// Show the desired name of the component in the ImGui inspector. If null, the type name will be used.
 	/// </summary>
 	public string Name { get; set; }
 

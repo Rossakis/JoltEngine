@@ -8,7 +8,7 @@ using Nez.Utils.Collections;
 
 namespace Nez;
 
-public class EntityList
+public class EntityList : IEnumerable<Entity>
 {
 	public Scene Scene;
 
@@ -368,4 +368,15 @@ public class EntityList
 	// }
 
 	#endregion
+
+	public IEnumerator<Entity> GetEnumerator()
+	{
+		for (int i = 0; i < _entities.Length; i++)
+			yield return _entities.Buffer[i];
+	}
+
+	System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+	{
+		return GetEnumerator();
+	}
 }

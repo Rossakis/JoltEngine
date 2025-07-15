@@ -244,6 +244,9 @@ public class SceneGraphWindow
 
 	private void HandleEntitySelectionNavigation()
 	{
+		if (!Core.IsEditMode)
+			return; 
+
 		var hierarchyList = BuildHierarchyList();
 		var currentEntity = _imGuiManager?.MainEntityInspector?.Entity;
 		if (currentEntity == null || hierarchyList.Count == 0)

@@ -19,6 +19,8 @@ namespace Nez
 
 		#region Fields and Properties
 
+		public static float DefaultZoom = 0f;
+
 		#region 3D Camera Fields
 
 		/// <summary>

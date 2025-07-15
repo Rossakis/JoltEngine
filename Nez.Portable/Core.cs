@@ -8,6 +8,7 @@ using Nez.Console;
 using Nez.BitmapFonts;
 using Nez.Textures;
 using System.Diagnostics;
+using Nez.Sprites;
 using Nez.Utils;
 using Nez.Utils.Collections;
 using Nez.Utils.Coroutines;
@@ -23,11 +24,6 @@ namespace Nez;
 
 public class Core : Game
 {
-	/// <summary>
-	/// In EditMode, Entities' components aren't updated, and instead, user can use the ImGui inspector to move the objects in the scene manually.
-	/// </summary>
-	public static bool IsEditMode { get; set; }
-
 	/// <summary>
 	/// core emitter. emits only Core level events.
 	/// </summary>
@@ -381,6 +377,7 @@ public class Core : Game
 		Emitter.Emit(CoreEvents.SceneChanged);
 		Time.SceneChanged();
 		GC.Collect();
+		_hasBeenInEditMode = false; // Reset after every scene load
 	}
 
 	/// <summary>
@@ -495,4 +492,33 @@ public class Core : Game
 	}
 
 	#endregion
+
+	public static event Action OnChangedToEditMode;
+	public static event Action OnChangedToPlayMode;
+
+	private static bool _isEditMode;
+	private static bool _hasBeenInEditMode;
+
+	/// In EditMode, Entities' components aren't updated, and instead, user can use the ImGui inspector to move the objects in the scene manually.
+	public static bool IsEditMode
+	{
+		get => _isEditMode;
+		set
+		{
+			if (_isEditMode != value)
+			{
+				_isEditMode = value;
+
+				if (value)
+				{
+					OnChangedToEditMode?.Invoke();
+					_hasBeenInEditMode = true;
+				}
+				else if (_hasBeenInEditMode)
+				{
+					OnChangedToPlayMode?.Invoke();
+				}
+			}
+		}
+	}
 }

@@ -151,6 +151,29 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Num.Vector2(0, 0));
 		ImGui.Begin(_gameWindowTitle, _gameWindowFlags);
 
+		// the Reset Camera Zoom
+		var camera = Core.Scene?.Camera;
+		if (camera != null && Math.Abs(camera.Zoom - Camera.DefaultZoom) > 0.01f)
+		{
+			// Place button at top-left of the window's content region
+			var windowPos = ImGui.GetWindowPos();
+			var contentMin = ImGui.GetWindowContentRegionMin();
+			var buttonPos = windowPos + contentMin + new Num.Vector2(8, 8) * ImGui.GetIO().FontGlobalScale;
+
+			ImGui.SetCursorScreenPos(buttonPos);
+
+			// Calculate button size based on text
+			var buttonText = "Reset Camera Zoom";
+			var textSize = ImGui.CalcTextSize(buttonText);
+			var padding = new Num.Vector2(16, 8) * ImGui.GetIO().FontGlobalScale;
+			var buttonSize = textSize + padding;
+
+			if (ImGui.Button(buttonText, buttonSize))
+			{
+				camera.Zoom = Camera.DefaultZoom;
+			}
+		}
+
 		// convert mouse input to the game windows coordinates
 		OverrideMouseInput();
 

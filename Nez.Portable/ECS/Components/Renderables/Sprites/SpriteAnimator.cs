@@ -121,8 +121,33 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 	public SpriteAnimator(Sprite sprite)
 	{
 		SetSprite(sprite);
-
 	}
+
+#if DEBUG
+
+	// When switching from EditMode to PlayMode, One shot animations can get stuck, so we manually unstuck them when going to PlayMode
+
+	public override void OnEnabled()
+	{
+		Core.OnChangedToPlayMode += ChangedToPlayMode;
+	}
+
+	public override void OnDisabled()
+	{
+		Core.OnChangedToPlayMode -= ChangedToPlayMode;
+	}
+
+	
+	private void ChangedToPlayMode()
+	{
+		TryResumeOneShot();
+	}
+
+	private void TryResumeOneShot()
+	{
+		UnPause();
+	}
+#endif
 
 	public virtual void Update()
 	{
@@ -180,6 +205,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 				break;
 		}
 	}
+
 
 	/// <summary>
 	/// adds all the animations from the SpriteAtlas

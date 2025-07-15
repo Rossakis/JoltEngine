@@ -54,6 +54,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	// Camera Params
 	public static float EditModeCameraSpeed = 250f;
 	public static float EditModeCameraFastSpeed = 500f;
+	private const float EditorCameraZoomSpeed = 1f;
 	public static float CurrentCameraSpeed { get; private set; }
 
 	private Vector2 _cameraTargetPosition;
@@ -244,8 +245,11 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		if (Input.IsKeyPressed(Keys.F1) || Input.IsKeyPressed(Keys.F2)) // Switch modes
 			SceneGraphWindow.InvokeSwitchEditMode(Core.IsEditMode = !Core.IsEditMode);
 
+		ManageCameraZoom();
+
 		if (Core.IsEditMode)
 		{
+
 			// Initialize target position if needed
 			if (_cameraTargetPosition == default)
 				_cameraTargetPosition = Core.Scene.Camera.Position;
@@ -268,6 +272,31 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			// Smoothly interpolate camera position towards target
 			Core.Scene.Camera.Position = Vector2.Lerp(Core.Scene.Camera.Position, _cameraTargetPosition, _cameraLerp);
 		}
+
+	}
+
+	private void ManageCameraZoom()
+	{
+		if (Core.IsEditMode)
+		{
+			if (Input.MouseWheelDelta > 0)
+			{
+				Core.Scene.Camera.Zoom += EditorCameraZoomSpeed * Time.DeltaTime;
+			}
+			else if (Input.MouseWheelDelta < 0)
+			{
+				Core.Scene.Camera.Zoom -= EditorCameraZoomSpeed * Time.DeltaTime;
+			}
+		}
+		else
+		{
+			Core.Scene.Camera.Zoom = Camera.DefaultZoom;
+		}
+	}
+
+	public void SetCameraTargetPosition(Vector2 position)
+	{
+	    _cameraTargetPosition = position;
 	}
 
 
