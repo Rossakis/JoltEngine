@@ -120,6 +120,8 @@ namespace Nez.Sprites
 			set => SetSprite(value);
 		}
 
+		public bool IsSelectableInEditor { get; set; } = true;
+
 		protected Vector2 _origin;
 		protected Sprite _sprite;
 

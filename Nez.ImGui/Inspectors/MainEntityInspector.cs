@@ -26,7 +26,6 @@ public class MainEntityInspector
 	public MainEntityInspector(Entity entity = null)
 	{
 		Entity = entity;
-
 		_componentInspectors.Clear();
 
 		if (Entity != null)
@@ -66,8 +65,7 @@ public class MainEntityInspector
 
 		ImGui.SetNextWindowCollapsed(false, ImGuiCond.Once);
 		ImGui.SetNextWindowPos(new Num.Vector2(windowPosX, MainInspectorPosY), ImGuiCond.Always);
-		ImGui.SetNextWindowSize(new Num.Vector2(_mainInspectorWidth, windowHeight), ImGuiCond.FirstUseEver);
-
+		ImGui.SetNextWindowSize(new Num.Vector2(_mainInspectorWidth, windowHeight), ImGuiCond.Once);
 
 		var open = IsOpen;
 		var entityName = Entity != null ? Entity.Name : "";
@@ -78,65 +76,66 @@ public class MainEntityInspector
 			if (Entity == null)
 			{
 				ImGui.TextColored(new Num.Vector4(1, 1, 0, 1), "No entity selected.");
-				ImGui.End();
-				return;
 			}
-
-			//If resizing the window manually
-			var currentWidth = ImGui.GetWindowSize().X;
-
-			if (Math.Abs(currentWidth - _mainInspectorWidth) > 0.01f)
-				_mainInspectorWidth = Math.Clamp(currentWidth, _minInspectorWidth, _maxInspectorWidth);
-
-			// Draw main entity UI
-			var type = Entity.Type.ToString();
-			ImGui.InputText("InstanceType", ref type, 30);
-
-			var enabled = Entity.Enabled;
-			if (ImGui.Checkbox("Enabled", ref enabled))
-				Entity.Enabled = enabled;
-
-			ImGui.InputText("Name", ref Entity.Name, 25);
-
-			var updateOrder = Entity.UpdateOrder;
-			if (ImGui.InputInt("Update Order", ref updateOrder))
-				Entity.SetUpdateOrder(updateOrder);
-
-			var updateInterval = (int)Entity.UpdateInterval;
-			if (ImGui.SliderInt("Update Interval", ref updateInterval, 1, 100))
-				Entity.UpdateInterval = (uint)updateInterval;
-
-			var tag = Entity.Tag;
-			if (ImGui.InputInt("Tag", ref tag))
-				Entity.Tag = tag;
-
-			var debugEnabled = Entity.DebugRenderEnabled;
-			if (ImGui.Checkbox("Debug Render Enabled", ref debugEnabled))
-				Entity.DebugRenderEnabled = debugEnabled;
-
-			NezImGui.MediumVerticalSpace();
-			_transformInspector.Draw();
-			NezImGui.MediumVerticalSpace();
-
-			for (var i = _componentInspectors.Count - 1; i >= 0; i--)
+			else
 			{
-				if (_componentInspectors[i].Entity == null)
+
+				//If resizing the window manually
+				var currentWidth = ImGui.GetWindowSize().X;
+
+				if (Math.Abs(currentWidth - _mainInspectorWidth) > 0.01f)
+					_mainInspectorWidth = Math.Clamp(currentWidth, _minInspectorWidth, _maxInspectorWidth);
+
+				// Draw main entity UI
+				var type = Entity.Type.ToString();
+				ImGui.InputText("InstanceType", ref type, 30);
+
+				var enabled = Entity.Enabled;
+				if (ImGui.Checkbox("Enabled", ref enabled))
+					Entity.Enabled = enabled;
+
+				ImGui.InputText("Name", ref Entity.Name, 25);
+
+				var updateOrder = Entity.UpdateOrder;
+				if (ImGui.InputInt("Update Order", ref updateOrder))
+					Entity.SetUpdateOrder(updateOrder);
+
+				var updateInterval = (int)Entity.UpdateInterval;
+				if (ImGui.SliderInt("Update Interval", ref updateInterval, 1, 100))
+					Entity.UpdateInterval = (uint)updateInterval;
+
+				var tag = Entity.Tag;
+				if (ImGui.InputInt("Tag", ref tag))
+					Entity.Tag = tag;
+
+				var debugEnabled = Entity.DebugRenderEnabled;
+				if (ImGui.Checkbox("Debug Render Enabled", ref debugEnabled))
+					Entity.DebugRenderEnabled = debugEnabled;
+
+				NezImGui.MediumVerticalSpace();
+				_transformInspector.Draw();
+				NezImGui.MediumVerticalSpace();
+
+				for (var i = _componentInspectors.Count - 1; i >= 0; i--)
 				{
-					_componentInspectors.RemoveAt(i);
-					continue;
+					if (_componentInspectors[i].Entity == null)
+					{
+						_componentInspectors.RemoveAt(i);
+						continue;
+					}
+
+					_componentInspectors[i].Draw();
+					NezImGui.MediumVerticalSpace();
 				}
 
-				_componentInspectors[i].Draw();
-				NezImGui.MediumVerticalSpace();
-			}
+				if (NezImGui.CenteredButton("Add Component", 0.6f))
+				{
+					_componentNameFilter = "";
+					ImGui.OpenPopup("component-selector");
+				}
 
-			if (NezImGui.CenteredButton("Add Component", 0.6f))
-			{
-				_componentNameFilter = "";
-				ImGui.OpenPopup("component-selector");
+				DrawComponentSelectorPopup();
 			}
-
-			DrawComponentSelectorPopup();
 		}
 
 		ImGui.End();

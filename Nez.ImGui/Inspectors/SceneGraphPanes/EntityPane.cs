@@ -9,9 +9,9 @@ namespace Nez.ImGuiTools.SceneGraphPanes;
 
 public class EntityPane
 {
-    #region Fields and Properties
-
-    public static Collider _selectedEntityCollider; // Used for rendering a collider box for the currently selected entity
+	#region Fields and Properties
+	public bool IsDraggingGizmo => _draggingX || _draggingY;
+	public static Collider _selectedEntityCollider; // Used for rendering a collider box for the currently selected entity
 
     private const int MIN_ENTITIES_FOR_CLIPPER = 100;
     private string _newEntityName = "";
@@ -255,7 +255,6 @@ public class EntityPane
         if (entity.Transform.ChildCount > 0)
             ImGui.SetNextItemOpen(isExpanded, ImGuiCond.Always);
 
-
 		// Draw tree node
 		if (entity.Transform.ChildCount > 0)
 			treeNodeOpened = ImGui.TreeNodeEx($"{entity.Name} ({entity.Transform.ChildCount})###{entity.Id}",
@@ -264,7 +263,6 @@ public class EntityPane
 			treeNodeOpened = ImGui.TreeNodeEx($"{entity.Name} ({entity.Transform.ChildCount})###{entity.Id}",
 				ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.OpenOnArrow | flags);
 
-		// --- Fix: Toggle expansion on arrow click ---
 		if (entity.Transform.ChildCount > 0)
 		{
 			// Check if the arrow was clicked (not the label)
@@ -289,6 +287,7 @@ public class EntityPane
 		{
 			_imGuiManager.OpenMainEntityInspector(entity);
 			SelectedEntity = entity;
+			ImGui.SetWindowFocus();
 		}
 
 		// Move camera to the entity for inspection
@@ -413,4 +412,5 @@ public class EntityPane
     }
 
     #endregion
+
 }

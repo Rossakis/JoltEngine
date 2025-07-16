@@ -59,7 +59,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	public static float CurrentCameraSpeed { get; private set; }
 
 	private Vector2 _cameraTargetPosition;
-	private float _cameraLerp = 0.4f; 
+	private float _cameraLerp = 0.4f;
 
 	public ImGuiManager(ImGuiOptions options = null)
 	{
@@ -149,7 +149,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 					_spriteAtlasEditorWindow = _spriteAtlasEditorWindow ?? new SpriteAtlasEditorWindow();
 
 				if (ImGui.MenuItem("Quit ImGui"))
-					SetEnabled(false);
+				 SetEnabled(false);
 				ImGui.EndMenu();
 			}
 
@@ -243,15 +243,13 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 	private void UpdateCamera()
 	{
-		if (Input.IsKeyPressed(Keys.F1) || Input.IsKeyPressed(Keys.F2)) // Switch modes
+		if (Input.IsKeyPressed(Keys.F1) || Input.IsKeyPressed(Keys.F2))
 			SceneGraphWindow.InvokeSwitchEditMode(Core.IsEditMode = !Core.IsEditMode);
 
 		ManageCameraZoom();
 
 		if (Core.IsEditMode)
 		{
-
-			// Initialize target position if needed
 			if (_cameraTargetPosition == default)
 				_cameraTargetPosition = Core.Scene.Camera.Position;
 
@@ -260,7 +258,6 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			else
 				CurrentCameraSpeed = EditModeCameraSpeed;
 
-			// Move target position with WASD
 			if (Input.IsKeyDown(Keys.D))
 				_cameraTargetPosition += new Vector2(CurrentCameraSpeed, 0) * Time.DeltaTime;
 			if (Input.IsKeyDown(Keys.A))
@@ -270,21 +267,24 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			if (Input.IsKeyDown(Keys.S))
 				_cameraTargetPosition += new Vector2(0, CurrentCameraSpeed) * Time.DeltaTime;
 
-			// Smoothly interpolate camera position towards target
 			Core.Scene.Camera.Position = Vector2.Lerp(Core.Scene.Camera.Position, _cameraTargetPosition, _cameraLerp);
 		}
 
-		// Double-click selection logic
-		if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+		if (ImGui.IsWindowHovered(ImGuiHoveredFlags.AnyWindow))
 		{
-			TrySelectEntityAtMouse();
-		}
-		// Single click anywhere in game view: deselect if something is selected
-		else if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
-		{
-			if (SceneGraphWindow.EntityPane.SelectedEntity != null)
+			// Double-click selection logic
+			if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
 			{
-				DeselectEntity();
+				TrySelectEntityAtMouse();
+			}
+			// Single click anywhere in game view: deselect if something is selected and not dragging gizmo
+			else if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+			{
+				var entityPane = SceneGraphWindow.EntityPane;
+				if (entityPane.SelectedEntity != null && !entityPane.IsDraggingGizmo)
+				{
+					DeselectEntity();
+				}
 			}
 		}
 	}
@@ -378,13 +378,17 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	/// <param name="entity"></param>
 	public void OpenMainEntityInspector(Entity entity = null)
 	{
-		if (entity == null)
-			entity = Core.Scene.Camera.Entity;
-
-		if (MainEntityInspector != null && MainEntityInspector.Entity == entity)
-			return;
-
-		MainEntityInspector = new MainEntityInspector(entity);
+		if (MainEntityInspector != null)
+		{
+			if(MainEntityInspector.Entity == entity)
+				return;
+			
+			MainEntityInspector.SetEntity(entity);
+		}
+		else
+		{
+			MainEntityInspector = new MainEntityInspector(entity);
+		}
 	}
 
 	/// <summary>
@@ -431,10 +435,10 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 	private void TrySelectEntityAtMouse()
 	{
-	    var mouseWorld = Core.Scene.Camera.ScreenToWorldPoint(Input.ScaledMousePosition);
+		var mouseWorld = Core.Scene.Camera.ScreenToWorldPoint(Input.ScaledMousePosition);
 	    Entity selected = null;
 
-	    // 1. Check entities with colliders (topmost first)
+	    // Check entities with colliders (topmost first)
 	    for (int i = Core.Scene.Entities.Count - 1; i >= 0; i--)
 	    {
 	        var entity = Core.Scene.Entities[i];
@@ -446,7 +450,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	        }
 	    }
 
-	    // 2. If not found, check entities with SpriteRenderer or by proximity to Transform.Position
+	    // If not found, check entities with SpriteRenderer or by proximity to Transform.Position
 	    if (selected == null)
 	    {
 	        float minDist = 16f; // pixel threshold
@@ -456,6 +460,10 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	            var sprite = entity.GetComponent<SpriteRenderer>();
 	            if (sprite != null)
 	            {
+	                // Only select if IsSelectableInEditor is true
+	                if (!sprite.IsSelectableInEditor)
+	                    continue;
+
 	                var bounds = sprite.Bounds;
 	                if (bounds.Contains(mouseWorld))
 	                {
@@ -476,25 +484,20 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	        }
 	    }
 
-	    // 3. Set selection in the editor
+	    // Set selection in the editor
 	    if (selected != null)
 	    {
-	        // Set selection in your ImGui/Editor system
 	        SceneGraphWindow.EntityPane.SelectedEntity = selected;
 	        OpenMainEntityInspector(selected);
-	    }
+
+	        // Move camera to the selected entity
+	        SetCameraTargetPosition(selected.Transform.Position);
+		}
 	}
 	
 	public void DeselectEntity()
 	{
-	    // Deselect in the SceneGraphWindow
-	    if (SceneGraphWindow?.EntityPane != null)
-	        SceneGraphWindow.EntityPane.SelectedEntity = null;
-
-	    // Set the MainEntityInspector to show "No entity selected"
-	    if (MainEntityInspector != null)
-	    {
-	        MainEntityInspector.SetEntity(null);
-	    }
+		if (SceneGraphWindow?.EntityPane != null)
+		    SceneGraphWindow.EntityPane.SelectedEntity = null;
 	}
 }
