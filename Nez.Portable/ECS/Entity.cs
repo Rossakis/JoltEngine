@@ -468,6 +468,8 @@ public class Entity : IComparable<Entity>
 		component.Entity = this;
 		Components.Add(component);
 		component.Initialize();
+		if (Scene != null)
+            Scene.TriggerComponentAddedCallbacks(component);
 		return component;
 	}
 
@@ -482,6 +484,8 @@ public class Entity : IComparable<Entity>
 		component.Entity = this;
 		Components.Add(component);
 		component.Initialize();
+		if (Scene != null)
+            Scene.TriggerComponentAddedCallbacks(component);
 		return component;
 	}
 

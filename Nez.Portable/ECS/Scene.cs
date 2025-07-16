@@ -209,6 +209,7 @@ public class Scene
 	private RenderTarget2D _destinationRenderTarget;
 	private Action<Texture2D> _screenshotRequestCallback;
 	private readonly Dictionary<Type, List<Delegate>> _entityAddedCallbacks = new();
+	private readonly Dictionary<Type, List<Delegate>> _componentAddedCallbacks = new();
 
 	internal readonly FastList<SceneComponent> _sceneComponents = new();
 	internal readonly FastList<Renderer> _renderers = new();
@@ -985,7 +986,8 @@ public class Scene
 		entity.Transform.Position = position;
 		return AddEntity(entity);
 	}
-	
+
+	#region Wait for Entity Added 
 	/// <summary>
 	/// Registers a callback that will be invoked whenever an entity of type <typeparamref name="T"/> is added to the scene,
 	/// including entities already present when the callback is registered.
@@ -1009,7 +1011,7 @@ public class Scene
 		}
 		list.Add(onAdded);
 	}
-	
+
 	/// <summary>
 	/// Registers a callback that will be called **once** for the first entity of type T added to the scene,
 	/// then the callback is automatically removed.
@@ -1044,7 +1046,61 @@ public class Scene
 		foreach (var (t, d) in delegatesToRemove)
 			_entityAddedCallbacks[t].Remove(d);
 	}
+	#endregion
 
+
+	#region Wait For Component Added
+
+	/// <summary>
+	/// Registers a callback that will be invoked whenever a component of type <typeparamref name="T"/> is added to any entity in the scene.
+	/// </summary>
+	public void OnComponentAdded<T>(Action<T> onAdded) where T : Component
+	{
+		var type = typeof(T);
+		if (!_componentAddedCallbacks.TryGetValue(type, out var list))
+		{
+			list = new List<Delegate>();
+			_componentAddedCallbacks[type] = list;
+		}
+		list.Add(onAdded);
+	}
+
+	/// <summary>
+	/// Registers a callback that will be called **once** for the first component of type T added to the scene,
+	/// then the callback is automatically removed.
+	/// </summary>
+	public void OnComponentAddedOnce<T>(Action<T> onAdded) where T : Component
+	{
+		var oneShot = new OneShotDelegate<T>(onAdded);
+		OnComponentAdded<T>(oneShot.Invoke);
+	}
+
+	internal void TriggerComponentAddedCallbacks(Component component)
+	{
+		var type = component.GetType();
+		var delegatesToRemove = new List<(Type, Delegate)>();
+
+		foreach (var kvp in _componentAddedCallbacks)
+		{
+			if (kvp.Key.IsAssignableFrom(type))
+			{
+				foreach (var del in kvp.Value.ToArray())
+				{
+					del.DynamicInvoke(component);
+
+					// Remove if this is a one-shot delegate
+					if (del.Target is IOneShotDelegate)
+						delegatesToRemove.Add((kvp.Key, del));
+				}
+			}
+		}
+
+		// Remove one-shot delegates after invoking
+		foreach (var (t, d) in delegatesToRemove)
+			_componentAddedCallbacks[t].Remove(d);
+	}
+
+	#endregion
 	/// <summary>
 	/// adds an Entity to the Scene's Entities list
 	/// </summary>

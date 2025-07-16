@@ -37,6 +37,19 @@ public class MainEntityInspector
 		}
 	}
 
+	public void SetEntity(Entity entity)
+	{
+		Entity = entity;
+		_componentInspectors.Clear();
+		_transformInspector = null;
+		if (Entity != null)
+		{
+			_transformInspector = new TransformInspector(Entity.Transform);
+			for (var i = 0; i < entity.Components.Count; i++)
+				_componentInspectors.Add(new ComponentInspector(entity.Components[i]));
+		}
+	}
+
 	public void Draw()
 	{
 		if (!IsOpen)

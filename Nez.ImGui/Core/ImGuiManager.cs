@@ -5,6 +5,7 @@ using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Nez.Sprites;
 using Nez.Utils;
 using Num = System.Numerics;
 
@@ -273,6 +274,19 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			Core.Scene.Camera.Position = Vector2.Lerp(Core.Scene.Camera.Position, _cameraTargetPosition, _cameraLerp);
 		}
 
+		// Double-click selection logic
+		if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+		{
+			TrySelectEntityAtMouse();
+		}
+		// Single click anywhere in game view: deselect if something is selected
+		else if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+		{
+			if (SceneGraphWindow.EntityPane.SelectedEntity != null)
+			{
+				DeselectEntity();
+			}
+		}
 	}
 
 	private void ManageCameraZoom()
@@ -414,4 +428,73 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	}
 
 	#endregion
+
+	private void TrySelectEntityAtMouse()
+	{
+	    var mouseWorld = Core.Scene.Camera.ScreenToWorldPoint(Input.ScaledMousePosition);
+	    Entity selected = null;
+
+	    // 1. Check entities with colliders (topmost first)
+	    for (int i = Core.Scene.Entities.Count - 1; i >= 0; i--)
+	    {
+	        var entity = Core.Scene.Entities[i];
+	        var collider = entity.GetComponent<Collider>();
+	        if (collider != null && collider.Bounds.Contains(mouseWorld))
+	        {
+	            selected = entity;
+	            break;
+	        }
+	    }
+
+	    // 2. If not found, check entities with SpriteRenderer or by proximity to Transform.Position
+	    if (selected == null)
+	    {
+	        float minDist = 16f; // pixel threshold
+	        for (int i = Core.Scene.Entities.Count - 1; i >= 0; i--)
+	        {
+	            var entity = Core.Scene.Entities[i];
+	            var sprite = entity.GetComponent<SpriteRenderer>();
+	            if (sprite != null)
+	            {
+	                var bounds = sprite.Bounds;
+	                if (bounds.Contains(mouseWorld))
+	                {
+	                    selected = entity;
+	                    break;
+	                }
+	            }
+	            else
+	            {
+	                // Fallback: select if mouse is close to entity's position
+	                float dist = Vector2.Distance(entity.Transform.Position, mouseWorld);
+	                if (dist < minDist)
+	                {
+	                    selected = entity;
+	                    minDist = dist;
+	                }
+	            }
+	        }
+	    }
+
+	    // 3. Set selection in the editor
+	    if (selected != null)
+	    {
+	        // Set selection in your ImGui/Editor system
+	        SceneGraphWindow.EntityPane.SelectedEntity = selected;
+	        OpenMainEntityInspector(selected);
+	    }
+	}
+	
+	public void DeselectEntity()
+	{
+	    // Deselect in the SceneGraphWindow
+	    if (SceneGraphWindow?.EntityPane != null)
+	        SceneGraphWindow.EntityPane.SelectedEntity = null;
+
+	    // Set the MainEntityInspector to show "No entity selected"
+	    if (MainEntityInspector != null)
+	    {
+	        MainEntityInspector.SetEntity(null);
+	    }
+	}
 }

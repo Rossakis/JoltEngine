@@ -14,7 +14,7 @@ public class SceneGraphWindow
 	/// A copy of a component that can be pasted to another entity
 	/// </summary>
 	public Component CopiedComponent { get; set; }
-
+	public EntityPane EntityPane => _entityPane;
 	private PostProcessorsPane _postProcessorsPane = new();
 	private RenderersPane _renderersPane = new();
 	private EntityPane _entityPane = new();
