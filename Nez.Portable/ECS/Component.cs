@@ -65,6 +65,10 @@ public class Component : IComparable<Component>
 
 	#region Component Lifecycle
 
+	public Component()
+	{
+	}
+
 	/// <summary>
 	/// called when this Component has had its Entity assigned but it is NOT yet added to the live Components list of the Entity yet. Useful
 	/// for things like physics Components that need to access the Transform to modify collision body properties.

@@ -343,6 +343,10 @@ namespace Nez
 		{
 			public Keys Key;
 
+			public KeyboardKey()
+			{
+				Key = Keys.None;
+			}
 
 			public KeyboardKey(Keys key)
 			{
@@ -368,6 +372,11 @@ namespace Nez
 			public Keys Key;
 			public Keys Modifier;
 
+			public KeyboardModifiedKey()
+			{
+				Key = Keys.None;
+				Modifier = Keys.None;
+			}
 
 			public KeyboardModifiedKey(Keys key, Keys modifier)
 			{
@@ -395,6 +404,11 @@ namespace Nez
 			public int GamepadIndex;
 			public Buttons Button;
 
+			public GamePadButton()
+			{
+				GamepadIndex = 0;
+				Button = 0;
+			}
 
 			public GamePadButton(int gamepadIndex, Buttons button)
 			{
@@ -418,6 +432,11 @@ namespace Nez
 			public int GamepadIndex;
 			public float Threshold;
 
+			public GamePadLeftTrigger()
+			{
+				GamepadIndex = 0;
+				Threshold = 0f;
+			}
 
 			public GamePadLeftTrigger(int gamepadIndex, float threshold)
 			{
@@ -448,9 +467,7 @@ namespace Nez
 
 
 			public override bool IsDown => Input.GamePads[GamepadIndex].IsRightTriggerDown(Threshold);
-
 			public override bool IsPressed => Input.GamePads[GamepadIndex].IsRightTriggerPressed(Threshold);
-
 			public override bool IsReleased => Input.GamePads[GamepadIndex].IsRightTriggerReleased(Threshold);
 		}
 
@@ -463,6 +480,10 @@ namespace Nez
 		{
 			public int GamepadIndex;
 
+			public GamePadDPadRight()
+			{
+				GamepadIndex = 0; 
+			}
 
 			public GamePadDPadRight(int gamepadIndex)
 			{

@@ -27,6 +27,9 @@ namespace Nez.Svg
 
 		ISvgPathBuilder _pathBuilder;
 
+		public SvgDebugComponent() : base()
+		{
+		}
 
 		/// <summary>
 		/// beware! If pathBuilder is null the SvgReflectionPathBuilder will be used and it is slow as dirt.

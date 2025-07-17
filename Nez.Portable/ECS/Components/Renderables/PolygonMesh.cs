@@ -18,5 +18,9 @@ namespace Nez
 			SetTriangles(triangulator.TriangleIndices.ToArray());
 			RecalculateBounds(true);
 		}
+
+		public PolygonMesh() : base()
+		{
+		}
 	}
 }

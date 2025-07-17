@@ -41,6 +41,10 @@ namespace Nez
 			_sprite.Enabled = false;
 		}
 
+		public SpriteOutlineRenderer() : base()
+		{
+		}
+
 		public override void OnEntityTransformChanged(Transform.Component comp)
 		{
 			base.OnEntityTransformChanged(comp);

@@ -46,6 +46,10 @@ namespace Nez3D
 			}
 		}
 
+		public Model3D() : base()
+		{
+		}
+
 		public Model3D EnableDefaultLighting()
 		{
 			foreach (var mesh in _model.Meshes)

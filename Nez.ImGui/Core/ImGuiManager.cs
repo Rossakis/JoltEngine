@@ -61,6 +61,11 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	private Vector2 _cameraTargetPosition;
 	private float _cameraLerp = 0.4f;
 
+	// Camera dragging with middle mouse button
+	private bool _isCameraDragging = false;
+	private Vector2 _cameraDragStartMouse;
+	private Vector2 _cameraDragStartPosition;
+
 	public ImGuiManager(ImGuiOptions options = null)
 	{
 		if (options == null)
@@ -241,6 +246,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			_entityInspectors[i].Draw();
 	}
 
+
 	private void UpdateCamera()
 	{
 		if (Input.IsKeyPressed(Keys.F1) || Input.IsKeyPressed(Keys.F2))
@@ -250,6 +256,26 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 		if (Core.IsEditMode)
 		{
+			// Camera Dragging with Middle Mouse
+			var mousePos = Input.ScaledMousePosition;
+			if (Input.MiddleMouseButtonPressed)
+			{
+				_isCameraDragging = true;
+				_cameraDragStartMouse = mousePos;
+				_cameraDragStartPosition = _cameraTargetPosition;
+			}
+			else if (_isCameraDragging && Input.MiddleMouseButtonDown)
+			{
+				var delta = mousePos - _cameraDragStartMouse;
+				
+				// Move camera opposite to mouse drag direction
+				_cameraTargetPosition = _cameraDragStartPosition - delta;
+			}
+			else if (_isCameraDragging && !Input.MiddleMouseButtonDown)
+			{
+				_isCameraDragging = false;
+			}
+
 			if (_cameraTargetPosition == default)
 				_cameraTargetPosition = Core.Scene.Camera.Position;
 

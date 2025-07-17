@@ -32,6 +32,11 @@ namespace Nez
 			}
 		}
 
+		public VirtualJoystick() : base()
+		{
+			Normalized = false;
+		}
+
 
 		public VirtualJoystick(bool normalized) : base()
 		{
@@ -135,6 +140,12 @@ namespace Nez
 			public float Deadzone;
 
 
+			public GamePadLeftStick()
+			{
+				GamepadIndex = 0;
+				Deadzone = Input.DEFAULT_DEADZONE;
+			}
+
 			public GamePadLeftStick(int gamepadIndex = 0, float deadzone = Input.DEFAULT_DEADZONE)
 			{
 				GamepadIndex = gamepadIndex;
@@ -152,6 +163,12 @@ namespace Nez
 			public float Deadzone;
 
 
+			public GamePadRightStick()
+			{
+				GamepadIndex = 0;
+				Deadzone = Input.DEFAULT_DEADZONE;
+			}
+
 			public GamePadRightStick(int gamepadIndex = 0, float deadzone = Input.DEFAULT_DEADZONE)
 			{
 				GamepadIndex = gamepadIndex;
@@ -166,6 +183,11 @@ namespace Nez
 		{
 			public int GamepadIndex;
 
+
+			public GamePadDpad()
+			{
+				GamepadIndex = 0;
+			}
 
 			public GamePadDpad(int gamepadIndex = 0)
 			{
@@ -207,6 +229,15 @@ namespace Nez
 			private bool _turnedY;
 			private Vector2 _value;
 
+
+			public KeyboardKeys()
+			{
+				OverlapBehavior = OverlapBehavior.CancelOut;
+				Left = Keys.None;
+				Right = Keys.None;
+				Up = Keys.None;
+				Down = Keys.None;
+			}
 
 			public KeyboardKeys(OverlapBehavior overlapBehavior, Keys left, Keys right, Keys up, Keys down)
 			{

@@ -61,6 +61,10 @@ namespace Nez
 			Sprite = sprite;
 		}
 
+		public NinePatchSpriteRenderer() : base()
+		{
+		}
+
 		public NinePatchSpriteRenderer(Sprite sprite, int top, int bottom, int left, int right) : this(
 			new NinePatchSprite(sprite, left, right, top, bottom))
 		{ }

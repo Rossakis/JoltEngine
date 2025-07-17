@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Nez.Utils.Collections;
 
 
 namespace Nez;
 
-public class ComponentList
+public class ComponentList : IEnumerable<Component>
 {
 	// global updateOrder sort for the IUpdatable list
 	private static IUpdatableComparer compareUpdatableOrder = new();
@@ -314,4 +315,29 @@ public class ComponentList
 			if (_components.Buffer[i].Enabled)
 				_components.Buffer[i].DebugRender(batcher);
 	}
+
+
+	#region IEnumerable<Component> Implementation
+
+	public IEnumerator<Component> GetEnumerator()
+	{
+		for (int i = 0; i < _components.Length; i++)
+			yield return _components.Buffer[i];
+	}
+
+	IEnumerator IEnumerable.GetEnumerator()
+	{
+		return GetEnumerator();
+	}
+
+	/// <summary>
+	/// Get the list of components that were added this frame. This is useful for grouping components that were added
+	/// </summary>
+	/// <returns></returns>
+	public List<Component> GetComponentsToAddList()
+	{
+		 return _componentsToAdd;
+	}
+
+	#endregion
 }

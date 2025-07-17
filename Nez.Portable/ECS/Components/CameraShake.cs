@@ -30,6 +30,10 @@ namespace Nez
 			FinishedThreshold = finishedThreshold;
 		}
 
+		public CameraShake() : base()
+		{
+		}
+
 		public void Shake(
 			float shakeIntensity = 15f,
 			float shakeDegredation = 0.9f,

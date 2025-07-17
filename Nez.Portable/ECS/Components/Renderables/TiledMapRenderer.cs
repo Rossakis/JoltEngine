@@ -38,6 +38,10 @@ namespace Nez
 				CollisionLayer = tiledMap.TileLayers[collisionLayerName];
 		}
 
+		public TiledMapRenderer() : base()
+		{
+		}
+
 		/// <summary>
 		/// sets this component to only render a single layer
 		/// </summary>
