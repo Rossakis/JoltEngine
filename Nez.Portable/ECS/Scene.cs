@@ -272,7 +272,7 @@ public class Scene
 		RenderableComponents = new RenderableComponentList();
 		Content = new NezContentManager();
 
-		var cameraEntity = SimpleCreateEntity("camera");
+		var cameraEntity = SimpleCreateEntity<EntityData>("camera");
 		Camera = cameraEntity.AddComponent(new Camera());
 
 		// setup our resolution policy. we'll commit it in begin
@@ -968,9 +968,12 @@ public class Scene
 	/// add the Entity to this Scene, and return it
 	/// </summary>
 	/// <returns></returns>
-	public Entity SimpleCreateEntity(string name)
+	public Entity SimpleCreateEntity<TData>(string name) where TData : EntityData, new()
 	{
 		var entity = new Entity(name);
+		if (!entity.HasComponent<TData>())
+			entity.AddComponent(new TData()); 
+
 		return AddEntity(entity);
 	}
 
@@ -980,10 +983,13 @@ public class Scene
 	/// <returns>The entity.</returns>
 	/// <param name="name">Name.</param>
 	/// <param name="position">Position.</param>
-	public Entity CreateEntity(string name, Vector2 position)
+	public Entity SimpleCreateEntity<TData>(string name, Vector2 position) where TData : EntityData, new()
 	{
 		var entity = new Entity(name);
 		entity.Transform.Position = position;
+		if(!entity.HasComponent<TData>())
+			entity.AddComponent(new TData());
+
 		return AddEntity(entity);
 	}
 
@@ -1108,7 +1114,18 @@ public class Scene
 	public virtual Entity AddEntity(Entity entity)
 	{
 		AddEntity<Entity>(entity);
-		entity.InitParams();
+		return entity;
+	}
+
+
+	/// <summary>
+	/// adds an Entity to the Scene's Entities list with EntityData of Type TData.
+	/// </summary>
+	/// <param name="entity">The Entity to add</param>
+	public virtual Entity AddEntityWithEntityData<TData>(Entity entity) where TData : EntityData, new()
+	{
+		entity.AddComponent<TData>();
+		AddEntity<Entity>(entity);
 		return entity;
 	}
 

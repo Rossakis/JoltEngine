@@ -2,8 +2,20 @@
 using System.Runtime.CompilerServices;
 using Nez.Persistence;
 
-
 namespace Nez;
+
+/// <summary>
+/// ComponentData class for Components. This is used to serialize Component data to JSON.
+/// </summary>
+public abstract class ComponentData { }
+
+// Helper struct to store component type and its data as JSON
+public struct ComponentDataEntry
+{
+	public string ComponentTypeName;
+	public string DataTypeName;
+	public string Json;
+}
 
 /// <summary>
 /// Execution order:
@@ -31,6 +43,12 @@ public class Component : IComparable<Component>
 	{
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		get => Entity.Transform;
+	}
+
+	public virtual ComponentData Data
+	{
+		get => null;
+		set { }
 	}
 
 	/// <summary>

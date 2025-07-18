@@ -56,36 +56,41 @@ public class MainEntityInspector
 
 		var topMargin = 20f * ImGui.GetIO().FontGlobalScale;
 
-		ImGui.PushStyleVar(ImGuiStyleVar.GrabMinSize, 0.0f); // makes grip almost invisible
-		ImGui.PushStyleColor(ImGuiCol.ResizeGrip, new Num.Vector4(0, 0, 0, 0)); // transparent grip
+		ImGui.PushStyleVar(ImGuiStyleVar.GrabMinSize, 0.0f);
+		ImGui.PushStyleColor(ImGuiCol.ResizeGrip, new Num.Vector4(0, 0, 0, 0));
 
 		var windowPosX = Screen.Width - _mainInspectorWidth;
 		var windowHeight = Screen.Height - topMargin;
 		MainInspectorPosY = topMargin;
 
-		ImGui.SetNextWindowCollapsed(false, ImGuiCond.Once);
 		ImGui.SetNextWindowPos(new Num.Vector2(windowPosX, MainInspectorPosY), ImGuiCond.Always);
-		ImGui.SetNextWindowSize(new Num.Vector2(_mainInspectorWidth, windowHeight), ImGuiCond.Once);
+
+		// Only set window size on first use, not every frame
+		ImGui.SetNextWindowSize(new Num.Vector2(_mainInspectorWidth, windowHeight), ImGuiCond.FirstUseEver);
 
 		var open = IsOpen;
-		var entityName = Entity != null ? Entity.Name : "";
-		var windowTitle = $"Main Inspector: {entityName}##{_windowId}";
+		var windowTitle = $"Main Inspector##{_windowId}"; // constant title
 
 		if (ImGui.Begin(windowTitle, ref open, ImGuiWindowFlags.None))
 		{
+			var entityName = Entity != null ? Entity.Name : "";
+			ImGui.SetWindowFontScale(1.5f); // Double the font size for header effect
+			ImGui.Text(entityName);
+			ImGui.SetWindowFontScale(1.0f); // Reset to default
+
+			NezImGui.BigVerticalSpace();
+
+			// Always update width, regardless of entity selection
+			var currentWidth = ImGui.GetWindowSize().X;
+			if (Math.Abs(currentWidth - _mainInspectorWidth) > 0.01f)
+				_mainInspectorWidth = Math.Clamp(currentWidth, _minInspectorWidth, _maxInspectorWidth);
+
 			if (Entity == null)
 			{
 				ImGui.TextColored(new Num.Vector4(1, 1, 0, 1), "No entity selected.");
 			}
 			else
 			{
-
-				//If resizing the window manually
-				var currentWidth = ImGui.GetWindowSize().X;
-
-				if (Math.Abs(currentWidth - _mainInspectorWidth) > 0.01f)
-					_mainInspectorWidth = Math.Clamp(currentWidth, _minInspectorWidth, _maxInspectorWidth);
-
 				// Draw main entity UI
 				var type = Entity.Type.ToString();
 				ImGui.InputText("InstanceType", ref type, 30);
@@ -143,7 +148,7 @@ public class MainEntityInspector
 		ImGui.PopStyleColor();
 
 		if (!open)
-			Core.GetGlobalManager<ImGuiManager>().CloseMainEntityInspector();
+			Nez.Core.GetGlobalManager<ImGuiManager>().CloseMainEntityInspector();
 	}
 
 	private void DrawComponentSelectorPopup()

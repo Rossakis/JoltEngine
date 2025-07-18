@@ -1,12 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using Microsoft.Xna.Framework;
 using Nez.Persistence;
 
-
 namespace Nez;
+
+[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+public class EntityData : Component
+{
+	public List<ComponentDataEntry> ComponentDataList;
+
+	public EntityData()
+    {
+	    ComponentDataList = new List<ComponentDataEntry>();
+	}
+}
 
 [JsonSerializable(typeof(Entity))]
 public class Entity : IComparable<Entity>
@@ -122,6 +133,20 @@ public class Entity : IComparable<Entity>
 	private bool _enabled = true;
 	private bool _debugRenderEnabled = true;
 	internal int _updateOrder = 0;
+
+
+	#region Serialization data structs
+	/// <summary>
+	/// Holds ComponentDataEntry objects to be assigned to components as they are added.
+	/// </summary>
+	[JsonExclude]
+	public List<ComponentDataEntry> componentDataToAdd = new();
+
+	public EntityData Data { get; set; }
+
+	#endregion
+
+
 	#endregion
 
 
@@ -598,8 +623,6 @@ public class Entity : IComparable<Entity>
 	}
 
 	#endregion
-
-
 	public int CompareTo(Entity other)
 	{
 		var compare = _updateOrder.CompareTo(other._updateOrder);

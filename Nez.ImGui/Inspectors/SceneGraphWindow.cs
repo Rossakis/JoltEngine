@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ImGuiNET;
+using Microsoft.Xna.Framework.Input;
 using Nez.ECS;
 using Nez.ImGuiTools.SceneGraphPanes;
 using Nez.Utils;
@@ -82,11 +83,11 @@ public class SceneGraphWindow
 	{
 		IsOpen = isOpen;
 
-		if (Core.Scene == null || !isOpen)
+		if (Nez.Core.Scene == null || !isOpen)
 			return;
 
 		if (_imGuiManager == null)
-			_imGuiManager = Core.GetGlobalManager<ImGuiManager>();
+			_imGuiManager = Nez.Core.GetGlobalManager<ImGuiManager>();
 
 		var topMargin = 20f * ImGui.GetIO().FontGlobalScale;
 		var rightMargin = 10f;
@@ -112,13 +113,13 @@ public class SceneGraphWindow
 				_sceneGraphWidth = Math.Clamp(currentWidth, _minSceneGraphWidth, _maxSceneGraphWidth);
 
 			NezImGui.SmallVerticalSpace();
-			if (Core.IsEditMode)
+			if (Nez.Core.IsEditMode)
 			{
 				ImGui.TextWrapped("Press F1/F2 to switch to Play mode.");
 				NezImGui.SmallVerticalSpace();
 
 				if (NezImGui.CenteredButton("Edit Mode", 0.8f))
-					InvokeSwitchEditMode(Core.IsEditMode = false);
+					InvokeSwitchEditMode(Nez.Core.IsEditMode = false);
 
 				NezImGui.SmallVerticalSpace();
 				if (NezImGui.CenteredButton("Reset Scene", 0.8f))
@@ -130,7 +131,7 @@ public class SceneGraphWindow
 				NezImGui.SmallVerticalSpace();
 
 				if (NezImGui.CenteredButton("Play Mode", 0.8f))
-					InvokeSwitchEditMode(Core.IsEditMode = true);
+					InvokeSwitchEditMode(Nez.Core.IsEditMode = true);
 			}
 
 			NezImGui.MediumVerticalSpace();
@@ -158,14 +159,14 @@ public class SceneGraphWindow
 
 			// Show Copied Component
 			NezImGui.MediumVerticalSpace();
-			if (_imGuiManager.SceneGraphWindow.CopiedComponent != null)
+			if (CopiedComponent != null)
 			{
 				NezImGui.VeryBigVerticalSpace();
-				ImGui.TextWrapped($"Component Copied: {_imGuiManager.SceneGraphWindow.CopiedComponent.GetType().Name}");
+				ImGui.TextWrapped($"Component Copied: {CopiedComponent.GetType().Name}");
 
 				NezImGui.SmallVerticalSpace();
 				if (NezImGui.CenteredButton("Clear Copied Component", 0.8f))
-					_imGuiManager.SceneGraphWindow.CopiedComponent = null;
+					CopiedComponent = null;
 			}
 
 			DrawSaveChangesPopup();
@@ -174,6 +175,11 @@ public class SceneGraphWindow
 			ImGui.PopStyleVar();
 			ImGui.PopStyleColor();
 		}
+
+
+		// Control + S = Save ALL
+		if (Input.IsKeyDown(Keys.LeftControl) && Input.IsKeyPressed(Keys.S))
+			InvokeSaveAllChanges();
 
 		HandleEntitySelectionNavigation();
 	}
@@ -192,14 +198,14 @@ public class SceneGraphWindow
 					if (ImGui.Selectable(typeName))
 					{
 						// Generate a unique name for the new entity
-						var uniqueName = Core.Scene.GetUniqueEntityName(typeName);
+						var uniqueName = Nez.Core.Scene.GetUniqueEntityName(typeName);
 
 						// Use the factory registry to create the entity
 						if (EntityFactoryRegistry.TryCreate(typeName, out var entity))
 						{
 							entity.Type = Entity.InstanceType.Dynamic;
 							entity.Name = uniqueName;
-							entity.Transform.Position = Core.Scene.Camera.Transform.Position;
+							entity.Transform.Position = Nez.Core.Scene.Camera.Transform.Position;
 							EntityFactoryRegistry.InvokeEntityCreated(entity);
 						}
 
@@ -223,7 +229,7 @@ public class SceneGraphWindow
 				ImGui.CloseCurrentPopup();
 			}
 
-			if (!Core.IsEditMode)
+			if (!Nez.Core.IsEditMode)
 				return;
 
 			NezImGui.SmallVerticalSpace();
@@ -244,7 +250,7 @@ public class SceneGraphWindow
 
 	private void HandleEntitySelectionNavigation()
 	{
-		if (!Core.IsEditMode)
+		if (!Nez.Core.IsEditMode)
 			return; 
 
 		var hierarchyList = BuildHierarchyList();
@@ -331,7 +337,7 @@ public class SceneGraphWindow
 	private List<Entity> BuildHierarchyList()
 	{
 		var result = new List<Entity>();
-		var entities = Core.Scene?.Entities;
+		var entities = Nez.Core.Scene?.Entities;
 		if (entities == null) return result;
 
 		for (int i = 0; i < entities.Count; i++)

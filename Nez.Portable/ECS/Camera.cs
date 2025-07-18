@@ -16,6 +16,13 @@ namespace Nez
 			internal float bottom;
 		}
 
+		// public class CameraData : EntityData
+		// {
+		// 	public CameraShakeComponentData ShakeData = new();
+		// 	public CameraFollowComponentData FollowData = new();
+		//
+		// 	public CameraData() : base() { }
+		// }
 
 		#region Fields and Properties
 

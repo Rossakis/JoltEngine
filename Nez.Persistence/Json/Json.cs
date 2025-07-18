@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Reflection;
 
-
 namespace Nez.Persistence
 {
 	public sealed class DecodeException : Exception
@@ -81,6 +80,19 @@ namespace Nez.Persistence
 		{
 			System.Diagnostics.Debug.Assert(json != null);
 			return JsonDecoder.FromJson(json, settings);
+		}
+
+		/// <summary>
+		/// decodes <paramref name="json"/> into a strongly typed object of specified <paramref name="type"/>
+		/// </summary>
+		/// <param name="json">Json.</param>
+		/// <param name="type">The type to decode the json into.</param>
+		/// <param name="settings">Settings.</param>
+		/// <returns></returns>
+		public static object FromJson(string json, Type type, JsonSettings settings = null)
+		{
+			System.Diagnostics.Debug.Assert(json != null);
+			return JsonDecoder.FromJson(json, type, settings);
 		}
 
 		/// <summary>

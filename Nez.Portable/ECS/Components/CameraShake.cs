@@ -2,11 +2,50 @@
 using Microsoft.Xna.Framework;
 using Nez.Utils;
 
-
 namespace Nez
 {
 	public class CameraShake : Component, IUpdatable
 	{
+		#region Component Data
+
+		public class CameraShakeComponentData : ComponentData
+		{
+			public float TimePerFrame;
+			public float FinishedThreshold;
+			public bool Enabled;
+			public float ShakeIntensity;
+			public float ShakeDegradation;
+		}
+
+		private CameraShakeComponentData _data = new CameraShakeComponentData();
+
+		public override ComponentData Data
+		{
+			get
+			{
+				_data.TimePerFrame = TimePerFrame;
+				_data.FinishedThreshold = FinishedThreshold;
+				_data.Enabled = Enabled;
+				_data.ShakeIntensity = ShakeIntensity;
+				_data.ShakeDegradation = ShakeDegradation;
+				return _data;
+			}
+			set
+			{
+				if (value is CameraShakeComponentData shakeData)
+				{
+					TimePerFrame = shakeData.TimePerFrame;
+					FinishedThreshold = shakeData.FinishedThreshold;
+					Enabled = shakeData.Enabled;
+					ShakeIntensity = shakeData.ShakeIntensity;
+					ShakeDegradation = shakeData.ShakeDegradation;
+					_data = shakeData;
+				}
+			}
+		}
+
+		#endregion
+
 		// New properties for duration calculation
 		public float TimePerFrame { get; set; } = 1f / 60f; // Default to 60 FPS
 		public float TotalShakeDuration { get; private set; }
@@ -14,11 +53,22 @@ namespace Nez
 
 		public event Action ShakeFinished;
 
-
 		Vector2 _shakeDirection;
 		Vector2 _shakeOffset;
-		float _shakeIntensity = 0f;
-		float _shakeDegredation = 0.95f;
+
+		private float _shakeIntensity = 0f;
+		public float ShakeIntensity
+		{
+			get => _shakeIntensity;
+			set => _shakeIntensity = value;
+		}
+
+		private float _shakeDegredation = 0.95f;
+		public float ShakeDegradation
+		{
+			get => _shakeDegredation;
+			set => _shakeDegredation = value;
+		}
 
 		public void OnShakeFinished()
 		{
@@ -44,13 +94,34 @@ namespace Nez
 			if (_shakeIntensity < shakeIntensity)
 			{
 				_shakeDirection = shakeDirection;
-				_shakeIntensity = shakeIntensity;
+				ShakeIntensity = shakeIntensity;
 
 				// Validate degradation
 				if (shakeDegredation < 0f || shakeDegredation >= 1f)
 					shakeDegredation = 0.95f;
 
-				_shakeDegredation = shakeDegredation;
+				ShakeDegradation = shakeDegredation;
+
+				// Calculate total duration when new shake is applied
+				CalculateTotalShakeDuration();
+			}
+		}
+
+		public void Shake(Vector2 shakeDirection = default)
+		{
+			Enabled = true;
+			// Use the current ShakeIntensity and ShakeDegradation properties
+			if (_shakeIntensity < ShakeIntensity)
+			{
+				_shakeDirection = shakeDirection;
+
+				// Validate degradation
+				if (ShakeDegradation < 0f || ShakeDegradation >= 1f)
+					ShakeDegradation = 0.95f;
+
+				// Assign to backing fields to ensure consistency
+				_shakeIntensity = ShakeIntensity;
+				_shakeDegredation = ShakeDegradation;
 
 				// Calculate total duration when new shake is applied
 				CalculateTotalShakeDuration();
