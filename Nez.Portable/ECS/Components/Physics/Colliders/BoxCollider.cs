@@ -42,13 +42,14 @@ namespace Nez
 		/// <param name="y">The y coordinate.</param>
 		/// <param name="width">Width.</param>
 		/// <param name="height">Height.</param>
-		public BoxCollider(float x, float y, float width, float height)
+		public BoxCollider(float x, float y, float width, float height, string name = null)
 		{
+			Name = name ?? GetType().Name;
 			_localOffset = new Vector2(x + width / 2, y + height / 2);
 			Shape = new Box(width, height);
 		}
 
-		public BoxCollider(float width, float height) : this(-width / 2, -height / 2, width, height)
+		public BoxCollider(float width, float height, string name = null) : this(-width / 2, -height / 2, width, height, name)
 		{
 		}
 
@@ -56,7 +57,7 @@ namespace Nez
 		/// creates a BoxCollider and uses the x/y components of the Rect as the localOffset
 		/// </summary>
 		/// <param name="rect">Rect.</param>
-		public BoxCollider(Rectangle rect) : this(rect.X, rect.Y, rect.Width, rect.Height)
+		public BoxCollider(Rectangle rect, string name = null) : this(rect.X, rect.Y, rect.Width, rect.Height, name)
 		{
 		}
 

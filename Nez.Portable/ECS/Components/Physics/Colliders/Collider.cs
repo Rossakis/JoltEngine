@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Nez.PhysicsShapes;
 
@@ -7,6 +8,92 @@ namespace Nez
 {
 	public abstract class Collider : Component
 	{
+		#region Component Data
+		public class ColliderComponentData : ComponentData
+		{
+			// Common to all colliders
+			public bool IsTrigger;
+			public int PhysicsLayer;
+			public int CollidesWithLayers;
+			public bool ShouldColliderScaleAndRotateWithTransform;
+
+			// BoxCollider
+			public RectangleF Rectangle; // Local rectangle (x, y, width, height)
+
+			// CircleCollider
+			public float CircleRadius;
+			public Vector2 CircleOffset;
+
+			// PolygonCollider
+			public Vector2[] PolygonPoints; // Local points
+		}
+
+		private ColliderComponentData _data = new ColliderComponentData();
+
+		public override ComponentData Data
+		{
+			get
+			{
+				_data.IsTrigger = IsTrigger;
+				_data.PhysicsLayer = PhysicsLayer;
+				_data.CollidesWithLayers = CollidesWithLayers;
+				_data.ShouldColliderScaleAndRotateWithTransform = ShouldColliderScaleAndRotateWithTransform;
+
+				if (this is BoxCollider box)
+				{
+					var width = box.Width;
+					var height = box.Height;
+					var offset = box.LocalOffset;
+					_data.Rectangle = new RectangleF(offset.X - width / 2f, offset.Y - height / 2f, width, height);
+				}
+				else if (this is CircleCollider circle)
+				{
+					_data.CircleRadius = circle.Radius;
+					_data.CircleOffset = circle.LocalOffset;
+				}
+				else if (this is PolygonCollider polygon)
+				{
+					// Return a copy to avoid exposing internal array
+					_data.PolygonPoints = polygon.Shape is Polygon polyShape
+						? polyShape.Points?.ToArray()
+						: null;
+				}
+
+				return _data;
+			}
+			set
+			{
+				if (value is ColliderComponentData colliderData)
+				{
+					IsTrigger = colliderData.IsTrigger;
+					PhysicsLayer = colliderData.PhysicsLayer;
+					CollidesWithLayers = colliderData.CollidesWithLayers;
+					ShouldColliderScaleAndRotateWithTransform = colliderData.ShouldColliderScaleAndRotateWithTransform;
+
+					if (this is BoxCollider box)
+					{
+						box.LocalOffset = new Vector2(
+							colliderData.Rectangle.X + colliderData.Rectangle.Width / 2f,
+							colliderData.Rectangle.Y + colliderData.Rectangle.Height / 2f
+						);
+						box.SetSize(colliderData.Rectangle.Width, colliderData.Rectangle.Height);
+					}
+					else if (this is CircleCollider circle)
+					{
+						circle.LocalOffset = colliderData.CircleOffset;
+						circle.Radius = colliderData.CircleRadius;
+					}
+					else if (this is PolygonCollider polygon && colliderData.PolygonPoints != null)
+					{
+						// Set the points on the PolygonCollider
+						polygon.Shape = new Polygon(colliderData.PolygonPoints);
+					}
+
+					_data = colliderData;
+				}
+			}
+		}
+		#endregion
 		/// <summary>
 		/// the underlying Shape of the Collider
 		/// </summary>

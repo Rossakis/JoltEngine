@@ -84,8 +84,9 @@ public class Component : IComparable<Component>
 
 	#region Component Lifecycle
 
-	public Component()
+	public Component(string name = null)
 	{
+		Name = name ?? GetType().Name;
 	}
 
 	/// <summary>

@@ -1060,7 +1060,7 @@ public class Scene
 	/// <summary>
 	/// Registers a callback that will be invoked whenever a component of type <typeparamref name="T"/> is added to any entity in the scene.
 	/// </summary>
-	public void OnComponentAdded<T>(Action<T> onAdded) where T : Component
+	public void OnComponentAddedToScene<T>(Action<T> onAdded) where T : Component
 	{
 		var type = typeof(T);
 		if (!_componentAddedCallbacks.TryGetValue(type, out var list))
@@ -1075,10 +1075,10 @@ public class Scene
 	/// Registers a callback that will be called **once** for the first component of type T added to the scene,
 	/// then the callback is automatically removed.
 	/// </summary>
-	public void OnComponentAddedOnce<T>(Action<T> onAdded) where T : Component
+	public void OnComponentAddedToSceneOnce<T>(Action<T> onAdded) where T : Component
 	{
 		var oneShot = new OneShotDelegate<T>(onAdded);
-		OnComponentAdded<T>(oneShot.Invoke);
+		OnComponentAddedToScene<T>(oneShot.Invoke);
 	}
 
 	internal void TriggerComponentAddedCallbacks(Component component)

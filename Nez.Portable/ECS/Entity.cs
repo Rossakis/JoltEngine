@@ -136,11 +136,7 @@ public class Entity : IComparable<Entity>
 
 
 	#region Serialization data structs
-	/// <summary>
-	/// Holds ComponentDataEntry objects to be assigned to components as they are added.
-	/// </summary>
-	[JsonExclude]
-	public List<ComponentDataEntry> componentDataToAdd = new();
+	private readonly Dictionary<Type, List<Delegate>> _componentAddedCallbacks = new();
 
 	public EntityData Data { get; set; }
 
@@ -521,21 +517,23 @@ public class Entity : IComparable<Entity>
 			}
 		}
 
+		string componentName;
 		// Assign unique name if needed
 		if (maxIndex >= 0)
 		{
-			component.Name = $"{type.Name}_{maxIndex + 1}";
+			componentName = $"{type.Name}_{maxIndex + 1}";
 		}
 		else if (string.IsNullOrEmpty(component.Name))
 		{
-			component.Name = type.Name;
+			componentName = type.Name;
 		}
 
 		component.Entity = this;
 		Components.Add(component);
 		component.Initialize();
-		if (Scene != null)
-			Scene.TriggerComponentAddedCallbacks(component);
+
+		TriggerComponentAddedCallbacks(component);
+
 		return component;
 	}
 
@@ -657,6 +655,60 @@ public class Entity : IComparable<Entity>
 		for (var i = 0; i < Components.Count; i++)
 			RemoveComponent(Components[i]);
 	}
+
+	#endregion
+
+	#region Component Event callbacks
+
+	/// <summary>
+	/// Registers a callback that will be invoked whenever a component of type <typeparamref name="T"/> is added to this entity.
+	/// </summary>
+	public void OnComponentAdded<T>(Action<T> onAdded) where T : Component
+	{
+		var type = typeof(T);
+		if (!_componentAddedCallbacks.TryGetValue(type, out var list))
+		{
+			list = new List<Delegate>();
+			_componentAddedCallbacks[type] = list;
+		}
+		list.Add(onAdded);
+	}
+
+	/// <summary>
+	/// Registers a callback that will be called **once** for the first component of type T added to this entity,
+	/// then the callback is automatically removed.
+	/// </summary>
+	public void OnComponentAddedOnce<T>(Action<T> onAdded) where T : Component
+	{
+		var oneShot = new OneShotDelegate<T>(onAdded);
+		OnComponentAdded<T>(oneShot.Invoke);
+	}
+
+	internal void TriggerComponentAddedCallbacks(Component component)
+	{
+		var type = component.GetType();
+		var delegatesToRemove = new List<(Type, Delegate)>();
+
+		foreach (var kvp in _componentAddedCallbacks)
+		{
+			if (kvp.Key.IsAssignableFrom(type))
+			{
+				foreach (var del in kvp.Value.ToArray())
+				{
+					del.DynamicInvoke(component);
+
+					// Remove if this is a one-shot delegate
+					if (del.Target is IOneShotDelegate)
+						delegatesToRemove.Add((kvp.Key, del));
+				}
+			}
+		}
+
+		// Remove one-shot delegates after invoking
+		foreach (var (t, d) in delegatesToRemove)
+			_componentAddedCallbacks[t].Remove(d);
+	}
+
 
 	#endregion
 	public int CompareTo(Entity other)
