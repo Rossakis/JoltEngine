@@ -10,6 +10,35 @@ namespace Nez.Sprites
 	/// </summary>
 	public class SpriteRenderer : RenderableComponent
 	{
+		/// <summary>
+		/// Serializable data for SpriteRenderer component.
+		/// </summary>
+		public class SpriteRendererComponentData : ComponentData
+		{
+			public string TextureAssetName { get; set; }
+			public Color Color { get; set; }
+			public Vector2 LocalOffset { get; set; }
+			public Vector2 Origin { get; set; }
+			public float LayerDepth { get; set; }
+			public int RenderLayer { get; set; }
+			public bool Enabled { get; set; }
+			public SpriteEffects SpriteEffects { get; set; }
+
+			public SpriteRendererComponentData() { }
+
+			public SpriteRendererComponentData(SpriteRenderer renderer)
+			{
+				TextureAssetName = renderer.Sprite?.Texture2D?.Name;
+				Color = renderer.Color;
+				LocalOffset = renderer.LocalOffset;
+				Origin = renderer.Origin;
+				LayerDepth = renderer.LayerDepth;
+				RenderLayer = renderer.RenderLayer;
+				Enabled = renderer.Enabled;
+				SpriteEffects = renderer.SpriteEffects;
+			}
+		}
+
 		public override RectangleF Bounds
 		{
 			get
@@ -124,6 +153,7 @@ namespace Nez.Sprites
 
 		protected Vector2 _origin;
 		protected Sprite _sprite;
+
 
 
 		public SpriteRenderer()

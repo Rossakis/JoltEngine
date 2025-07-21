@@ -1,7 +1,9 @@
-using System;
-using System.Collections.Generic;
+using Microsoft.Xna.Framework.Graphics;
 using Nez.Textures;
 using Nez.Utils;
+using System;
+using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 
 namespace Nez.Sprites;
 
@@ -10,6 +12,51 @@ namespace Nez.Sprites;
 /// </summary>
 public class SpriteAnimator : SpriteRenderer, IUpdatable
 {
+	/// <summary>
+	/// Serializable data for SpriteAnimator component.
+	/// </summary>
+	public class SpriteAnimatorComponentData : ComponentData
+	{
+		public string TextureAssetName { get; set; }
+		public Color Color { get; set; }
+		public Vector2 LocalOffset { get; set; }
+		public Vector2 Origin { get; set; }
+		public float LayerDepth { get; set; }
+		public int RenderLayer { get; set; }
+		public bool Enabled { get; set; }
+		public SpriteEffects SpriteEffects { get; set; }
+		public bool FlipX { get; set; }
+		public bool FlipY { get; set; }
+
+		// Animation state
+		public string CurrentAnimationName { get; set; }
+		public int CurrentFrame { get; set; }
+		public float CurrentElapsedTime { get; set; }
+		public SpriteAnimator.LoopMode CurrentLoopMode { get; set; }
+		public SpriteAnimator.State AnimationState { get; set; }
+
+		public SpriteAnimatorComponentData() { }
+
+		public SpriteAnimatorComponentData(SpriteAnimator animator)
+		{
+			TextureAssetName = animator.Sprite?.Texture2D?.Name;
+			Color = animator.Color;
+			LocalOffset = animator.LocalOffset;
+			Origin = animator.Origin;
+			LayerDepth = animator.LayerDepth;
+			RenderLayer = animator.RenderLayer;
+			Enabled = animator.Enabled;
+			SpriteEffects = animator.SpriteEffects;
+			FlipX = animator.FlipX;
+			FlipY = animator.FlipY;
+
+			CurrentAnimationName = animator.CurrentAnimationName;
+			CurrentFrame = animator.CurrentFrame;
+			CurrentElapsedTime = animator.CurrentElapsedTime;
+			CurrentLoopMode = animator.CurrentLoopMode;
+			AnimationState = animator.AnimationState;
+		}
+	}
 	public enum LoopMode
 	{
 		/// <summary>

@@ -10,6 +10,28 @@ namespace Nez
 	/// </summary>
 	public class ArcadeRigidbody : Component, IUpdatable
 	{
+		public class ArcadeRigidbodyComponentData : ComponentData
+		{
+			public float Mass { get; set; }
+			public float Elasticity { get; set; }
+			public float Friction { get; set; }
+			public float Glue { get; set; }
+			public bool ShouldUseGravity { get; set; }
+			public Vector2 Velocity { get; set; }
+
+			public ArcadeRigidbodyComponentData() { }
+
+			public ArcadeRigidbodyComponentData(ArcadeRigidbody rigidbody)
+			{
+				Mass = rigidbody.Mass;
+				Elasticity = rigidbody.Elasticity;
+				Friction = rigidbody.Friction;
+				Glue = rigidbody.Glue;
+				ShouldUseGravity = rigidbody.ShouldUseGravity;
+				Velocity = rigidbody.Velocity;
+			}
+		}
+
 		/// <summary>
 		/// mass of this rigidbody. A 0 mass will make this an immovable object.
 		/// </summary>
