@@ -66,6 +66,10 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	private Vector2 _cameraDragStartMouse;
 	private Vector2 _cameraDragStartPosition;
 
+	private bool _pendingExit = false;
+	private bool _pendingSceneChange = false;
+	private Type _requestedSceneType = null;
+
 	public ImGuiManager(ImGuiOptions options = null)
 	{
 		if (options == null)
@@ -97,6 +101,10 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 		// Create default Main Entity Inspector window when current scene is finished loading the entities
 		Scene.OnFinishedAddingEntitiesWithData += OpenMainEntityInspector;
+
+		Core.EmitterWithPending.AddObserver(CoreEvents.Exiting, OnAppExiting);
+		//TODO: Uncomment when Core.EmitterWithPending is implemented
+		//Core.EmitterWithPending.AddObserver(CoreEvents.SceneChanged, (bool _pendingExit) => {});
 	}
 
 	/// <summary>
@@ -163,8 +171,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 				foreach (var sceneType in _sceneSubclasses)
 					if (ImGui.MenuItem(sceneType.Name))
 					{
-						var scene = (Scene)Activator.CreateInstance(sceneType);
-						Core.StartSceneTransition(new FadeTransition(() => scene));
+						RequestSceneChange(sceneType);
 					}
 
 				ImGui.EndMenu();
@@ -430,8 +437,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			{
 				_entityInspectors.RemoveAt(i);
 
-				if (entitynspectorInitialSpawnOffset - entitynspectorSpawnOffsetIncremental >=
-				    0) // Reset the previous spawn offset 
+				if (entitynspectorInitialSpawnOffset - entitynspectorSpawnOffsetIncremental >= 0) // Reset the previous spawn offset 
 					entitynspectorInitialSpawnOffset -= entitynspectorSpawnOffsetIncremental;
 
 				return;
@@ -525,5 +531,42 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	{
 		if (SceneGraphWindow?.EntityPane != null)
 		    SceneGraphWindow.EntityPane.SelectedEntity = null;
+	}
+
+	private void OnAppExiting(bool pending)
+	{
+	    if (pending)
+	    {
+			// Only show the prompt if there are unsaved changes
+			if (EditorChangeTracker.IsDirty)
+				_pendingExit = true;
+			else
+				Core.ConfirmAndExit();
+		}
+	}
+
+	private void RequestSceneChange(Type sceneType)
+	{
+		if (EditorChangeTracker.IsDirty)
+		{
+			TriggerSceneChangePrompt(sceneType);
+		}
+		else
+		{
+			ChangeScene(sceneType);
+		}
+	}
+
+	private void TriggerSceneChangePrompt(Type sceneType)
+	{
+		_pendingSceneChange = true;
+		_requestedSceneType = sceneType;
+		_pendingExit = false;
+	}
+
+	private void ChangeScene(Type sceneType)
+	{
+	    var scene = (Scene)Activator.CreateInstance(sceneType);
+	    Core.StartSceneTransition(new FadeTransition(() => scene));
 	}
 }

@@ -181,7 +181,6 @@ public class SceneGraphWindow
 			ImGui.PopStyleColor();
 		}
 
-		// Control + S = Save ALL
 		if (Input.IsKeyDown(Keys.LeftControl) && Input.IsKeyPressed(Keys.S))
 			InvokeSaveSceneChanges();
 

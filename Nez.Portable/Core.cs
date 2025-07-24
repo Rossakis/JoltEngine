@@ -30,6 +30,11 @@ public class Core : Game
 	public static Emitter<CoreEvents> Emitter;
 
 	/// <summary>
+	/// Core emitter that emits Core level events with a bool value. This is used for events that have a pending state, such as
+	/// </summary>
+	public static Emitter<CoreEvents, bool> EmitterWithPending = new Emitter<CoreEvents, bool>(new CoreEventsComparer());
+
+	/// <summary>
 	/// enables/disables if we should quit the app when escape is pressed
 	/// </summary>
 	public static bool ExitOnEscapeKeypress = true;
@@ -320,12 +325,47 @@ public class Core : Game
 		EndDebugDraw();
 	}
 
+	// protected override void OnExiting(object sender, ExitingEventArgs args)
+	// {
+	// #if DEBUG
+	//     // Always cancel the exit first
+	//     args.Cancel = true;
+	//     // Notify listeners that an exit is pending
+	//     EmitterWithPending.Emit(CoreEvents.Exiting, true);
+	// #else
+	//     base.OnExiting(sender, args);
+	//     Emitter.Emit(CoreEvents.Exiting);
+	// #endif
+	// }
+
+	//Core.EmitterWithPending.AddObserver(CoreEvents.Exiting, OnExitConfirmed);
+
+	private static bool _allowExit = false;
+
 	protected override void OnExiting(object sender, ExitingEventArgs args)
 	{
-		base.OnExiting(sender, args);
-		Emitter.Emit(CoreEvents.Exiting);
+#if DEBUG
+		if (!_allowExit)
+		{
+			args.Cancel = true;
+			EmitterWithPending.Emit(CoreEvents.Exiting, true);
+		}
+		else
+		{
+			base.OnExiting(sender, args);
+		}
+#else
+        base.OnExiting(sender, args);
+        Emitter.Emit(CoreEvents.Exiting);
+#endif
 	}
 
+	public static void ConfirmAndExit()
+	{
+		_allowExit = true;
+		Exit();
+	}
+	
 	#endregion
 
 	#region Debug Injection
@@ -521,4 +561,6 @@ public class Core : Game
 			}
 		}
 	}
+
+    
 }

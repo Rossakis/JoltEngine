@@ -1,13 +1,12 @@
+using System;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
-using System;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Num = System.Numerics;
 using Nez.Persistence.Binary;
 using Nez.Utils;
 using Nez.Utils.Extensions;
-
 
 namespace Nez.ImGuiTools;
 
@@ -341,7 +340,106 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		// we have to do our layout in update so that if the game window is not focused or being displayed we can wipe
 		// the Input, essentially letting ImGui consume it
 		_renderer.BeforeLayout(Time.DeltaTime);
+
+		DrawApplicationExitPrompt(ref _pendingExit, false);
+		DrawApplicationExitPrompt(ref _pendingSceneChange, true);
+		ManageUndoAndRedo();
+
 		LayoutGui();
+	}
+
+	private void DrawApplicationExitPrompt(ref bool pendingValue, bool isForSceneChange)
+	{
+		if (pendingValue) 
+		{
+			ImGui.OpenPopup("Unsaved Changes");
+		}
+		else
+		{
+			return;
+		}
+
+		if (pendingValue && ImGui.BeginPopupModal("Unsaved Changes", ref pendingValue, ImGuiWindowFlags.AlwaysAutoResize))
+		{
+			ImGui.TextWrapped("You have unsaved changes for:");
+
+			ImGui.Spacing();
+			NezImGui.MediumVerticalSpace();
+			ImGui.Separator();
+
+			int i = 1;
+			foreach (var (_, description) in EditorChangeTracker.ChangedObjects)
+			{
+				ImGui.BulletText($"{i++}. {description}");
+			}
+
+			ImGui.Separator();
+			NezImGui.MediumVerticalSpace();
+
+			if (ImGui.Button("Save", new Num.Vector2(120, 0)))
+			{
+				SceneGraphWindow.InvokeSaveSceneChanges();
+				EditorChangeTracker.Clear();
+				ImGui.CloseCurrentPopup();
+				if (isForSceneChange && _requestedSceneType != null)
+				{
+					ChangeScene(_requestedSceneType);
+					pendingValue = false;
+				}
+				else
+				{
+					pendingValue = false;
+					Core.ConfirmAndExit();
+				}
+			}
+
+			ImGui.SameLine();
+
+			if (ImGui.Button("Discard", new Num.Vector2(120, 0)))
+			{
+				EditorChangeTracker.Revert();
+				ImGui.CloseCurrentPopup();
+				if (isForSceneChange && _requestedSceneType != null)
+				{
+					ChangeScene(_requestedSceneType);
+					pendingValue = false;
+					_requestedSceneType = null;
+				}
+				else
+				{
+					pendingValue = false;
+					Core.ConfirmAndExit();
+				}
+			}
+
+			ImGui.SameLine();
+
+			if (ImGui.Button("Cancel", new Num.Vector2(120, 0)))
+			{
+				pendingValue = false;
+				_requestedSceneType = null;
+				ImGui.CloseCurrentPopup();
+			}
+
+			ImGui.EndPopup();
+		}
+			
+	}
+
+	private void ManageUndoAndRedo()
+	{
+		// Check for Ctrl+Z (Undo)
+		var io = ImGui.GetIO();
+		bool ctrlDown = io.KeyCtrl;
+		bool zPressed = ImGui.IsKeyPressed(ImGuiKey.Z, false);
+
+		if (ctrlDown && zPressed)
+		{
+			EditorChangeTracker.Undo();
+		}
+
+		//TODO: Ctrl + Y
+
 	}
 
 	#endregion

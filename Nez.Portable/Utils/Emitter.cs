@@ -8,12 +8,11 @@ namespace Nez.Utils
 	/// </summary>
 	public class Emitter<T> where T : struct, IComparable, IFormattable
 	{
-		Dictionary<T, List<Action>> _messageTable;
-
+		Dictionary<T, List<Action>> _observers;
 
 		public Emitter()
 		{
-			_messageTable = new Dictionary<T, List<Action>>();
+			_observers = new Dictionary<T, List<Action>>();
 		}
 
 		/// <summary>
@@ -23,16 +22,16 @@ namespace Nez.Utils
 		/// <param name="customComparer">Custom comparer.</param>
 		public Emitter(IEqualityComparer<T> customComparer)
 		{
-			_messageTable = new Dictionary<T, List<Action>>(customComparer);
+			_observers = new Dictionary<T, List<Action>>(customComparer);
 		}
 
 		public void AddObserver(T eventType, Action handler)
 		{
 			List<Action> list = null;
-			if (!_messageTable.TryGetValue(eventType, out list))
+			if (!_observers.TryGetValue(eventType, out list))
 			{
 				list = new List<Action>();
-				_messageTable.Add(eventType, list);
+				_observers.Add(eventType, list);
 			}
 
 			Insist.IsFalse(list.Contains(handler), "You are trying to add the same observer twice");
@@ -43,20 +42,19 @@ namespace Nez.Utils
 		{
 			// we purposely do this in unsafe fashion so that it will throw an Exception if someone tries to remove a handler that
 			// was never added
-			_messageTable[eventType].Remove(handler);
+			_observers[eventType].Remove(handler);
 		}
 
 		public void Emit(T eventType)
 		{
 			List<Action> list = null;
-			if (_messageTable.TryGetValue(eventType, out list))
+			if (_observers.TryGetValue(eventType, out list))
 			{
 				for (var i = list.Count - 1; i >= 0; i--)
 					list[i]();
 			}
 		}
 	}
-
 
 	/// <summary>
 	/// simple event emitter that is designed to have its generic contraint be either an int or an enum. this variant lets you pass around
@@ -65,7 +63,6 @@ namespace Nez.Utils
 	public class Emitter<T, U> where T : struct, IComparable, IFormattable
 	{
 		Dictionary<T, List<Action<U>>> _messageTable;
-
 
 		public Emitter()
 		{

@@ -1,8 +1,9 @@
-using System;
-using System.Collections.Generic;
 using ImGuiNET;
 using Nez.ImGuiTools.ObjectInspectors;
 using Nez.Utils;
+using System;
+using System.Collections.Generic;
+using System.Reflection;
 using Num = System.Numerics;
 
 namespace Nez.ImGuiTools;
@@ -101,9 +102,29 @@ public class MainEntityInspector
 
 				ImGui.InputText("Name", ref Entity.Name, 25);
 
-				var updateOrder = Entity.UpdateOrder;
+				// TODO:
+				int oldUpdateOrder = Entity.UpdateOrder;
+				int updateOrder = Entity.UpdateOrder;
 				if (ImGui.InputInt("Update Order", ref updateOrder))
+				{
+					// Get the PropertyInfo for the UpdateOrder property
+					var propertyInfo = typeof(Entity).GetProperty(nameof(Entity.UpdateOrder));
+
+					// Create the undo/redo action
+					var action = new GenericValueChangeAction(
+						Entity,
+						propertyInfo,
+						oldUpdateOrder,
+						updateOrder,
+						$"{Entity.Name}.UpdateOrder"
+					);
+
+					// Push to the tracker (also marks as dirty)
+					EditorChangeTracker.PushUndo(action, Entity, $"{Entity.Name}.UpdateOrder");
+
+					// Actually apply the change
 					Entity.SetUpdateOrder(updateOrder);
+				}
 
 				var updateInterval = (int)Entity.UpdateInterval;
 				if (ImGui.SliderInt("Update Interval", ref updateInterval, 1, 100))
