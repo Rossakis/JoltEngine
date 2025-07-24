@@ -170,29 +170,17 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 		SetSprite(sprite);
 	}
 
-#if DEBUG
-
-	// When switching from EditMode to PlayMode, One shot animations can get stuck, so we manually unstuck them when going to PlayMode
-
+#if DEBUG // Pause/UnPause animations in Play Mode
 	public override void OnEnabled()
 	{
-		Core.OnChangedToPlayMode += ChangedToPlayMode;
+		Core.OnChangedToPlayMode += UnPause;
+		Core.OnChangedToEditMode += Pause;
 	}
 
 	public override void OnDisabled()
 	{
-		Core.OnChangedToPlayMode -= ChangedToPlayMode;
-	}
-
-	
-	private void ChangedToPlayMode()
-	{
-		TryResumeOneShot();
-	}
-
-	private void TryResumeOneShot()
-	{
-		UnPause();
+		Core.OnChangedToPlayMode -= UnPause;
+		Core.OnChangedToEditMode -= Pause;
 	}
 #endif
 

@@ -46,25 +46,13 @@ public class SceneGraphWindow
 
 	#region Event Handlers
 
-	public event Action OnSaveEntityChanges;
 	public event Action OnSaveSceneChanges;
-	public event Action OnSaveAllChanges;
 	public event Action OnResetScene;
 	public event Action<bool> OnSwitchEditMode;
-
-	public void InvokeSaveEntityChanges()
-	{
-		OnSaveEntityChanges?.Invoke();
-	}
 
 	public void InvokeSaveSceneChanges()
 	{
 		OnSaveSceneChanges?.Invoke();
-	}
-
-	public void InvokeSaveAllChanges()
-	{
-		OnSaveAllChanges?.Invoke();
 	}
 
 	public void InvokeResetScene()
@@ -151,8 +139,8 @@ public class SceneGraphWindow
 				_entityPane.Draw();
 
 			NezImGui.MediumVerticalSpace();
-			if (NezImGui.CenteredButton("Save Changes", 0.7f))
-				ImGui.OpenPopup("save-changes");
+			if (NezImGui.CenteredButton("Save Scene", 0.7f))
+				InvokeSaveSceneChanges();
 
 			NezImGui.MediumVerticalSpace();
 			if (NezImGui.CenteredButton("Add Entity", 0.6f))
@@ -186,7 +174,6 @@ public class SceneGraphWindow
 			}
 
 			DrawTmxFilePickerPopup();
-			DrawSaveChangesPopup();
 			DrawEntitySelectorPopup();
 
 			ImGui.End();
@@ -196,7 +183,7 @@ public class SceneGraphWindow
 
 		// Control + S = Save ALL
 		if (Input.IsKeyDown(Keys.LeftControl) && Input.IsKeyPressed(Keys.S))
-			InvokeSaveAllChanges();
+			InvokeSaveSceneChanges();
 
 		HandleEntitySelectionNavigation();
 	}
@@ -230,38 +217,6 @@ public class SceneGraphWindow
 					}
 
 			ImGui.EndPopup();
-		}
-	}
-
-	private void DrawSaveChangesPopup()
-	{
-		if (ImGui.BeginPopup("save-changes"))
-		{
-			ImGui.Text("Select SAVE mode");
-
-			NezImGui.SmallVerticalSpace();
-			if (NezImGui.CenteredButton("Save ENTITY", 1f))
-			{
-				InvokeSaveEntityChanges();
-				ImGui.CloseCurrentPopup();
-			}
-
-			if (!Nez.Core.IsEditMode)
-				return;
-
-			NezImGui.SmallVerticalSpace();
-			if (NezImGui.CenteredButton("Save SCENE", 1f))
-			{
-				InvokeSaveSceneChanges();
-				ImGui.CloseCurrentPopup();
-			}
-
-			NezImGui.SmallVerticalSpace();
-			if (NezImGui.CenteredButton("Save ALL", 1f))
-			{
-				InvokeSaveAllChanges();
-				ImGui.CloseCurrentPopup();
-			}
 		}
 	}
 
