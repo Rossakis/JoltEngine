@@ -191,6 +191,21 @@ public class Component : IComparable<Component>
 
 	public override string ToString()
 	{
-		return $"[Component: type: {GetType()}, updateOrder: {UpdateOrder}]";
+		var type = GetType();
+		string typeName = type.IsGenericType
+			? $"{type.BaseType.Name}<{type.GetGenericArguments()[0].Name}>"
+			: type.Name;
+
+		// If the component's name is null or empty, treat it as the type name
+		var compName = string.IsNullOrEmpty(Name) ? typeName : Name;
+
+		// Show only type if name matches type, otherwise show "Name (Type)"
+		var displayName = compName == typeName ? typeName : $"{compName} ({typeName})";
+
+		// Prepend entity name if available
+		if (Entity != null && !string.IsNullOrEmpty(Entity.Name))
+			return $"{Entity.Name}.{displayName}";
+		else
+			return displayName;
 	}
 }

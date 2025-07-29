@@ -105,10 +105,6 @@ public class EditorChangeTracker
         var action = _undoStack.Pop();
         action.Undo();
         _redoStack.Push(action);
-		System.Console.WriteLine(action.Description);
-
-        // Optionally, mark as dirty (if you want undo to count as a change)
-        // MarkChanged(...);
 
         return action;
     }
@@ -125,9 +121,6 @@ public class EditorChangeTracker
         var action = _redoStack.Pop();
         action.Redo();
         _undoStack.Push(action);
-
-        // Optionally, mark as dirty (if you want redo to count as a change)
-        // MarkChanged(...);
 
         return action;
     }

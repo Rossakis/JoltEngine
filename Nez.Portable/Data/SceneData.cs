@@ -9,7 +9,9 @@ namespace Nez.Data;
 public class SceneData
 {
     public string TiledMapFileName = String.Empty;
-    public List<SceneEntityData> Entities;
+
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+	public List<SceneEntityData> Entities;
 
     public SceneData()
     {

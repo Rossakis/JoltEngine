@@ -143,7 +143,7 @@ namespace Nez
 				2 * Debug.Size.LineSizeMultiplier);
 		}
 
-		public override string ToString()
+		public string PrintBounds()
 		{
 			return string.Format("[BoxCollider: bounds: {0}", Bounds);
 		}

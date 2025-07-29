@@ -341,14 +341,22 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		// the Input, essentially letting ImGui consume it
 		_renderer.BeforeLayout(Time.DeltaTime);
 
-		DrawApplicationExitPrompt(ref _pendingExit, false);
-		DrawApplicationExitPrompt(ref _pendingSceneChange, true);
+		DrawApplicationExitPrompt(ref _pendingExit, ExitPromptType.Exit);
+		DrawApplicationExitPrompt(ref _pendingSceneChange, ExitPromptType.SceneChange);
+		DrawApplicationExitPrompt(ref _pendingResetScene, ExitPromptType.ResetScene);
 		ManageUndoAndRedo();
 
 		LayoutGui();
 	}
 
-	private void DrawApplicationExitPrompt(ref bool pendingValue, bool isForSceneChange)
+	private enum ExitPromptType
+	{
+		Exit,
+		SceneChange,
+		ResetScene
+	}
+
+	private void DrawApplicationExitPrompt(ref bool pendingValue, ExitPromptType exitPromptType)
 	{
 		if (pendingValue) 
 		{
@@ -381,9 +389,14 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 				SceneGraphWindow.InvokeSaveSceneChanges();
 				EditorChangeTracker.Clear();
 				ImGui.CloseCurrentPopup();
-				if (isForSceneChange && _requestedSceneType != null)
+				if (exitPromptType == ExitPromptType.SceneChange && _requestedSceneType != null)
 				{
 					ChangeScene(_requestedSceneType);
+					pendingValue = false;
+				}
+				else if (exitPromptType == ExitPromptType.ResetScene)
+				{
+					ResetScene();
 					pendingValue = false;
 				}
 				else
@@ -399,11 +412,16 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			{
 				EditorChangeTracker.Revert();
 				ImGui.CloseCurrentPopup();
-				if (isForSceneChange && _requestedSceneType != null)
+				if (exitPromptType == ExitPromptType.SceneChange && _requestedSceneType != null)
 				{
 					ChangeScene(_requestedSceneType);
 					pendingValue = false;
 					_requestedSceneType = null;
+				}
+				else if (exitPromptType == ExitPromptType.ResetScene)
+				{
+					ResetScene();
+					pendingValue = false;
 				}
 				else
 				{

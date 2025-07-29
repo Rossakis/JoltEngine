@@ -69,6 +69,8 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	private bool _pendingExit = false;
 	private bool _pendingSceneChange = false;
 	private Type _requestedSceneType = null;
+	private bool _pendingResetScene = false;
+	private Type _requestedResetSceneType = null;
 
 	public ImGuiManager(ImGuiOptions options = null)
 	{
@@ -101,7 +103,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 		// Create default Main Entity Inspector window when current scene is finished loading the entities
 		Scene.OnFinishedAddingEntitiesWithData += OpenMainEntityInspector;
-
+		SceneGraphWindow.OnResetScene += RequestResetScene;
 		Core.EmitterWithPending.AddObserver(CoreEvents.Exiting, OnAppExitSaveChanges);
 	}
 
@@ -567,6 +569,26 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	{
 	    var scene = (Scene)Activator.CreateInstance(sceneType);
 	    Core.StartSceneTransition(new FadeTransition(() => scene));
+	}
+
+	public void RequestResetScene()
+	{
+		if (EditorChangeTracker.IsDirty)
+		{
+			_pendingResetScene = true;
+			_requestedResetSceneType = Core.Scene.GetType();
+		}
+		else
+		{
+			ResetScene();
+		}
+	}
+
+	private void ResetScene()
+	{
+		var newScene = (Scene)Activator.CreateInstance(_requestedResetSceneType ?? Core.Scene.GetType());
+		Core.Scene = newScene;
+		EditorChangeTracker.Clear();
 	}
 	#endregion
 }

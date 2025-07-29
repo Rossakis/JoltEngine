@@ -79,7 +79,7 @@ namespace Nez
 			batcher.DrawPixel(Shape.Position, Debug.Colors.ColliderCenter, 2 * Debug.Size.LineSizeMultiplier);
 		}
 
-		public override string ToString()
+		public string PrintBounds()
 		{
 			return string.Format("[CircleCollider: bounds: {0}, radius: {1}", Bounds, ((Circle) Shape).Radius);
 		}

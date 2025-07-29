@@ -610,7 +610,7 @@ public class Transform
 	}
 
 
-	public override string ToString()
+	public string Print()
 	{
 		return string.Format(
 			"[Transform: parent: {0}, position: {1}, rotation: {2}, scale: {3}, localPosition: {4}, localRotation: {5}, localScale: {6}]",

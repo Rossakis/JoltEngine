@@ -300,7 +300,7 @@ namespace Nez
 			return res;
 		}
 
-		public override string ToString()
+		public string Print()
 		{
 			return $"[RenderableComponent] {GetType()}, renderLayer: {RenderLayer}]";
 		}

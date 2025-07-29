@@ -27,7 +27,6 @@ public class MainEntityInspector
 
 	private bool _isEditingUpdateInterval = false;
 	private uint _updateIntervalEditStartValue;
-
 	private bool _isEditingName = false;
 	private string _nameEditStartValue;
 

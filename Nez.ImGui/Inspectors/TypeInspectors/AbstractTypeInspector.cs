@@ -1,9 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using ImGuiNET;
 using Nez.Utils;
 using Nez.Utils.Extensions;
-
 
 namespace Nez.ImGuiTools.TypeInspectors
 {
@@ -14,6 +14,12 @@ namespace Nez.ImGuiTools.TypeInspectors
 	/// </summary>
 	public abstract class AbstractTypeInspector
 	{
+		protected struct EditSession
+		{
+			public bool IsEditing;
+			public object EditStartValue;
+		}
+
 		public string Name => _name;
 
 		/// <summary>
@@ -35,6 +41,10 @@ namespace Nez.ImGuiTools.TypeInspectors
 		protected bool _isReadOnly;
 		protected string _tooltip;
 
+		// Undo/Redo support fields
+		protected AbstractTypeInspector _parentInspector;
+		protected List<string> _pathFromRoot = new List<string>(); // path of member names from root to this inspector
+		private Dictionary<string, EditSession> _editSessions = new();
 
 		/// <summary>
 		/// used to prep the inspector
@@ -42,6 +52,7 @@ namespace Nez.ImGuiTools.TypeInspectors
 		public virtual void Initialize()
 		{
 			_tooltip = _memberInfo.GetAttribute<TooltipAttribute>()?.Tooltip;
+			_editSessions.Clear();
 		}
 
 		/// <summary>
@@ -95,7 +106,6 @@ namespace Nez.ImGuiTools.TypeInspectors
 			}
 		}
 
-
 		#region Set target methods
 
 		public void SetTarget(object target, FieldInfo field)
@@ -115,6 +125,9 @@ namespace Nez.ImGuiTools.TypeInspectors
 			{
 				_setter = (val) => { field.SetValue(target, val); };
 			}
+
+			_parentInspector = null;
+			_pathFromRoot = new List<string> { field.Name };
 		}
 
 		public void SetTarget(object target, PropertyInfo prop)
@@ -132,8 +145,11 @@ namespace Nez.ImGuiTools.TypeInspectors
 
 			if (!_isReadOnly)
 			{
-				_setter = (val) => { prop.SetMethod.Invoke(target, new object[] {val}); };
+				_setter = (val) => { prop.SetMethod.Invoke(target, new object[] { val }); };
 			}
+
+			_parentInspector = null;
+			_pathFromRoot = new List<string> { prop.Name };
 		}
 
 		/// <summary>
@@ -166,15 +182,11 @@ namespace Nez.ImGuiTools.TypeInspectors
 					parentInspector.SetValue(structValue);
 				};
 			}
+
+			_parentInspector = parentInspector;
+			_pathFromRoot = new List<string>(parentInspector._pathFromRoot) { field.Name };
 		}
 
-		/// <summary>
-		/// this version will first fetch the struct before getting/setting values on it when invoking the getter/setter
-		/// </summary>
-		/// <returns>The struct target.</returns>
-		/// <param name="target">Target.</param>
-		/// <param name="structName">Struct name.</param>
-		/// <param name="field">Field.</param>
 		public void SetStructTarget(object target, AbstractTypeInspector parentInspector, PropertyInfo prop)
 		{
 			_target = target;
@@ -198,6 +210,9 @@ namespace Nez.ImGuiTools.TypeInspectors
 					parentInspector.SetValue(structValue);
 				};
 			}
+
+			_parentInspector = parentInspector;
+			_pathFromRoot = new List<string>(parentInspector._pathFromRoot) { prop.Name };
 		}
 
 		public void SetTarget(object target, MethodInfo method)
@@ -205,16 +220,17 @@ namespace Nez.ImGuiTools.TypeInspectors
 			_memberInfo = method;
 			_target = target;
 			_name = method.Name;
+			_parentInspector = null;
+			_pathFromRoot = new List<string> { method.Name };
 		}
 
 		#endregion
-
 
 		#region Get/set values
 
 		protected T GetValue<T>()
 		{
-			return (T) _getter(_target);
+			return (T)_getter(_target);
 		}
 
 		protected object GetValue()
@@ -228,5 +244,62 @@ namespace Nez.ImGuiTools.TypeInspectors
 		}
 
 		#endregion
+
+		#region Undo/Redo Support
+		protected EditSession GetEditSession(string fieldName)
+		{
+			if (!_editSessions.TryGetValue(fieldName, out var session))
+				session = new EditSession();
+			return session;
+		}
+
+		protected void SetEditSession(string fieldName, EditSession session)
+		{
+			_editSessions[fieldName] = session;
+		}
+
+		/// <summary>
+		/// Sets the value and pushes an undo action if the value changed.
+		/// </summary>
+		protected void SetValueWithUndo(object newValue, string description = null)
+		{
+			var oldValue = GetValue();
+			if (!Equals(oldValue, newValue))
+			{
+				EditorChangeTracker.PushUndo(
+					new PathUndoAction(
+						GetRootTarget(),
+						new List<string>(_pathFromRoot),
+						oldValue,
+						newValue,
+						description ?? GetFullPathDescription()
+					)
+				);
+
+				SetValue(newValue);
+				EditorChangeTracker.MarkChanged(GetRootTarget(), description ?? GetFullPathDescription());
+			}
+		}
+
+		/// <summary>
+		/// Traverses up to the root target (the top-most inspector's _target).
+		/// </summary>
+		protected object GetRootTarget()
+		{
+			AbstractTypeInspector current = this;
+			while (current._parentInspector != null)
+				current = current._parentInspector;
+			return current._target;
+		}
+
+		#endregion
+
+		protected string GetFullPathDescription()
+		{
+			// Try to get the entity name if the root is an Entity
+			var root = GetRootTarget();
+			string entityName = root is Nez.Entity entity ? entity.Name : root?.ToString() ?? "UnknownEntity";
+			return $"{entityName}.{string.Join(".", _pathFromRoot)}";
+		}
 	}
 }

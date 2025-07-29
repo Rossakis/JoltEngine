@@ -1,11 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Nez.Utils;
 using Nez.Utils.Extensions;
 using Num = System.Numerics;
-
 
 namespace Nez.ImGuiTools.TypeInspectors
 {
@@ -29,7 +29,7 @@ namespace Nez.ImGuiTools.TypeInspectors
 			base.Initialize();
 			_rangeAttribute = _memberInfo.GetAttribute<RangeAttribute>();
 
-			// the inspect method name matters! We use reflection to feth it.
+			// the inspect method name matters! We use reflection to fetch it.
 			var valueTypeName = _valueType.Name.ToString();
 			var inspectorMethodName = "Inspect" + valueTypeName[0].ToString().ToUpper() + valueTypeName.Substring(1);
 			var inspectMethodInfo = ReflectionUtils.GetMethodInfo(this, inspectorMethodName);
@@ -53,14 +53,14 @@ namespace Nez.ImGuiTools.TypeInspectors
 		{
 			var value = GetValue<bool>();
 			if (ImGui.Checkbox(_name, ref value))
-				SetValue(value);
+				SetValueWithUndo(value, _name);
 		}
 
 		void InspectColor()
 		{
 			var value = GetValue<Color>().ToNumerics();
 			if (ImGui.ColorEdit4(_name, ref value))
-				SetValue(value.ToXNAColor());
+				SetValueWithUndo(value.ToXNAColor(), _name);
 		}
 
 		/// <summary>
@@ -70,70 +70,139 @@ namespace Nez.ImGuiTools.TypeInspectors
 		/// <returns></returns>
 		bool InspectAnyInt(ref int value)
 		{
+			bool changed = false;
+			string fieldKey = _name;
+
 			if (_rangeAttribute != null)
 			{
 				if (_rangeAttribute.UseDragVersion)
-					return ImGui.DragInt(_name, ref value, 1, (int) _rangeAttribute.MinValue,
-						(int) _rangeAttribute.MaxValue);
+				{
+					// DragInt: batch undo/redo
+					changed = ImGui.DragInt(_name, ref value, 1, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+					HandleEditSession(fieldKey, value, changed);
+				}
 				else
-					return ImGui.SliderInt(_name, ref value, (int) _rangeAttribute.MinValue,
-						(int) _rangeAttribute.MaxValue);
+				{
+					// SliderInt: batch undo/redo
+					changed = ImGui.SliderInt(_name, ref value, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+					HandleEditSession(fieldKey, value, changed);
+				}
 			}
 			else
 			{
-				return ImGui.InputInt(_name, ref value);
+				// InputInt: immediate undo/redo
+				changed = ImGui.InputInt(_name, ref value);
+				if (changed)
+					SetValueWithUndo(value, _name);
 			}
+
+			return changed;
 		}
 
 		void InspectInt32()
 		{
 			var value = GetValue<int>();
-
-			if (InspectAnyInt(ref value))
-				SetValue(value);
+			InspectAnyInt(ref value);
 		}
 
 		void InspectUInt32()
 		{
 			var value = Convert.ToInt32(GetValue());
-			if (InspectAnyInt(ref value))
-				SetValue(Convert.ToUInt32(value));
+			if (_rangeAttribute != null)
+			{
+				bool changed;
+				string fieldKey = _name;
+				if (_rangeAttribute.UseDragVersion)
+				{
+					changed = ImGui.DragInt(_name, ref value, 1, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+					HandleEditSession(fieldKey, value, changed, v => Convert.ToUInt32(v));
+				}
+				else
+				{
+					changed = ImGui.SliderInt(_name, ref value, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+					HandleEditSession(fieldKey, value, changed, v => Convert.ToUInt32(v));
+				}
+			}
+			else
+			{
+				if (ImGui.InputInt(_name, ref value))
+					SetValueWithUndo(Convert.ToUInt32(value), _name);
+			}
 		}
 
 		void InspectInt64()
 		{
 			var value = Convert.ToInt32(GetValue());
-			if (InspectAnyInt(ref value))
-				SetValue(Convert.ToInt64(value));
+			if (_rangeAttribute != null)
+			{
+				bool changed;
+				string fieldKey = _name;
+				if (_rangeAttribute.UseDragVersion)
+				{
+					changed = ImGui.DragInt(_name, ref value, 1, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+					HandleEditSession(fieldKey, value, changed, v => Convert.ToInt64(v));
+				}
+				else
+				{
+					changed = ImGui.SliderInt(_name, ref value, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+					HandleEditSession(fieldKey, value, changed, v => Convert.ToInt64(v));
+				}
+			}
+			else
+			{
+				if (ImGui.InputInt(_name, ref value))
+					SetValueWithUndo(Convert.ToInt64(value), _name);
+			}
 		}
 
 		unsafe void InspectUInt64()
 		{
 			var value = Convert.ToInt32(GetValue());
-			if (InspectAnyInt(ref value))
-				SetValue(Convert.ToUInt64(value));
+			if (_rangeAttribute != null)
+			{
+				bool changed;
+				string fieldKey = _name;
+				if (_rangeAttribute.UseDragVersion)
+				{
+					changed = ImGui.DragInt(_name, ref value, 1, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+					HandleEditSession(fieldKey, value, changed, v => Convert.ToUInt64(v));
+				}
+				else
+				{
+					changed = ImGui.SliderInt(_name, ref value, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+					HandleEditSession(fieldKey, value, changed, v => Convert.ToUInt64(v));
+				}
+			}
+			else
+			{
+				if (ImGui.InputInt(_name, ref value))
+					SetValueWithUndo(Convert.ToUInt64(value), _name);
+			}
 		}
 
 		void InspectSingle()
 		{
 			var value = GetValue<float>();
+			bool changed = false;
+			string fieldKey = _name;
+
 			if (_rangeAttribute != null)
 			{
 				if (_rangeAttribute.UseDragVersion)
 				{
-					if (ImGui.DragFloat(_name, ref value, 1, _rangeAttribute.MinValue, _rangeAttribute.MaxValue))
-						SetValue(value);
+					changed = ImGui.DragFloat(_name, ref value, 1, _rangeAttribute.MinValue, _rangeAttribute.MaxValue);
+					HandleEditSession(fieldKey, value, changed);
 				}
 				else
 				{
-					if (ImGui.SliderFloat(_name, ref value, _rangeAttribute.MinValue, _rangeAttribute.MaxValue))
-						SetValue(value);
+					changed = ImGui.SliderFloat(_name, ref value, _rangeAttribute.MinValue, _rangeAttribute.MaxValue);
+					HandleEditSession(fieldKey, value, changed);
 				}
 			}
 			else
 			{
-				if (ImGui.DragFloat(_name, ref value))
-					SetValue(value);
+				changed = ImGui.DragFloat(_name, ref value);
+				HandleEditSession(fieldKey, value, changed);
 			}
 		}
 
@@ -141,21 +210,65 @@ namespace Nez.ImGuiTools.TypeInspectors
 		{
 			var value = GetValue<string>() ?? string.Empty;
 			if (ImGui.InputText(_name, ref value, 100))
-				SetValue(value);
+				SetValueWithUndo(value, _name);
 		}
 
 		void InspectVector2()
 		{
 			var value = GetValue<Vector2>().ToNumerics();
-			if (ImGui.DragFloat2(_name, ref value))
-				SetValue(value.ToXNA());
+			string fieldKey = _name;
+			bool changed = ImGui.DragFloat2(_name, ref value);
+			HandleEditSession(fieldKey, value.ToXNA(), changed);
 		}
 
 		void InspectVector3()
 		{
 			var value = GetValue<Vector3>().ToNumerics();
-			if (ImGui.DragFloat3(_name, ref value))
-				SetValue(value.ToXNA());
+			string fieldKey = _name;
+			bool changed = ImGui.DragFloat3(_name, ref value);
+			HandleEditSession(fieldKey, value.ToXNA(), changed);
+		}
+
+		void HandleEditSession<T>(string fieldKey, T value, bool changed, Func<T, object> convert = null)
+		{
+			var session = GetEditSession(fieldKey);
+
+			// Start of edit session
+			if (ImGui.IsItemActive() && !session.IsEditing)
+			{
+				session.IsEditing = true;
+				session.EditStartValue = GetValue();
+				System.Console.WriteLine("Start of Edit session value: " + GetValue());
+			}
+
+			// Apply value live (for drags/sliders)
+			if (changed)
+			{
+				SetValue(convert != null ? convert(value) : value);
+				System.Console.WriteLine("Changing value: " + value);
+			}
+
+			// End of edit session: push undo if value changed
+			if (session.IsEditing && ImGui.IsItemDeactivatedAfterEdit())
+			{
+				session.IsEditing = false;
+				var endValue = GetValue();
+				if (!Equals(session.EditStartValue, endValue))
+				{
+					EditorChangeTracker.PushUndo(
+						new PathUndoAction(
+							GetRootTarget(),
+							new List<string>(_pathFromRoot),
+							session.EditStartValue,
+							endValue,
+							GetFullPathDescription()
+						)
+					);
+					EditorChangeTracker.MarkChanged(GetRootTarget(), GetFullPathDescription());
+				}
+			}
+
+			SetEditSession(fieldKey, session);
 		}
 	}
 }
