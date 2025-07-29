@@ -238,14 +238,12 @@ namespace Nez.ImGuiTools.TypeInspectors
 			{
 				session.IsEditing = true;
 				session.EditStartValue = GetValue();
-				System.Console.WriteLine("Start of Edit session value: " + GetValue());
 			}
 
 			// Apply value live (for drags/sliders)
 			if (changed)
 			{
 				SetValue(convert != null ? convert(value) : value);
-				System.Console.WriteLine("Changing value: " + value);
 			}
 
 			// End of edit session: push undo if value changed
@@ -265,6 +263,9 @@ namespace Nez.ImGuiTools.TypeInspectors
 						)
 					);
 					EditorChangeTracker.MarkChanged(GetRootTarget(), GetFullPathDescription());
+
+					System.Console.WriteLine(_pathFromRoot);
+
 				}
 			}
 

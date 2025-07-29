@@ -14,10 +14,10 @@ public class EntityPane
 	public static Collider _selectedEntityCollider; // Used for rendering a collider box for the currently selected entity
 
     private const int MIN_ENTITIES_FOR_CLIPPER = 100;
-    private string _newEntityName = "";
 
     private Entity _previousEntity; // Used for rendering a collider box for the currently selected entity
     private Entity _selectedEntity;
+
     public Entity SelectedEntity
     {
         get => _selectedEntity;
@@ -32,11 +32,9 @@ public class EntityPane
 
     private bool _draggingX = false;
     private bool _draggingY = false;
-    private Vector2 _dragStartMouse;
     private Vector2 _dragStartEntityPos;
-    private Vector2 _dragStartEntityToCameraOffset;
     private Vector2 _dragStartWorldMouse;
-
+    private Vector2 _dragStartUndoPosition;
 
 	#endregion
 
@@ -87,114 +85,133 @@ public class EntityPane
 	/// Draws the X/Y axis arrows for the selected entity and handles drag interaction.
 	/// </summary>
 	private void DrawSelectedEntityGizmo()
-{
-    if (_selectedEntity == null || !Core.IsEditMode)
-        return;
+	{
+		if (_selectedEntity == null || !Core.IsEditMode)
+			return;
 
-    var camera = Core.Scene.Camera;
-    float baseLength = 30f;
-    float minLength = 10f;
-    float maxLength = 100f;
-    float axisLength = baseLength / MathF.Max(camera.RawZoom, 0.01f);
-    axisLength = Math.Clamp(axisLength, minLength, maxLength);
+		var camera = Core.Scene.Camera;
+		float baseLength = 30f;
+		float minLength = 10f;
+		float maxLength = 100f;
+		float axisLength = baseLength / MathF.Max(camera.RawZoom, 0.01f);
+		axisLength = Math.Clamp(axisLength, minLength, maxLength);
 
-    float baseWidth = 4f;
-    float maxWidth = 16f;
-    float scaledWidth = baseWidth;
-    if (camera.RawZoom > 1f)
-        scaledWidth = MathF.Min(baseWidth * camera.RawZoom, maxWidth);
+		float baseWidth = 4f;
+		float maxWidth = 16f;
+		float scaledWidth = baseWidth;
+		if (camera.RawZoom > 1f)
+			scaledWidth = MathF.Min(baseWidth * camera.RawZoom, maxWidth);
 
-    var entityPos = _selectedEntity.Transform.Position;
-    var screenPos = camera.WorldToScreenPoint(entityPos);
-    var axisEndX = camera.WorldToScreenPoint(entityPos + new Vector2(axisLength, 0));
-    var axisEndY = camera.WorldToScreenPoint(entityPos + new Vector2(0, -axisLength));
+		var entityPos = _selectedEntity.Transform.Position;
+		var screenPos = camera.WorldToScreenPoint(entityPos);
+		var axisEndX = camera.WorldToScreenPoint(entityPos + new Vector2(axisLength, 0));
+		var axisEndY = camera.WorldToScreenPoint(entityPos + new Vector2(0, -axisLength));
 
-    Color xColor = Color.Red;
-    Color yColor = Color.LimeGreen;
+		Color xColor = Color.Red;
+		Color yColor = Color.LimeGreen;
 
-    var mousePos = Input.ScaledMousePosition;
+		var mousePos = Input.ScaledMousePosition;
 
-    bool xHovered = IsMouseNearLine(mousePos, screenPos, axisEndX);
-    bool yHovered = IsMouseNearLine(mousePos, screenPos, axisEndY);
+		bool xHovered = IsMouseNearLine(mousePos, screenPos, axisEndX);
+		bool yHovered = IsMouseNearLine(mousePos, screenPos, axisEndY);
 
-    if (_draggingX)
-        xColor = Color.Yellow;
-    else if (xHovered)
-        xColor = Color.Orange;
+		if (_draggingX)
+			xColor = Color.Yellow;
+		else if (xHovered)
+			xColor = Color.Orange;
 
-    if (_draggingY)
-        yColor = Color.Yellow;
-    else if (yHovered)
-        yColor = Color.Orange;
+		if (_draggingY)
+			yColor = Color.Yellow;
+		else if (yHovered)
+			yColor = Color.Orange;
 
-    Debug.DrawArrow(entityPos, entityPos + new Vector2(axisLength, 0), scaledWidth, scaledWidth, xColor);
-    Debug.DrawArrow(entityPos, entityPos + new Vector2(0, -axisLength), scaledWidth, scaledWidth, yColor);
+		Debug.DrawArrow(entityPos, entityPos + new Vector2(axisLength, 0), scaledWidth, scaledWidth, xColor);
+		Debug.DrawArrow(entityPos, entityPos + new Vector2(0, -axisLength), scaledWidth, scaledWidth, yColor);
 
-    if (prevCameraPos == Vector2.Zero)
-        prevCameraPos = camera.Position;
+		if (prevCameraPos == Vector2.Zero)
+			prevCameraPos = camera.Position;
 
-    // Start dragging if not already dragging
-    if (!_draggingX && !_draggingY)
-    {
-        if ((xHovered && yHovered && Input.LeftMouseButtonPressed) ||
-            (xHovered && Input.LeftMouseButtonPressed) ||
-            (yHovered && Input.LeftMouseButtonPressed))
-        {
-            if (xHovered && yHovered)
-            {
-                _draggingX = true;
-                _draggingY = true;
-            }
-            else if (xHovered)
-            {
-                _draggingX = true;
-            }
-            else if (yHovered)
-            {
-                _draggingY = true;
-            }
+		// Start dragging if not already dragging
+		if (!_draggingX && !_draggingY)
+		{
+			if ((xHovered && yHovered && Input.LeftMouseButtonPressed) ||
+			    (xHovered && Input.LeftMouseButtonPressed) ||
+			    (yHovered && Input.LeftMouseButtonPressed))
+			{
+				if (xHovered && yHovered)
+				{
+					_draggingX = true;
+					_draggingY = true;
+				}
+				else if (xHovered)
+				{
+					_draggingX = true;
+				}
+				else if (yHovered)
+				{
+					_draggingY = true;
+				}
 
-            _dragStartMouse = mousePos;
-            _dragStartEntityPos = entityPos;
-            _dragStartEntityToCameraOffset = entityPos - camera.Position;
-            _dragStartWorldMouse = camera.ScreenToWorldPoint(mousePos);
-        }
-    }
+				_dragStartEntityPos = entityPos;
+				_dragStartWorldMouse = camera.ScreenToWorldPoint(mousePos);
 
-    // Keep dragging as long as mouse is held down 
-    if ((_draggingX || _draggingY) && Input.LeftMouseButtonDown)
-    {
-        var worldMouse = camera.ScreenToWorldPoint(mousePos);
-        var delta = worldMouse - _dragStartWorldMouse;
+				// Undo/Redo: Start of drag session
+				_dragStartUndoPosition = _selectedEntity.Transform.Position;
+			}
+		}
 
-        if (_draggingX && _draggingY)
-        {
-            ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeAll);
-            _selectedEntity.Transform.Position = _dragStartEntityPos + delta;
-        }
-        else if (_draggingX)
-        {
-            ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
-            _selectedEntity.Transform.Position = new Vector2(_dragStartEntityPos.X + delta.X, _selectedEntity.Transform.Position.Y);
-        }
-        else if (_draggingY)
-        {
-            ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
-            _selectedEntity.Transform.Position = new Vector2(_selectedEntity.Transform.Position.X, _dragStartEntityPos.Y + delta.Y);
-        }
-    }
+		// Keep dragging as long as mouse is held down 
+		if ((_draggingX || _draggingY) && Input.LeftMouseButtonDown)
+		{
+			var worldMouse = camera.ScreenToWorldPoint(mousePos);
+			var delta = worldMouse - _dragStartWorldMouse;
 
-    // End dragging when mouse button is released
-    if ((_draggingX || _draggingY) && !Input.LeftMouseButtonDown)
-    {
-        _draggingX = false;
-        _draggingY = false;
-    }
+			if (_draggingX && _draggingY)
+			{
+				ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeAll);
+				_selectedEntity.Transform.Position = _dragStartEntityPos + delta;
+			}
+			else if (_draggingX)
+			{
+				ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
+				_selectedEntity.Transform.Position = new Vector2(_dragStartEntityPos.X + delta.X,
+					_selectedEntity.Transform.Position.Y);
+			}
+			else if (_draggingY)
+			{
+				ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
+				_selectedEntity.Transform.Position = new Vector2(_selectedEntity.Transform.Position.X,
+					_dragStartEntityPos.Y + delta.Y);
+			}
+		}
 
-    prevCameraPos = camera.Position;
-}
+		// --- Undo/Redo: End of drag session ---
+		if ((_draggingX || _draggingY) && !Input.LeftMouseButtonDown)
+		{
+			_draggingX = false;
+			_draggingY = false;
 
-    /// <summary>
+			var endPos = _selectedEntity.Transform.Position;
+			if (_dragStartUndoPosition != endPos)
+			{
+				EditorChangeTracker.PushUndo(
+					new GenericValueChangeAction(
+						_selectedEntity.Transform,
+						(obj, val) => ((Transform)obj).SetPosition((Vector2)val),
+						_dragStartUndoPosition,
+						endPos,
+						$"{_selectedEntity.Name}.Transform.Position"
+					),
+					_selectedEntity,
+					$"{_selectedEntity.Name}.Transform.Position"
+				);
+			}
+		}
+
+		prevCameraPos = camera.Position;
+	}
+
+	/// <summary>
     /// Utility to check if mouse is near a line segment.
     /// </summary>
     private bool IsMouseNearLine(Vector2 mouse, Vector2 a, Vector2 b, float threshold = 10f)

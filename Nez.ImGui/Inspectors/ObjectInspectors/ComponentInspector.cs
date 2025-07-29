@@ -97,7 +97,7 @@ namespace Nez.ImGuiTools.ObjectInspectors
 					}
 
 					_inspectors[i].Draw();
-				} 
+				}
 				
 				foreach (var action in _componentDelegateMethods)
 					action();

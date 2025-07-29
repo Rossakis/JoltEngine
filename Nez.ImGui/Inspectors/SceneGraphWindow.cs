@@ -197,6 +197,8 @@ public class SceneGraphWindow
 		}
 	}
 
+
+	#region Entity Selection Navigation
 	private void HandleEntitySelectionNavigation()
 	{
 		if (!Core.IsEditMode)
@@ -207,6 +209,7 @@ public class SceneGraphWindow
 		if (currentEntity == null || hierarchyList.Count == 0)
 			return;
 
+		// Up / Down key navigation logic
 		bool upPressed = ImGui.IsKeyPressed(ImGuiKey.UpArrow);
 		bool downPressed = ImGui.IsKeyPressed(ImGuiKey.DownArrow);
 		bool upHeld = ImGui.IsKeyDown(ImGuiKey.UpArrow);
@@ -369,6 +372,8 @@ public class SceneGraphWindow
 			}
 		}
 	}
+
+#endregion
 
 	private void DrawTmxFilePickerPopup()
 	{

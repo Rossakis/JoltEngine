@@ -298,7 +298,7 @@ namespace Nez.ImGuiTools.TypeInspectors
 		{
 			// Try to get the entity name if the root is an Entity
 			var root = GetRootTarget();
-			string entityName = root is Nez.Entity entity ? entity.Name : root?.ToString() ?? "UnknownEntity";
+			string entityName = root is Entity entity ? entity.Name : root?.ToString() ?? "UnknownEntity";
 			return $"{entityName}.{string.Join(".", _pathFromRoot)}";
 		}
 	}

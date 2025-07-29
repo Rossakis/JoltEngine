@@ -379,7 +379,6 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	    _cameraTargetPosition = position;
 	}
 
-
 	#region Public API
 
 	/// <summary>
@@ -498,6 +497,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 	#endregion
 
+	#region Entity Selection
 	private void TrySelectEntityAtMouse()
 	{
 		var mouseWorld = Core.Scene.Camera.ScreenToWorldPoint(Input.ScaledMousePosition);
@@ -565,8 +565,9 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		if (SceneGraphWindow?.EntityPane != null)
 		    SceneGraphWindow.EntityPane.SelectedEntity = null;
 	}
+	#endregion
 
-	#region Save Changes for App Exit and Scene Change
+	#region Save Changes for AppExit/ SceneChange / SceneReset
 	private void OnAppExitSaveChanges(bool pending)
 	{
 	    if (pending)

@@ -1,12 +1,13 @@
-using System.Collections.Generic;
-using System.Reflection;
-using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using TI = Nez.ImGuiTools.TypeInspectors;
-using System.Collections;
+using Nez.Data;
 using Nez.Utils;
 using Nez.Utils.Extensions;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
+using TI = Nez.ImGuiTools.TypeInspectors;
 
 
 namespace Nez.ImGuiTools.TypeInspectors
@@ -14,7 +15,7 @@ namespace Nez.ImGuiTools.TypeInspectors
 	public static class TypeInspectorUtils
 	{
 		// Type cache seeing as how typeof isnt free and this will be hit a lot
-		static readonly Type notInspectableAttrType = typeof(NotInspectableAttribute);
+		static readonly Type notInspectableAttrType = typeof(HideAttributeInInspector);
 		static readonly Type inspectableAttrType = typeof(InspectableAttribute);
 		static readonly Type componentType = typeof(Component);
 		static readonly Type transformType = typeof(Transform);
@@ -72,7 +73,7 @@ namespace Nez.ImGuiTools.TypeInspectors
 				if (prop.IsDefined(notInspectableAttrType))
 					continue;
 
-				// Transforms and Component subclasses arent useful to inspect
+				// Transforms & Component subclasses arent useful to inspect
 				if (prop.PropertyType == transformType || prop.PropertyType.IsSubclassOf(componentType))
 					continue;
 
