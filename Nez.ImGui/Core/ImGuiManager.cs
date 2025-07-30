@@ -179,6 +179,21 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		UpdateCamera();
 	}
 
+	public void GlobalKeyCommands()
+	{
+		if (ImGui.IsKeyPressed(ImGuiKey.F1) || Input.IsKeyPressed(Keys.F2))
+			InvokeSwitchEditMode(Core.IsEditMode = !Core.IsEditMode);
+
+		// Save scene changes if Ctrl+S is pressed
+		if (Input.IsKeyDown(Keys.LeftControl) && Input.IsKeyPressed(Keys.S))
+		{
+			System.Console.WriteLine("Pressed Save at: " );
+			InvokeSaveSceneChanges();
+		}
+
+		SceneGraphWindow.EntityPane.HandleCopyAndPaste();
+	}
+
 	/// <summary>
 	/// draws the main menu bar
 	/// </summary>
@@ -287,9 +302,6 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 	private void UpdateCamera()
 	{
-		if (Input.IsKeyPressed(Keys.F1) || Input.IsKeyPressed(Keys.F2))
-			InvokeSwitchEditMode(Core.IsEditMode = !Core.IsEditMode);
-
 		ManageCameraZoom();
 
 		if (Core.IsEditMode)
@@ -322,14 +334,17 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			else
 				CurrentCameraSpeed = EditModeCameraSpeed;
 
-			if (Input.IsKeyDown(Keys.D))
-				_cameraTargetPosition += new Vector2(CurrentCameraSpeed, 0) * Time.DeltaTime;
-			if (Input.IsKeyDown(Keys.A))
-				_cameraTargetPosition -= new Vector2(CurrentCameraSpeed, 0) * Time.DeltaTime;
-			if (Input.IsKeyDown(Keys.W))
-				_cameraTargetPosition -= new Vector2(0, CurrentCameraSpeed) * Time.DeltaTime;
-			if (Input.IsKeyDown(Keys.S))
-				_cameraTargetPosition += new Vector2(0, CurrentCameraSpeed) * Time.DeltaTime;
+			if (!Input.IsKeyDown(Keys.LeftControl) && !Input.IsKeyDown(Keys.RightControl))
+			{
+				if (Input.IsKeyDown(Keys.D))
+					_cameraTargetPosition += new Vector2(CurrentCameraSpeed, 0) * Time.DeltaTime;
+				if (Input.IsKeyDown(Keys.A))
+					_cameraTargetPosition -= new Vector2(CurrentCameraSpeed, 0) * Time.DeltaTime;
+				if (Input.IsKeyDown(Keys.W))
+					_cameraTargetPosition -= new Vector2(0, CurrentCameraSpeed) * Time.DeltaTime;
+				if (Input.IsKeyDown(Keys.S))
+					_cameraTargetPosition += new Vector2(0, CurrentCameraSpeed) * Time.DeltaTime;
+			}
 
 			Core.Scene.Camera.Position = Vector2.Lerp(Core.Scene.Camera.Position, _cameraTargetPosition, _cameraLerp);
 		}

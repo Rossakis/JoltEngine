@@ -342,14 +342,16 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		// the Input, essentially letting ImGui consume it
 		_renderer.BeforeLayout(Time.DeltaTime);
 
+		// Call this before game window is rendered so that these commands are called from independent of game window focus
+		GlobalKeyCommands();
+
 		// Exit prompt drawing and management
 		DrawApplicationExitPrompt(ref _pendingExit, ExitPromptType.Exit);
 		DrawApplicationExitPrompt(ref _pendingSceneChange, ExitPromptType.SceneChange);
 		DrawApplicationExitPrompt(ref _pendingResetScene, ExitPromptType.ResetScene);
 		ManageApplicationExitPrompt();
-
 		ManageUndoAndRedo();
-		
+
 		LayoutGui();
 	}
 
@@ -470,7 +472,6 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		{
 			EditorChangeTracker.Redo();
 		}
-
 	}
 
 	#endregion

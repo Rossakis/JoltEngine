@@ -55,11 +55,11 @@ public class SceneGraphWindow
 	{
 		IsOpen = isOpen;
 
-		if (Nez.Core.Scene == null || !isOpen)
+		if (Core.Scene == null || !isOpen)
 			return;
 
 		if (_imGuiManager == null)
-			_imGuiManager = Nez.Core.GetGlobalManager<ImGuiManager>();
+			_imGuiManager = Core.GetGlobalManager<ImGuiManager>();
 
 		var topMargin = 20f * ImGui.GetIO().FontGlobalScale;
 		var rightMargin = 10f;
@@ -85,7 +85,7 @@ public class SceneGraphWindow
 				_sceneGraphWidth = Math.Clamp(currentWidth, _minSceneGraphWidth, _maxSceneGraphWidth);
 
 			NezImGui.SmallVerticalSpace();
-			if (Nez.Core.IsEditMode)
+			if (Core.IsEditMode)
 			{
 				ImGui.TextWrapped("Press F1/F2 to switch to Play mode.");
 				NezImGui.SmallVerticalSpace();
@@ -158,9 +158,6 @@ public class SceneGraphWindow
 			ImGui.PopStyleVar();
 			ImGui.PopStyleColor();
 		}
-
-		if (Input.IsKeyDown(Keys.LeftControl) && Input.IsKeyPressed(Keys.S))
-			_imGuiManager.InvokeSaveSceneChanges();
 
 		HandleEntitySelectionNavigation();
 	}

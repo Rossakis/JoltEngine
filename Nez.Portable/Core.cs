@@ -239,7 +239,7 @@ public class Core : Game
 		Input.Update();
 
 		if (ExitOnEscapeKeypress &&
-		    (Input.IsKeyDown(Keys.Escape) || Input.GamePads[0].IsButtonReleased(Buttons.Back)))
+		    (Input.IsKeyPressed(Keys.Escape) || Input.GamePads[0].IsButtonReleased(Buttons.Back)))
 		{
 			base.Exit();
 			return;
@@ -249,7 +249,9 @@ public class Core : Game
 		{
 			for (var i = _globalManagers.Length - 1; i >= 0; i--)
 				if (_globalManagers.Buffer[i].Enabled)
+				{
 					_globalManagers.Buffer[i].Update();
+				}
 
 			// read carefully:
 			// - we do not update the Scene while a SceneTransition is happening

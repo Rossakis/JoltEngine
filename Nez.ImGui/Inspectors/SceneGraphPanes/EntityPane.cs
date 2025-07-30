@@ -36,6 +36,8 @@ public class EntityPane
     private Vector2 _dragStartWorldMouse;
     private Vector2 _dragStartUndoPosition;
 
+    private Entity _copiedEntity; // For Ctrl+C/Ctrl+V
+
 	#endregion
 
 	#region Main Draw Entry Point
@@ -48,8 +50,8 @@ public class EntityPane
 		if (_imGuiManager == null)
             _imGuiManager = Core.GetGlobalManager<ImGuiManager>();
 
-        // Draw entity tree (with clipper for large lists)
-        if (Core.Scene.Entities.Count > MIN_ENTITIES_FOR_CLIPPER)
+		// Draw entity tree (with clipper for large lists)
+		if (Core.Scene.Entities.Count > MIN_ENTITIES_FOR_CLIPPER)
         {
             var clipperPtr = ImGuiNative.ImGuiListClipper_ImGuiListClipper();
             var clipper = new ImGuiListClipperPtr(clipperPtr);
@@ -72,8 +74,7 @@ public class EntityPane
 
         // Draw gizmo for selected entity (arrows)
         DrawSelectedEntityGizmo();
-	}
-
+    }
 	#endregion
 
 
@@ -185,7 +186,7 @@ public class EntityPane
 			}
 		}
 
-		// --- Undo/Redo: End of drag session ---
+		// Undo/Redo: End of drag session
 		if ((_draggingX || _draggingY) && !Input.LeftMouseButtonDown)
 		{
 			_draggingX = false;
@@ -350,38 +351,21 @@ public class EntityPane
 			// Clone logic
 			var hasParameterlessCtor = entity.GetType().GetConstructor(Type.EmptyTypes) != null;
             bool canClone = hasParameterlessCtor
-                            && !InspectorCache.HasNonParameterlessChildEntity(entity)
-                            && entity.Type != Entity.InstanceType.HardCoded;
+                            && !InspectorCache.HasNonParameterlessChildEntity(entity);
 
             string reason = null;
             if (!canClone)
             {
-                if (entity.Type == Entity.InstanceType.HardCoded)
-                    reason = "Can't clone a Hard-Coded Entity!";
-                else if (!hasParameterlessCtor)
-                    reason = "Can't clone a Non-parameterless Entity!";
+				if (!hasParameterlessCtor)
+                    reason = "Can't duplicate a Non-parameterless Entity!";
                 else if (InspectorCache.HasNonParameterlessChildEntity(entity))
-                    reason = "Can't clone Entity with Non-parameterless children!";
+                    reason = "Can't duplicate Entity with Non-parameterless children!";
             }
 
             if (canClone)
             {
-                if (ImGui.Selectable("Clone Entity " + entity.Name))
-                {
-                    var typeName = entity.GetType().Name;
-                    if (EntityFactoryRegistry.TryCreate(typeName, out var clone))
-                    {
-                        clone.Type = entity.Type;
-                        clone.Name = Core.Scene.GetUniqueEntityName(typeName);
-                        clone.Transform.Position = Core.Scene.Camera.Position;
-                        EntityFactoryRegistry.InvokeEntityCreated(clone);
-                    }
-                    else
-                    {
-                        var fallbackClone = entity.Clone(Core.Scene.Camera.Position);
-                        entity.Scene.AddEntity(fallbackClone);
-                    }
-                }
+                if (ImGui.Selectable("Duplicate Entity " + entity.Name))
+	                DuplicateEntity(entity);
             }
             else
             {
@@ -399,7 +383,74 @@ public class EntityPane
             ImGui.EndPopup();
         }
     }
+	#endregion
 
+	#region Copy and Paste Logic
+
+	/// <summary>
+	/// Handles copy/paste/duplicate shortcuts for entities.
+	/// </summary>
+	public void HandleCopyAndPaste()
+    {
+	    // Handle Copy/Paste/Duplicate Shortcuts
+	    bool gameCtrlDown = Input.IsKeyDown(Keys.LeftControl) || Input.IsKeyDown(Keys.RightControl);
+
+		// Ctrl+C: Copy (we can only copy in EditMode in game view)
+		if (Core.IsEditMode && gameCtrlDown && Input.IsKeyPressed(Keys.C) && _copiedEntity != _selectedEntity)
+	    {
+		    System.Console.WriteLine("Copy game");
+		    _copiedEntity = _selectedEntity;
+	    }
+
+	    // Ctrl+V: Paste (duplicate)
+	    if (Core.IsEditMode && gameCtrlDown && Input.IsKeyPressed(Keys.V) && _copiedEntity != null)
+	    {
+		    System.Console.WriteLine("Paste game");
+		    DuplicateEntity(_copiedEntity);
+	    }
+
+	    // Ctrl+D: Duplicate selected
+	    if (Core.IsEditMode && gameCtrlDown && Input.IsKeyPressed(Keys.D) && _selectedEntity != null)
+	    {
+		    System.Console.WriteLine("Duplicate game");
+		    DuplicateEntity(_selectedEntity);
+	    }
+	}
+
+	/// <summary>
+	/// Duplicates the given entity and adds it to the scene.
+	/// If the entity is HardCoded, the clone will be of type Dynamic.
+	/// </summary>
+	private void DuplicateEntity(Entity entity)
+    {
+		if (entity == null || entity.Scene == null)
+			return;
+
+		var typeName = entity.GetType().Name;
+		if (EntityFactoryRegistry.TryCreate(typeName, out var clone))
+		{
+			clone.Type = Entity.InstanceType.Dynamic;
+			clone.Name = Core.Scene.GetUniqueEntityName(typeName);
+			clone.Transform.Position = Core.Scene.Camera.Position;
+			EntityFactoryRegistry.InvokeEntityCreated(clone);
+			entity.Scene.AddEntity(clone);
+
+			// Optionally select the new entity
+			SelectedEntity = clone;
+			_imGuiManager.OpenMainEntityInspector(clone);
+		}
+		else
+		{
+			// Fallback: use deep clone if factory is not available
+			var fallbackClone = entity.Clone(Core.Scene.Camera.Position);
+			fallbackClone.Type = Entity.InstanceType.Dynamic;
+			fallbackClone.Name = Core.Scene.GetUniqueEntityName(entity.Name);
+			entity.Scene.AddEntity(fallbackClone);
+
+			SelectedEntity = fallbackClone;
+			_imGuiManager.OpenMainEntityInspector(fallbackClone);
+		}
+	}
     #endregion
 
 }
