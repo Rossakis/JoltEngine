@@ -190,6 +190,13 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		{
 			InvokeSaveSceneChanges();
 		}
+
+		// Handle Alt+F4 (regardless of window focus)
+		if (ImGui.GetIO().KeyAlt && ImGui.IsKeyReleased(ImGuiKey.F4) && !_pendingExit)
+		{
+			// This triggers the same exit/save prompt as the window close event
+			OnAppExitSaveChanges(true);
+		}
 	}
 
 	/// <summary>

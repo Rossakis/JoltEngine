@@ -361,16 +361,22 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 	private void DrawApplicationExitPrompt(ref bool pendingValue, ExitPromptType exitPromptType)
 	{
-		if (pendingValue) 
+		if (!pendingValue)
+			return;
+
+		// Only open the popup if there are unsaved changes
+		if (EditorChangeTracker.IsDirty)
 		{
 			ImGui.OpenPopup("Unsaved Changes");
 		}
 		else
 		{
+			// No unsaved changes, reset the flag so prompt doesn't get stuck
+			pendingValue = false;
 			return;
 		}
 
-		if (pendingValue && ImGui.BeginPopupModal("Unsaved Changes", ref pendingValue, ImGuiWindowFlags.AlwaysAutoResize))
+		if (ImGui.BeginPopupModal("Unsaved Changes", ref pendingValue, ImGuiWindowFlags.AlwaysAutoResize))
 		{
 			ImGui.TextWrapped("You have unsaved changes for:");
 

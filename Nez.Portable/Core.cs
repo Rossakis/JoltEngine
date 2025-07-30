@@ -327,21 +327,6 @@ public class Core : Game
 		EndDebugDraw();
 	}
 
-	// protected override void OnExiting(object sender, ExitingEventArgs args)
-	// {
-	// #if DEBUG
-	//     // Always cancel the exit first
-	//     args.Cancel = true;
-	//     // Notify listeners that an exit is pending
-	//     EmitterWithPending.Emit(CoreEvents.Exiting, true);
-	// #else
-	//     base.OnExiting(sender, args);
-	//     Emitter.Emit(CoreEvents.Exiting);
-	// #endif
-	// }
-
-	//Core.EmitterWithPending.AddObserver(CoreEvents.Exiting, OnExitConfirmed);
-
 	private static bool _allowExit = false;
 
 	protected override void OnExiting(object sender, ExitingEventArgs args)
