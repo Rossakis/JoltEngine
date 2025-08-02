@@ -17,29 +17,56 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 	/// </summary>
 	public class SpriteAnimatorComponentData : ComponentData
 	{
-		public string TextureAssetName { get; set; }
-		public Color Color { get; set; }
-		public Vector2 LocalOffset { get; set; }
-		public Vector2 Origin { get; set; }
-		public float LayerDepth { get; set; }
-		public int RenderLayer { get; set; }
-		public bool Enabled { get; set; }
-		public SpriteEffects SpriteEffects { get; set; }
-		public bool FlipX { get; set; }
-		public bool FlipY { get; set; }
+		public string CurrentAnimationName = "";
+		public bool IsPlaying = false;
+		public float PlaybackRate = 1.0f;
+		public SpriteAnimator.LoopMode CurrentLoopMode = SpriteAnimator.LoopMode.Loop;
+		public int CurrentFrame = 0;
+		public float ElapsedTime = 0f;
+		
+		// SpriteRenderer properties (since SpriteAnimator inherits from SpriteRenderer)
+		public string TextureFilePath = "";
+		public Color Color = Color.White;
+		public Vector2 LocalOffset = Vector2.Zero;
+		public Vector2 Origin = Vector2.Zero;
+		public float LayerDepth = 0f;
+		public int RenderLayer = 0;
+		public bool Enabled = true;
+		public SpriteEffects SpriteEffects = SpriteEffects.None;
 
-		// Animation state
-		public string CurrentAnimationName { get; set; }
-		public int CurrentFrame { get; set; }
-		public float CurrentElapsedTime { get; set; }
-		public LoopMode CurrentLoopMode { get; set; }
-		public State AnimationState { get; set; }
-
-		public SpriteAnimatorComponentData() { }
+		public SpriteAnimatorComponentData()
+		{
+			// Initialize with default values
+			CurrentAnimationName = "";
+			IsPlaying = false;
+			PlaybackRate = 1.0f;
+			CurrentLoopMode = SpriteAnimator.LoopMode.Loop;
+			CurrentFrame = 0;
+			ElapsedTime = 0f;
+			
+			// SpriteRenderer defaults
+			TextureFilePath = "";
+			Color = Color.White;
+			LocalOffset = Vector2.Zero;
+			Origin = Vector2.Zero;
+			LayerDepth = 0f;
+			RenderLayer = 0;
+			Enabled = true;
+			SpriteEffects = SpriteEffects.None;
+		}
 
 		public SpriteAnimatorComponentData(SpriteAnimator animator)
 		{
-			TextureAssetName = animator.Sprite?.Texture2D?.Name;
+			// Capture current animation state
+			CurrentAnimationName = animator.CurrentAnimationName ?? "";
+			IsPlaying = animator.IsRunning;
+			PlaybackRate = animator.Speed;
+			CurrentLoopMode = animator.CurrentLoopMode;
+			CurrentFrame = animator.CurrentFrame;
+			ElapsedTime = animator.CurrentElapsedTime;
+			
+			// Capture SpriteRenderer properties
+			TextureFilePath = animator.Sprite?.Texture2D?.Name ?? "";
 			Color = animator.Color;
 			LocalOffset = animator.LocalOffset;
 			Origin = animator.Origin;
@@ -47,16 +74,66 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 			RenderLayer = animator.RenderLayer;
 			Enabled = animator.Enabled;
 			SpriteEffects = animator.SpriteEffects;
-			FlipX = animator.FlipX;
-			FlipY = animator.FlipY;
-
-			CurrentAnimationName = animator.CurrentAnimationName;
-			CurrentFrame = animator.CurrentFrame;
-			CurrentElapsedTime = animator.CurrentElapsedTime;
-			CurrentLoopMode = animator.CurrentLoopMode;
-			AnimationState = animator.AnimationState;
 		}
 	}
+
+	private SpriteAnimatorComponentData _animatorData = new SpriteAnimatorComponentData();
+
+	public override ComponentData Data
+	{
+		get
+		{
+			// Always ensure _animatorData exists
+			if (_animatorData == null)
+				_animatorData = new SpriteAnimatorComponentData();
+
+			// Update current animation state
+			_animatorData.CurrentAnimationName = CurrentAnimationName ?? "";
+			_animatorData.IsPlaying = IsRunning;
+			_animatorData.PlaybackRate = Speed;
+			_animatorData.CurrentLoopMode = CurrentLoopMode;
+			_animatorData.CurrentFrame = CurrentFrame;
+			_animatorData.ElapsedTime = CurrentElapsedTime;
+
+			// Update SpriteRenderer properties
+			_animatorData.Color = Color;
+			_animatorData.LocalOffset = LocalOffset;
+			_animatorData.Origin = Origin;
+			_animatorData.LayerDepth = LayerDepth;
+			_animatorData.RenderLayer = RenderLayer;
+			_animatorData.Enabled = Enabled;
+			_animatorData.SpriteEffects = SpriteEffects;
+
+			// Only update TextureFilePath if we don't already have one stored
+			if (string.IsNullOrEmpty(_animatorData.TextureFilePath) && Sprite?.Texture2D?.Name != null)
+			{
+				_animatorData.TextureFilePath = Sprite.Texture2D.Name;
+			}
+
+			return _animatorData;
+		}
+		set
+		{
+			if (value is SpriteAnimatorComponentData animatorData)
+			{
+				// Store the data first
+				_animatorData = animatorData;
+
+				// Apply SpriteRenderer properties
+				Color = animatorData.Color;
+				LocalOffset = animatorData.LocalOffset;
+				Origin = animatorData.Origin;
+				LayerDepth = animatorData.LayerDepth;
+				RenderLayer = animatorData.RenderLayer;
+				Enabled = animatorData.Enabled;
+				SpriteEffects = animatorData.SpriteEffects;
+
+				// Apply animation properties
+				Speed = animatorData.PlaybackRate;
+			}
+		}
+	}
+
 	public enum LoopMode
 	{
 		/// <summary>
@@ -160,6 +237,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 	public PingPongLoopStates PingPongLoopState { get; set; }
 
 	private bool _pingPongOnceAnimationStarted = false;
+
 
 	public SpriteAnimator()
 	{
@@ -432,25 +510,4 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 
 		return (CurrentFrame + 1) / (float)CurrentAnimation.Sprites.Length;
 	}
-
-	// public override Component Clone()
-	// {
-	// 	var clone = (SpriteAnimator)base.Clone();
-	// 	if (Sprite != null)
-	// 		clone.Sprite = Sprite.Clone();
-	//
-	// 	// Deep copy animations dictionary if present
-	// 	if (Animations != null)
-	// 	{
-	// 		clone.Animations = new Dictionary<string, SpriteAnimation>();
-	// 		foreach (var kvp in Animations)
-	// 			clone.Animations[kvp.Key] = kvp.Value.Clone();
-	// 	}
-	//
-	// 	// Deep copy current animation if present
-	// 	if (CurrentAnimation != null)
-	// 		clone.CurrentAnimation = CurrentAnimation.Clone();
-	//
-	// 	return clone;
-	// }
 }

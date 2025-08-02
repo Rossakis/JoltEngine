@@ -5,10 +5,12 @@ using System.Linq;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Nez.ImGuiTools.TypeInspectors;
+using Nez.ImGuiTools.UndoActions;
 using Nez.Sprites;
 using Nez.Systems;
 using Nez.Tiled;
 using Nez.Utils.Extensions;
+using Nez.Textures;
 using Num = System.Numerics;
 
 namespace Nez.ImGuiTools.TypeInspectors
@@ -47,7 +49,7 @@ namespace Nez.ImGuiTools.TypeInspectors
 
         private void DrawImageSourceSelector(SpriteRenderer spriteRenderer)
         {
-            ImGui.TextColored(new Num.Vector4(0.8f, 0.9f, 1.0f, 1.0f), "File Source Selection");
+            ImGui.TextColored(new Num.Vector4(0.8f, 0.9f, 1.0f, 1.0f), "Sprite Image Selection");
 
             // Show current texture info if available
             if (spriteRenderer.Sprite?.Texture2D != null)
@@ -120,14 +122,14 @@ namespace Nez.ImGuiTools.TypeInspectors
                 ImGui.OpenPopup("tmx-file-picker");
             }
 
-            // Clear button
+            // Clear button with undo support
             if (spriteRenderer.Sprite != null)
             {
                 ImGui.Spacing();
                 if (ImGui.Button("Clear Sprite", new Num.Vector2(-1, 0)))
                 {
+                    ClearSpriteWithUndo(spriteRenderer);
                     _errorMessage = "";
-                    spriteRenderer.SetSprite(null);
                 }
             }
 
@@ -135,6 +137,55 @@ namespace Nez.ImGuiTools.TypeInspectors
             DrawFilePickerPopup("png-file-picker", ".png", (sr, path) => LoadPngFileFromPicker(sr, path));
             DrawAsepriteFilePickerPopup(spriteRenderer);
             DrawTmxFilePickerPopup(spriteRenderer);
+        }
+
+        /// <summary>
+        /// Clears the sprite with full undo/redo support
+        /// </summary>
+        private void ClearSpriteWithUndo(SpriteRenderer spriteRenderer)
+        {
+            // Store the old state for undo
+            var oldSprite = spriteRenderer.Sprite;
+            var oldData = spriteRenderer.Data != null ? 
+                new SpriteRenderer.SpriteRendererComponentData(spriteRenderer) : 
+                new SpriteRenderer.SpriteRendererComponentData();
+
+            // Clear the sprite
+            spriteRenderer.SetSprite(null);
+            
+            // Create new empty data
+            var newData = new SpriteRenderer.SpriteRendererComponentData
+            {
+                TextureFilePath = "",
+                Color = spriteRenderer.Color,
+                LocalOffset = spriteRenderer.LocalOffset,
+                Origin = spriteRenderer.Origin,
+                LayerDepth = spriteRenderer.LayerDepth,
+                RenderLayer = spriteRenderer.RenderLayer,
+                Enabled = spriteRenderer.Enabled,
+                SpriteEffects = spriteRenderer.SpriteEffects,
+                FileType = SpriteRenderer.SpriteRendererComponentData.ImageFileType.None,
+                AsepriteData = null,
+                TiledData = null
+            };
+            
+            spriteRenderer.Data = newData;
+
+            // Push undo action
+            EditorChangeTracker.PushUndo(
+                new SpriteLoadUndoAction(
+                    spriteRenderer,
+                    oldSprite,
+                    oldData,
+                    null, // New sprite is null
+                    newData,
+                    $"Clear Sprite: {spriteRenderer.Entity?.Name ?? "Unknown Entity"}"
+                ),
+                spriteRenderer.Entity,
+                $"Clear Sprite: {spriteRenderer.Entity?.Name ?? "Unknown Entity"}"
+            );
+
+            Debug.Log($"Cleared sprite from {spriteRenderer.Entity?.Name}");
         }
 
         private void DrawFilePickerPopup(string popupId, string extensions, Action<SpriteRenderer, string> loadAction)
@@ -493,7 +544,7 @@ namespace Nez.ImGuiTools.TypeInspectors
                         new SpriteRenderer.SpriteRendererComponentData();
 
                     // Load the new PNG
-                    spriteRenderer.LoadPngFile(relativePath, contentManager);
+                    spriteRenderer.LoadPngFile(relativePath);
                     
                     // Store the new state
                     var newSprite = spriteRenderer.Sprite;
@@ -507,10 +558,10 @@ namespace Nez.ImGuiTools.TypeInspectors
                             oldData,
                             newSprite,
                             newData,
-                            $"Load PNG: {relativePath}"
+                            $"Load PNG: {Path.GetFileName(relativePath)}"
                         ),
                         spriteRenderer.Entity,
-                        $"Load PNG: {relativePath}"
+                        $"Load PNG: {Path.GetFileName(relativePath)}"
                     );
 
                     Debug.Log($"Loaded PNG from editor: {relativePath}");
@@ -542,7 +593,7 @@ namespace Nez.ImGuiTools.TypeInspectors
                         new SpriteRenderer.SpriteRendererComponentData();
 
                     // Load the new Aseprite file
-                    spriteRenderer.LoadAsepriteFile(relativePath, contentManager, layerName, frameNumber);
+                    spriteRenderer.LoadAsepriteFile(relativePath, layerName, frameNumber);
                     
                     // Store the new state
                     var newSprite = spriteRenderer.Sprite;
@@ -556,10 +607,10 @@ namespace Nez.ImGuiTools.TypeInspectors
                             oldData,
                             newSprite,
                             newData,
-                            $"Load Aseprite: {relativePath} (frame {frameNumber}, layer: {layerName ?? "all"})"
+                            $"Load Aseprite: {Path.GetFileName(relativePath)} (frame {frameNumber}, layer: {layerName ?? "all"})"
                         ),
                         spriteRenderer.Entity,
-                        $"Load Aseprite: {relativePath}"
+                        $"Load Aseprite: {Path.GetFileName(relativePath)}"
                     );
 
                     Debug.Log($"Loaded Aseprite from editor: {relativePath} (frame {frameNumber}, layer: {layerName ?? "all"})");
@@ -591,7 +642,7 @@ namespace Nez.ImGuiTools.TypeInspectors
                         new SpriteRenderer.SpriteRendererComponentData();
 
                     // Load the new TMX file
-                    spriteRenderer.LoadTmxFile(relativePath, contentManager, imageLayerName);
+                    spriteRenderer.LoadTmxFile(relativePath, imageLayerName);
                     
                     // Store the new state
                     var newSprite = spriteRenderer.Sprite;
@@ -605,10 +656,10 @@ namespace Nez.ImGuiTools.TypeInspectors
                             oldData,
                             newSprite,
                             newData,
-                            $"Load TMX: {relativePath} (layer: {imageLayerName ?? "first"})"
+                            $"Load TMX: {Path.GetFileName(relativePath)} (layer: {imageLayerName ?? "first"})"
                         ),
                         spriteRenderer.Entity,
-                        $"Load TMX: {relativePath}"
+                        $"Load TMX: {Path.GetFileName(relativePath)}"
                     );
 
                     Debug.Log($"Loaded TMX from editor: {relativePath} (layer: {imageLayerName ?? "first"})");

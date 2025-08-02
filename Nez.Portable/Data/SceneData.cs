@@ -32,8 +32,9 @@ public class SceneData
         public int UpdateOrder;
         public int Tag;
         public bool DebugRenderEnabled;
+        public string ParentEntityName = null;
 
-        public SceneEntityData()
+		public SceneEntityData()
         {
             InstanceType = Entity.InstanceType.HardCoded;
             Name = "";

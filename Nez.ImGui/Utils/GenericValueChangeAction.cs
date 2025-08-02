@@ -1,6 +1,6 @@
 using System;
 using System.Reflection;
-using Nez.ImGuiTools;
+using Nez.ImGuiTools.UndoActions;
 
 public class GenericValueChangeAction : EditorChangeTracker.IEditorAction
 {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
+using Nez.ImGuiTools.UndoActions;
 using Nez.Utils;
 using Nez.Utils.Extensions;
 using Num = System.Numerics;

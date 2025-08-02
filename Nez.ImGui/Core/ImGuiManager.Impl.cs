@@ -8,6 +8,7 @@ using Num = System.Numerics;
 using Nez.Persistence.Binary;
 using Nez.Utils;
 using Nez.Utils.Extensions;
+using Nez.ImGuiTools.UndoActions;
 
 namespace Nez.ImGuiTools;
 

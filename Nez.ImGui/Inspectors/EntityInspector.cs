@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ImGuiNET;
 using Nez.ImGuiTools.ObjectInspectors;
+using Nez.ImGuiTools.UndoActions;
 using Nez.Utils;
 using Num = System.Numerics;
 

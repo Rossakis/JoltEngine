@@ -1,5 +1,6 @@
 using ImGuiNET;
 using Nez.ImGuiTools.ObjectInspectors;
+using Nez.ImGuiTools.UndoActions;
 using Nez.Utils;
 using Nez.Utils.Coroutines;
 using System;

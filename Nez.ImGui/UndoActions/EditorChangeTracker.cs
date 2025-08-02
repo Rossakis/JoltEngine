@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using ImGuiNET;
 
-namespace Nez.ImGuiTools;
+namespace Nez.ImGuiTools.UndoActions;
 
 /// <summary>
 /// Tracks editor changes (dirty state) and supports undo/redo actions.

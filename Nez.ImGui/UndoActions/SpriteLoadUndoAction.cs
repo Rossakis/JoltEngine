@@ -1,5 +1,5 @@
 using System;
-using Nez.ImGuiTools;
+using Nez.ImGuiTools.UndoActions;
 using Nez.Sprites;
 using Nez.Textures;
 

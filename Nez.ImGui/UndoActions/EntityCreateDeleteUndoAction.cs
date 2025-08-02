@@ -1,6 +1,6 @@
 using Nez;
 using Nez.ECS;
-using Nez.ImGuiTools;
+using Nez.ImGuiTools.UndoActions;
 using System;
 
 public class EntityCreateDeleteUndoAction : EditorChangeTracker.IEditorAction

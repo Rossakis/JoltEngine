@@ -22,39 +22,38 @@ namespace Nez.Sprites
 		/// </summary>
 		public class SpriteRendererComponentData : ComponentData
 		{
-			public Texture2D Texture { get; set; }
-			public string TextureFilePath { get; set; } // Can take png, aseprite and tmx files
-			public Color Color { get; set; }
-			public Vector2 LocalOffset { get; set; }
-			public Vector2 Origin { get; set; }
-			public float LayerDepth { get; set; }
-			public int RenderLayer { get; set; }
-			public bool Enabled { get; set; }
-			public SpriteEffects SpriteEffects { get; set; }
-			public ImageFileType FileType { get; set; }
+			public string TextureFilePath = "";  // Initialize with default value
+			public Color Color = Color.White;
+			public Vector2 LocalOffset = Vector2.Zero;
+			public Vector2 Origin = Vector2.Zero;
+			public float LayerDepth = 0f;
+			public int RenderLayer = 0;
+			public bool Enabled = true;
+			public SpriteEffects SpriteEffects = SpriteEffects.None;
+			public ImageFileType FileType = ImageFileType.None;
 			
 			// File type specific data
-			public AsepriteImageData? AsepriteData { get; set; }
-			public TiledImageData? TiledData { get; set; }
+			public AsepriteImageData? AsepriteData = null;
+			public TiledImageData? TiledData = null;
 
 			public enum ImageFileType
 			{
-				None,
-				Png,
-				Aseprite,
-				Tiled
+				None = 0,
+				Png = 1,
+				Aseprite = 2,
+				Tiled = 3
 			}
 
 			public struct AsepriteImageData
 			{
-				public string LayerName { get; set; }
-				public int FrameNumber { get; set; }
-				public bool OnlyVisibleLayers { get; set; }
-				public bool IncludeBackgroundLayer { get; set; }
+				public string LayerName;
+				public int FrameNumber;
+				public bool OnlyVisibleLayers;
+				public bool IncludeBackgroundLayer;
 
 				public AsepriteImageData(string layerName = null, int frameNumber = 0, bool onlyVisibleLayers = true, bool includeBackgroundLayer = false)
 				{
-					LayerName = layerName;
+					LayerName = layerName ?? "";
 					FrameNumber = frameNumber;
 					OnlyVisibleLayers = onlyVisibleLayers;
 					IncludeBackgroundLayer = includeBackgroundLayer;
@@ -63,23 +62,34 @@ namespace Nez.Sprites
 
 			public struct TiledImageData
 			{
-				public string ImageLayerName { get; set; }
+				public string ImageLayerName;
 
 				public TiledImageData(string imageLayerName = null)
 				{
-					ImageLayerName = imageLayerName;
+					ImageLayerName = imageLayerName ?? "";
 				}
 			}
 
 			public SpriteRendererComponentData() 
 			{
+				// Ensure all properties have explicit default values
+				TextureFilePath = "";
+				Color = Color.White;
+				LocalOffset = Vector2.Zero;
+				Origin = Vector2.Zero;
+				LayerDepth = 0f;
+				RenderLayer = 0;
+				Enabled = true;
+				SpriteEffects = SpriteEffects.None;
 				FileType = ImageFileType.None;
+				AsepriteData = null;
+				TiledData = null;
 			}
 
 			public SpriteRendererComponentData(SpriteRenderer renderer)
 			{
-				Texture = renderer.Sprite?.Texture2D;
-				TextureFilePath = renderer.Sprite?.Texture2D?.Name;
+				// Always set all properties, even if they're defaults
+				TextureFilePath = renderer.Sprite?.Texture2D?.Name ?? "";
 				Color = renderer.Color;
 				LocalOffset = renderer.LocalOffset;
 				Origin = renderer.Origin;
@@ -88,21 +98,40 @@ namespace Nez.Sprites
 				Enabled = renderer.Enabled;
 				SpriteEffects = renderer.SpriteEffects;
 				
-				// Determine file type from texture name/path
-				if (!string.IsNullOrEmpty(TextureFilePath))
+				// Copy the existing data from the renderer's _data field
+				if (renderer._data != null)
 				{
-					var extension = Path.GetExtension(TextureFilePath).ToLower();
-					FileType = extension switch
+					FileType = renderer._data.FileType;
+					AsepriteData = renderer._data.AsepriteData;
+					TiledData = renderer._data.TiledData;
+					
+					// Preserve existing TextureFilePath if current sprite is null but we had data
+					if (string.IsNullOrEmpty(TextureFilePath) && !string.IsNullOrEmpty(renderer._data.TextureFilePath))
 					{
-						".png" => ImageFileType.Png, 
-						".ase" or ".aseprite" => ImageFileType.Aseprite,
-						".tmx" => ImageFileType.Tiled,
-						_ => ImageFileType.None
-					};
+						TextureFilePath = renderer._data.TextureFilePath;
+					}
 				}
 				else
 				{
-					FileType = ImageFileType.None;
+					// Determine file type from texture name/path if no existing data
+					if (!string.IsNullOrEmpty(TextureFilePath))
+					{
+						var extension = Path.GetExtension(TextureFilePath).ToLower();
+						FileType = extension switch
+						{
+							".png" => ImageFileType.Png, 
+							".ase" or ".aseprite" => ImageFileType.Aseprite,
+							".tmx" => ImageFileType.Tiled,
+							_ => ImageFileType.None
+						};
+					}
+					else
+					{
+						FileType = ImageFileType.None;
+					}
+					
+					AsepriteData = null;
+					TiledData = null;
 				}
 			}
 
@@ -143,8 +172,11 @@ namespace Nez.Sprites
 		{
 			get
 			{
-				_data.Texture = Sprite?.Texture2D;
-				_data.TextureFilePath = Sprite?.Texture2D?.Name;
+				// Always ensure _data exists
+				if (_data == null)
+					_data = new SpriteRendererComponentData();
+
+				// Update current component properties
 				_data.Color = Color;
 				_data.LocalOffset = LocalOffset;
 				_data.Origin = Origin;
@@ -152,21 +184,24 @@ namespace Nez.Sprites
 				_data.RenderLayer = RenderLayer;
 				_data.Enabled = Enabled;
 				_data.SpriteEffects = SpriteEffects;
+				
+				// ONLY update TextureFilePath if we don't already have one stored
+				// This preserves the full path that was saved
+				if (string.IsNullOrEmpty(_data.TextureFilePath) && Sprite?.Texture2D?.Name != null)
+				{
+					_data.TextureFilePath = Sprite.Texture2D.Name;
+				}
+				
 				return _data;
 			}
 			set
 			{
 				if (value is SpriteRendererComponentData spriteData)
 				{
-					//TODO: Handle loading textures from file paths if needed
-					if (spriteData.Texture != null)
-						SetSprite(new Sprite(spriteData.Texture));
-					else if (!string.IsNullOrEmpty(spriteData.TextureFilePath))
-					{
-						// Load texture by asset name if needed
-						// This would require access to a content manager or asset loading system
-					}
-
+					// Store the data first
+					_data = spriteData;
+					
+					// Apply properties to component
 					Color = spriteData.Color;
 					LocalOffset = spriteData.LocalOffset;
 					Origin = spriteData.Origin;
@@ -174,7 +209,12 @@ namespace Nez.Sprites
 					RenderLayer = spriteData.RenderLayer;
 					Enabled = spriteData.Enabled;
 					SpriteEffects = spriteData.SpriteEffects;
-					_data = spriteData;
+					//
+					// // ONLY load image if this is a SpriteEntity (not Platform, Player, etc.)
+					// if (!string.IsNullOrEmpty(spriteData.TextureFilePath) && Entity is SpriteEntity)
+					// {
+					// 	LoadImageFromData();
+					// }
 				}
 			}
 		}
@@ -301,6 +341,10 @@ namespace Nez.Sprites
 		{
 		}
 
+		public SpriteRenderer(string filePath)
+		{
+			_data.TextureFilePath = filePath;
+		}
 		public SpriteRenderer(Texture2D texture) : this(new Sprite(texture))
 		{
 		}
@@ -395,93 +439,115 @@ namespace Nez.Sprites
 
 		public override void Render(Batcher batcher, Camera camera)
 		{
-			batcher.Draw(Sprite, Entity.Transform.Position + LocalOffset, Color,
-				Entity.Transform.Rotation, Origin, Entity.Transform.Scale, SpriteEffects, _layerDepth);
-		}
-
-		public override void OnAddedToEntity()
-		{
-			base.OnAddedToEntity();
-
-			// Cast the Data property to our specific type
-			if (Data is SpriteRendererComponentData spriteData)
+			if (Sprite == null)
 			{
-				// Check if we have a file path but no sprite loaded
-				if (!string.IsNullOrEmpty(spriteData.TextureFilePath) && Sprite == null)
-				{
-					LoadImageFromData(spriteData);
-				}
+				Debug.Error($"SpriteRenderer on entity '{Entity?.Name}' has null Sprite!");
+				return;
 			}
+			
+			if (Sprite.Texture2D == null)
+			{
+				Debug.Error($"SpriteRenderer on entity '{Entity?.Name}' has Sprite with null Texture2D!");
+				return;
+			}
+
+			batcher.Draw(Sprite, Entity.Transform.Position + LocalOffset, Color, Entity.Transform.Rotation, 
+						 Origin, Entity.Transform.Scale, SpriteEffects, LayerDepth);
 		}
+
+		// public override void OnAddedToEntity()
+		// {
+		// 	base.OnAddedToEntity();
+		//
+		// 	// If we have a file path but no sprite, load it now that we're attached to an entity with a scene
+		// 	if (!string.IsNullOrEmpty(_data.TextureFilePath) && Sprite == null)
+		// 	{
+		// 		LoadImageFromData();
+		// 	}
+		// }
 
 		/// <summary>
 		/// Loads an image based on the ComponentData settings
 		/// </summary>
-		private void LoadImageFromData(SpriteRendererComponentData data)
+		public void LoadImageFromData()
 		{
+			// Check if we have data to load
+			if (string.IsNullOrEmpty(_data.TextureFilePath))
+			{
+				Debug.Warn($"SpriteRenderer has no texture file path to load from.");
+				return;
+			}
+			
+			// Log what we're about to load
+			if (Sprite == null)
+			{
+				Debug.Log($"SpriteRenderer loading image from saved data: {_data.TextureFilePath} (FileType: {_data.FileType})");
+			}
+
+			// Try to get content manager, but handle case where entity isn't in scene yet
 			var contentManager = Entity?.Scene?.Content ?? Core.Content;
 			if (contentManager == null)
 			{
-				Debug.Error("No content manager available to load image file: " + data.TextureFilePath);
+				Debug.Warn($"No content manager available to load image file: {_data.TextureFilePath}. Will retry when entity is added to scene.");
 				return;
 			}
 
-			switch (data.FileType)
+			switch (_data.FileType)
 			{
 				case SpriteRendererComponentData.ImageFileType.Png:
-					LoadPngFile(data.TextureFilePath, contentManager);
+					LoadPngFile(_data.TextureFilePath);
 					break;
 
 				case SpriteRendererComponentData.ImageFileType.Aseprite:
-					if (data.AsepriteData.HasValue)
+					if (_data.AsepriteData.HasValue)
 					{
-						var aseData = data.AsepriteData.Value;
-						LoadAsepriteFile(data.TextureFilePath, contentManager, aseData.LayerName, aseData.FrameNumber);
+						var aseData = _data.AsepriteData.Value;
+						LoadAsepriteFile(_data.TextureFilePath, aseData.LayerName, aseData.FrameNumber);
 					}
 					else
 					{
-						LoadAsepriteFile(data.TextureFilePath, contentManager);
+						LoadAsepriteFile(_data.TextureFilePath);
 					}
 					break;
 
 				case SpriteRendererComponentData.ImageFileType.Tiled:
-					if (data.TiledData.HasValue)
+					if (_data.TiledData.HasValue)
 					{
-						var tiledData = data.TiledData.Value;
-						LoadTmxFile(data.TextureFilePath, contentManager, tiledData.ImageLayerName);
+						var tiledData = _data.TiledData.Value;
+						LoadTmxFile(_data.TextureFilePath, tiledData.ImageLayerName);
 					}
 					else
 					{
-						LoadTmxFile(data.TextureFilePath, contentManager);
+						LoadTmxFile(_data.TextureFilePath);
 					}
 					break;
 
 				case SpriteRendererComponentData.ImageFileType.None:
 					// No file type specified, try to determine from extension
-					if (!string.IsNullOrEmpty(data.TextureFilePath))
+					if (!string.IsNullOrEmpty(_data.TextureFilePath))
 					{
-						var extension = Path.GetExtension(data.TextureFilePath).ToLower();
+						var extension = Path.GetExtension(_data.TextureFilePath).ToLower();
 						switch (extension)
 						{
 							case ".png": 
-								LoadPngFile(data.TextureFilePath, contentManager);
+								LoadPngFile(_data.TextureFilePath);
 								break;
 							case ".ase":
 							case ".aseprite":
-								LoadAsepriteFile(data.TextureFilePath, contentManager);
+								LoadAsepriteFile(_data.TextureFilePath);
 								break;
 							case ".tmx":
-								LoadTmxFile(data.TextureFilePath, contentManager);
+								LoadTmxFile(_data.TextureFilePath);
 								break;
 							default:
-								Debug.Error($"Unknown file extension for texture: {data.TextureFilePath}");
+								Debug.Error($"Unknown file extension for texture: {_data.TextureFilePath}");
 								break;
 						}
 					}
 					break;
 
 				default:
-					Debug.Error($"Unknown or unsupported file type for: {data.TextureFilePath}");
+					Debug.Error($"Unknown or unsupported file type for: {_data.TextureFilePath}");
 					break;
 			}
 		}
@@ -492,8 +558,14 @@ namespace Nez.Sprites
 		/// <param name="filepath">The file path relative to the project root (including Content/ prefix)</param>
 		/// <param name="contentManager">The content manager to use for loading</param>
 		/// <returns>The SpriteRenderer for method chaining</returns>
-		public SpriteRenderer LoadPngFile(string filepath, NezContentManager contentManager)
+		public SpriteRenderer LoadPngFile(string filepath)
 		{
+			var contentManager = Entity?.Scene?.Content ?? Core.Content;
+			if (contentManager == null)
+			{
+				throw new Exception($"No content manager available to load image file: {_data.TextureFilePath}. Will retry when entity is added to scene.");
+			}
+
 			try
 			{
 				// Ensure the path is properly formatted for NezContentManager
@@ -503,8 +575,11 @@ namespace Nez.Sprites
 				if (texture != null)
 				{
 					SetSprite(new Sprite(texture));
+					
+					// Update the data field properly
 					_data.SetPngData();
 					_data.TextureFilePath = normalizedPath;
+					
 					Debug.Log($"Successfully loaded PNG file: {normalizedPath}");
 				}
 				else
@@ -521,54 +596,6 @@ namespace Nez.Sprites
 		}
 
 		/// <summary>
-		/// Loads a TMX (Tiled map) file and creates a sprite from its texture
-		/// </summary>
-		/// <param name="filepath">The file path relative to the Content directory</param>
-		/// <param name="contentManager">The content manager to use for loading</param>
-		/// <returns>The SpriteRenderer for method chaining</returns>
-		public SpriteRenderer LoadTmxFile(string filepath, NezContentManager contentManager, string imageLayerName = null)
-		{
-			try
-			{
-				var tiledMap = contentManager.LoadTiledMap(filepath);
-
-				if (imageLayerName != null)
-				{
-					foreach (var image in tiledMap.ImageLayers)
-					{
-						if (image.Name == imageLayerName)
-						{
-							SetSprite(new Sprite(image.Image.Texture));
-							_data.SetTiledData(imageLayerName);
-							_data.TextureFilePath = filepath;
-							return this;
-						}
-					}
-					Debug.Error($"Image layer '{imageLayerName}' not found in TMX file: {filepath}");
-				}
-				else
-				{
-					if (tiledMap.ImageLayers.Count > 0 && tiledMap.ImageLayers[0].Image.Texture != null)
-					{
-						SetSprite(new Sprite(tiledMap.ImageLayers[0].Image.Texture));
-						_data.SetTiledData();
-						_data.TextureFilePath = filepath;
-					}
-					else
-					{
-						Debug.Error("Error: There was no image layer in the TMX file: " + filepath);
-					}
-				}
-			}
-			catch (Exception e)
-			{
-				Debug.Error($"Error loading TMX file {filepath}: {e.Message}");
-			}
-
-			return this;
-		}
-
-		/// <summary>
 		/// Loads an Aseprite file and creates a sprite from a specific frame and layer(s)
 		/// </summary>
 		/// <param name="filepath">The file path relative to the Content directory</param>
@@ -576,8 +603,14 @@ namespace Nez.Sprites
 		/// <param name="layerName">Optional specific layer name to include. If null, all visible layers will be included</param>
 		/// <param name="frameNumber">The frame number to load (0-based index). Defaults to 0</param>
 		/// <returns>The SpriteRenderer for method chaining</returns>
-		public SpriteRenderer LoadAsepriteFile(string filepath, NezContentManager contentManager, string layerName = null, int frameNumber = 0)
+		public SpriteRenderer LoadAsepriteFile(string filepath, string layerName = null, int frameNumber = 0)
 		{
+			var contentManager = Entity?.Scene?.Content ?? Core.Content;
+			if (contentManager == null)
+			{
+				throw new Exception($"No content manager available to load image file: {_data.TextureFilePath}. Will retry when entity is added to scene.");
+			}
+
 			try
 			{
 				var asepriteFile = contentManager.LoadAsepriteFile(filepath);
@@ -604,9 +637,12 @@ namespace Nez.Sprites
 					if (sprite != null)
 					{
 						SetSprite(sprite);
+						
+						// Update the data field properly
 						_data.SetAsepriteData(layerName, frameNumber);
 						_data.TextureFilePath = filepath;
-						Debug.Log($"Successfully loaded Aseprite file: {filepath}, frame: {frameNumber}" + (layerName != null ? $", layer: {layerName}" : ""));
+						
+                        Debug.Log($"Successfully loaded Aseprite file: {filepath}, frame: {frameNumber}" + (layerName != null ? $", layer: {layerName}" : ""));
 					}
 					else
 					{
@@ -621,6 +657,65 @@ namespace Nez.Sprites
 			catch (Exception e)
 			{
 				Debug.Error($"Error loading Aseprite file {filepath}: {e.Message}");
+			}
+
+			return this;
+		}
+
+		/// <summary>
+		/// Loads a TMX (Tiled map) file and creates a sprite from its texture
+		/// </summary>
+		/// <param name="filepath">The file path relative to the Content directory</param>
+		/// <param name="contentManager">The content manager to use for loading</param>
+		/// <returns>The SpriteRenderer for method chaining</returns>
+		public SpriteRenderer LoadTmxFile(string filepath, string imageLayerName = null)
+		{
+			var contentManager = Entity?.Scene?.Content ?? Core.Content;
+			if (contentManager == null)
+			{
+				throw new Exception($"No content manager available to load image file: {_data.TextureFilePath}. Will retry when entity is added to scene.");
+			}
+
+			try
+			{
+				var tiledMap = contentManager.LoadTiledMap(filepath);
+
+				if (imageLayerName != null)
+				{
+					foreach (var image in tiledMap.ImageLayers)
+					{
+						if (image.Name == imageLayerName)
+						{
+							SetSprite(new Sprite(image.Image.Texture));
+							
+							// Update the data field properly
+							_data.SetTiledData(imageLayerName);
+							_data.TextureFilePath = filepath;
+							
+							return this;
+						}
+					}
+					Debug.Error($"Image layer '{imageLayerName}' not found in TMX file: {filepath}");
+				}
+				else
+				{
+					if (tiledMap.ImageLayers.Count > 0 && tiledMap.ImageLayers[0].Image.Texture != null)
+					{
+						SetSprite(new Sprite(tiledMap.ImageLayers[0].Image.Texture));
+						
+						// Update the data field properly
+						_data.SetTiledData();
+						_data.TextureFilePath = filepath;
+					}
+					else
+					{
+						Debug.Error("Error: There was no image layer in the TMX file: " + filepath);
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				Debug.Error($"Error loading TMX file {filepath}: {e.Message}");
 			}
 
 			return this;

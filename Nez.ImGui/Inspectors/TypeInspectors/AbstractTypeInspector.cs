@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using ImGuiNET;
+using Nez.ImGuiTools.UndoActions;
 using Nez.Utils;
 using Nez.Utils.Extensions;
 

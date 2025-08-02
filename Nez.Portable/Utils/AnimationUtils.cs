@@ -57,7 +57,14 @@ public class AnimationUtils
     /// <returns>A Sprite containing the flattened frame data as a Texture2D</returns>
     public static Sprite LoadAsepriteFrame(Entity entity, string asepriteFilePath, int frameNumber, bool onlyVisibleLayers = true, bool includeBackgroundLayer = false, params string[] layerNames)
     {
-        var asepriteFile = entity.Scene.Content.LoadAsepriteFile(asepriteFilePath);
+        // Handle case where entity might not be in a scene yet
+        var contentManager = entity?.Scene?.Content ?? Core.Content;
+        if (contentManager == null)
+        {
+            throw new InvalidOperationException($"Cannot load Aseprite file '{asepriteFilePath}' - no content manager available. Entity must be added to a scene first.");
+        }
+        
+        var asepriteFile = contentManager.LoadAsepriteFile(asepriteFilePath);
         
         // Validate frame number
         if (frameNumber < 0 || frameNumber >= asepriteFile.Frames.Count)
@@ -99,7 +106,14 @@ public class AnimationUtils
     /// <returns>A Sprite containing the flattened frame data as a Texture2D</returns>
     public static Sprite LoadAsepriteFrameFromLayer(Entity entity, string asepriteFilePath, int frameNumber, string layerName, bool onlyVisibleLayers = true, bool includeBackgroundLayer = false)
     {
-        var asepriteFile = entity.Scene.Content.LoadAsepriteFile(asepriteFilePath);
+        // Handle case where entity might not be in a scene yet
+        var contentManager = entity?.Scene?.Content ?? Core.Content;
+        if (contentManager == null)
+        {
+            throw new InvalidOperationException($"Cannot load Aseprite file '{asepriteFilePath}' - no content manager available. Entity must be added to a scene first.");
+        }
+        
+        var asepriteFile = contentManager.LoadAsepriteFile(asepriteFilePath);
         
         // Validate frame number
         if (frameNumber < 0 || frameNumber >= asepriteFile.Frames.Count)

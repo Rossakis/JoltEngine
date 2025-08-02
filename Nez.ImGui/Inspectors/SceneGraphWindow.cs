@@ -2,6 +2,7 @@ using ImGuiNET;
 using Microsoft.Xna.Framework.Input;
 using Nez.ECS;
 using Nez.ImGuiTools.SceneGraphPanes;
+using Nez.ImGuiTools.UndoActions;
 using Nez.Utils;
 using System;
 using System.Collections.Generic;
