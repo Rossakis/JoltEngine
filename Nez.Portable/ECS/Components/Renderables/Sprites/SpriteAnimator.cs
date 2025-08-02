@@ -24,15 +24,31 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 		public int CurrentFrame = 0;
 		public float ElapsedTime = 0f;
 		
-		// SpriteRenderer properties (since SpriteAnimator inherits from SpriteRenderer)
+		// SpriteRenderer properties - store color as individual RGBA components for proper serialization
 		public string TextureFilePath = "";
-		public Color Color = Color.White;
+		public byte ColorR = 255;
+		public byte ColorG = 255;
+		public byte ColorB = 255;
+		public byte ColorA = 255;
 		public Vector2 LocalOffset = Vector2.Zero;
 		public Vector2 Origin = Vector2.Zero;
 		public float LayerDepth = 0f;
 		public int RenderLayer = 0;
 		public bool Enabled = true;
 		public SpriteEffects SpriteEffects = SpriteEffects.None;
+
+		// Helper property to get/set Color easily (not serialized)
+		public Color Color
+		{
+			get => new Color(ColorR, ColorG, ColorB, ColorA);
+			set
+			{
+				ColorR = value.R;
+				ColorG = value.G;
+				ColorB = value.B;
+				ColorA = value.A;
+			}
+		}
 
 		public SpriteAnimatorComponentData()
 		{
@@ -46,7 +62,10 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 			
 			// SpriteRenderer defaults
 			TextureFilePath = "";
-			Color = Color.White;
+			ColorR = 255;
+			ColorG = 255;
+			ColorB = 255;
+			ColorA = 255;
 			LocalOffset = Vector2.Zero;
 			Origin = Vector2.Zero;
 			LayerDepth = 0f;
@@ -65,9 +84,9 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 			CurrentFrame = animator.CurrentFrame;
 			ElapsedTime = animator.CurrentElapsedTime;
 			
-			// Capture SpriteRenderer properties
+			// Capture SpriteRenderer properties using the Color helper property
 			TextureFilePath = animator.Sprite?.Texture2D?.Name ?? "";
-			Color = animator.Color;
+			Color = animator.Color;  // This uses the helper property to set RGBA components
 			LocalOffset = animator.LocalOffset;
 			Origin = animator.Origin;
 			LayerDepth = animator.LayerDepth;

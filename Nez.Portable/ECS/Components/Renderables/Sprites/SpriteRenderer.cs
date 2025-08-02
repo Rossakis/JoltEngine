@@ -22,8 +22,14 @@ namespace Nez.Sprites
 		/// </summary>
 		public class SpriteRendererComponentData : ComponentData
 		{
-			public string TextureFilePath = "";  // Initialize with default value
-			public Color Color = Color.White;
+			public string TextureFilePath = "";
+			
+			// Store color as individual RGBA components for proper serialization
+			public byte ColorR = 255;
+			public byte ColorG = 255;
+			public byte ColorB = 255;
+			public byte ColorA = 255;
+			
 			public Vector2 LocalOffset = Vector2.Zero;
 			public Vector2 Origin = Vector2.Zero;
 			public float LayerDepth = 0f;
@@ -35,6 +41,19 @@ namespace Nez.Sprites
 			// File type specific data
 			public AsepriteImageData? AsepriteData = null;
 			public TiledImageData? TiledData = null;
+
+			// Helper property to get/set Color easily (not serialized)
+			public Color Color
+			{
+				get => new Color(ColorR, ColorG, ColorB, ColorA);
+				set
+				{
+					ColorR = value.R;
+					ColorG = value.G;
+					ColorB = value.B;
+					ColorA = value.A;
+				}
+			}
 
 			public enum ImageFileType
 			{
@@ -74,7 +93,10 @@ namespace Nez.Sprites
 			{
 				// Ensure all properties have explicit default values
 				TextureFilePath = "";
-				Color = Color.White;
+				ColorR = 255;
+				ColorG = 255;
+				ColorB = 255;
+				ColorA = 255;
 				LocalOffset = Vector2.Zero;
 				Origin = Vector2.Zero;
 				LayerDepth = 0f;
@@ -90,7 +112,10 @@ namespace Nez.Sprites
 			{
 				// Always set all properties, even if they're defaults
 				TextureFilePath = renderer.Sprite?.Texture2D?.Name ?? "";
+				
+				// Store color components
 				Color = renderer.Color;
+				
 				LocalOffset = renderer.LocalOffset;
 				Origin = renderer.Origin;
 				LayerDepth = renderer.LayerDepth;
@@ -211,10 +236,10 @@ namespace Nez.Sprites
 					SpriteEffects = spriteData.SpriteEffects;
 					//
 					// // ONLY load image if this is a SpriteEntity (not Platform, Player, etc.)
-					// if (!string.IsNullOrEmpty(spriteData.TextureFilePath) && Entity is SpriteEntity)
-					// {
-					// 	LoadImageFromData();
-					// }
+					if (!string.IsNullOrEmpty(spriteData.TextureFilePath))
+					{
+						LoadImageFromData();
+					}
 				}
 			}
 		}
@@ -323,7 +348,6 @@ namespace Nez.Sprites
 		/// the Sprite that should be displayed by this Sprite. When set, the origin of the Sprite is also set to match Sprite.origin.
 		/// </summary>
 		/// <value>The sprite.</value>
-		[Inspectable]
 		public Sprite Sprite
 		{
 			get => _sprite;
@@ -439,32 +463,21 @@ namespace Nez.Sprites
 
 		public override void Render(Batcher batcher, Camera camera)
 		{
-			if (Sprite == null)
-			{
-				Debug.Error($"SpriteRenderer on entity '{Entity?.Name}' has null Sprite!");
-				return;
-			}
-			
-			if (Sprite.Texture2D == null)
-			{
-				Debug.Error($"SpriteRenderer on entity '{Entity?.Name}' has Sprite with null Texture2D!");
-				return;
-			}
+			// if (Sprite == null)
+			// {
+			// 	Debug.Error($"SpriteRenderer on entity '{Entity?.Name}' has null Sprite!");
+			// 	return;
+			// }
+			//
+			// if (Sprite.Texture2D == null)
+			// {
+			// 	Debug.Error($"SpriteRenderer on entity '{Entity?.Name}' has Sprite with null Texture2D!");
+			// 	return;
+			// }
 
 			batcher.Draw(Sprite, Entity.Transform.Position + LocalOffset, Color, Entity.Transform.Rotation, 
 						 Origin, Entity.Transform.Scale, SpriteEffects, LayerDepth);
 		}
-
-		// public override void OnAddedToEntity()
-		// {
-		// 	base.OnAddedToEntity();
-		//
-		// 	// If we have a file path but no sprite, load it now that we're attached to an entity with a scene
-		// 	if (!string.IsNullOrEmpty(_data.TextureFilePath) && Sprite == null)
-		// 	{
-		// 		LoadImageFromData();
-		// 	}
-		// }
 
 		/// <summary>
 		/// Loads an image based on the ComponentData settings
