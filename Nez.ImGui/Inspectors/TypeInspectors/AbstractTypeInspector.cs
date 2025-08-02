@@ -29,6 +29,16 @@ namespace Nez.ImGuiTools.TypeInspectors
 		/// </summary>
 		public bool IsTargetDestroyed => _isTargetDestroyed;
 
+		/// <summary>
+		/// When true, this inspector will not create undo actions
+		/// </summary>
+		public bool IsUndoDisabled { get; set; } = false;
+
+		/// <summary>
+		/// Public accessor for MemberInfo (needed by StructInspector)
+		/// </summary>
+		public MemberInfo MemberInfo => _memberInfo;
+
 		protected int _scopeId = NezImGui.GetScopeId();
 		protected bool _wantsIndentWhenDrawn;
 
@@ -181,6 +191,12 @@ namespace Nez.ImGuiTools.TypeInspectors
 					var structValue = parentInspector.GetValue();
 					field.SetValue(structValue, val);
 					parentInspector.SetValue(structValue);
+					
+					// Notify the parent StructInspector that a field changed
+					if (parentInspector is StructInspector structInspector)
+					{
+						structInspector.NotifyFieldChanged();
+					}
 				};
 			}
 
@@ -231,20 +247,26 @@ namespace Nez.ImGuiTools.TypeInspectors
 
 		protected T GetValue<T>()
 		{
-			return (T)_getter(_target);
+		    return (T)_getter(_target);
 		}
 
 		protected object GetValue()
 		{
-			return _getter(_target);
+		    return _getter(_target);
+		}
+
+		// Add public accessor for StructInspector to use
+		public object GetValuePublic()
+		{
+		    return _getter(_target);
 		}
 
 		protected void SetValue(object value)
 		{
-			_setter.Invoke(value);
+		    _setter.Invoke(value);
 		}
 
-		#endregion
+#endregion
 
 		#region Undo/Redo Support
 		protected EditSession GetEditSession(string fieldName)
@@ -264,6 +286,12 @@ namespace Nez.ImGuiTools.TypeInspectors
 		/// </summary>
 		protected void SetValueWithUndo(object newValue, string description = null)
 		{
+			if (IsUndoDisabled)
+			{
+				SetValue(newValue);
+				return;
+			}
+			
 			var oldValue = GetValue();
 			if (!Equals(oldValue, newValue))
 			{
@@ -274,11 +302,12 @@ namespace Nez.ImGuiTools.TypeInspectors
 						oldValue,
 						newValue,
 						description ?? GetFullPathDescription()
-					)
+					),
+					GetRootTarget(),
+					description ?? GetFullPathDescription()
 				);
 
 				SetValue(newValue);
-				EditorChangeTracker.MarkChanged(GetRootTarget(), description ?? GetFullPathDescription());
 			}
 		}
 
@@ -301,6 +330,20 @@ namespace Nez.ImGuiTools.TypeInspectors
 			var root = GetRootTarget();
 			string entityName = root is Entity entity ? entity.Name : root?.ToString() ?? "UnknownEntity";
 			return $"{entityName}.{string.Join(".", _pathFromRoot)}";
+		}
+
+		/// <summary>
+		/// Returns true if this field is currently being actively edited (mouse is down on a drag/slider)
+		/// </summary>
+		public bool IsFieldCurrentlyActive()
+		{
+			// Check if any of our edit sessions are currently active
+			foreach (var session in _editSessions.Values)
+			{
+				if (session.IsEditing)
+					return true;
+			}
+			return false;
 		}
 	}
 }
