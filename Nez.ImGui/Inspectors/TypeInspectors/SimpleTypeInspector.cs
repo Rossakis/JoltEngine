@@ -254,12 +254,7 @@ namespace Nez.ImGuiTools.TypeInspectors
 				var endValue = GetValue();
 				if (!Equals(session.EditStartValue, endValue))
 				{
-					if (_parentInspector is StructInspector structInspector)
-					{
-						// For struct fields, notify the parent and let it handle undo
-						structInspector.NotifyFieldChanged();
-					}
-					else
+					if (_parentInspector is not StructInspector)
 					{
 						// For non-struct fields, create undo action directly
 						EditorChangeTracker.PushUndo(

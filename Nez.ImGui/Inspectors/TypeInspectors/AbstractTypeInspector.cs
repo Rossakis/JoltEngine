@@ -192,10 +192,17 @@ namespace Nez.ImGuiTools.TypeInspectors
 					field.SetValue(structValue, val);
 					parentInspector.SetValue(structValue);
 					
-					// Notify the parent StructInspector that a field changed
+					// Only notify for immediate changes (not during edit sessions)
+					// Edit sessions are handled by the StructInspector's IsFieldCurrentlyActive() detection
 					if (parentInspector is StructInspector structInspector)
 					{
-						structInspector.NotifyFieldChanged();
+						// Check if this is an immediate change (not part of an edit session)
+						bool isImmediateChange = !IsCurrentlyInEditSession();
+						
+						if (isImmediateChange)
+						{
+							structInspector.NotifyFieldChanged();
+						}
 					}
 				};
 			}
@@ -338,6 +345,19 @@ namespace Nez.ImGuiTools.TypeInspectors
 		public bool IsFieldCurrentlyActive()
 		{
 			// Check if any of our edit sessions are currently active
+			foreach (var session in _editSessions.Values)
+			{
+				if (session.IsEditing)
+					return true;
+			}
+			return false;
+		}
+
+		/// <summary>
+		/// Returns true if this inspector is currently in an edit session
+		/// </summary>
+		private bool IsCurrentlyInEditSession()
+		{
 			foreach (var session in _editSessions.Values)
 			{
 				if (session.IsEditing)

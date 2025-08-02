@@ -11,8 +11,14 @@ namespace Nez.ImGuiTools.TypeInspectors
     {
         List<AbstractTypeInspector> _inspectors = new List<AbstractTypeInspector>();
         bool _isHeaderOpen;
-        private bool _hasAnyFieldChanged; // Flag to track if any field changed this frame
-        private object _structValueBeforeFrame; // Store struct value at frame start
+        
+        // Edit session state for struct-level undo (for drag/slider operations)
+        private bool _isEditingStruct = false;
+        private object _structValueAtEditStart;
+        
+        // Immediate change tracking (for boolean, InputInt, etc.)
+        private bool _hasImmediateFieldChanged = false;
+        private object _structValueBeforeFrame;
 
         public override void Initialize()
         {
@@ -63,38 +69,84 @@ namespace Nez.ImGuiTools.TypeInspectors
             _isHeaderOpen = ImGui.CollapsingHeader($"{_name}");
             if (_isHeaderOpen)
             {
-                // Reset the change flag and capture struct at frame start
-                _hasAnyFieldChanged = false;
+                // Reset immediate change flag and capture struct at frame start
+                _hasImmediateFieldChanged = false;
                 _structValueBeforeFrame = GetValue();
                 
+                // Check if any field is currently active (for edit session detection)
+                bool anyFieldIsActive = false;
+                foreach (var inspector in _inspectors)
+                {
+                    if (inspector.IsFieldCurrentlyActive())
+                    {
+                        anyFieldIsActive = true;
+                        break;
+                    }
+                }
+
+                // Start edit session for drag/slider operations
+                if (anyFieldIsActive && !_isEditingStruct)
+                {
+                    _isEditingStruct = true;
+                    _structValueAtEditStart = GetValue();
+                }
+
                 // Draw all field inspectors with undo disabled
                 foreach (var inspector in _inspectors)
                 {
-                    // Disable undo for individual fields - the struct will handle it
                     inspector.IsUndoDisabled = true;
                     inspector.Draw();
                     inspector.IsUndoDisabled = false;
                 }
-                
-                // Check if any field signaled a change
-                if (_hasAnyFieldChanged)
+
+                // End edit session for drag/slider operations
+                if (_isEditingStruct && !anyFieldIsActive)
+                {
+                    _isEditingStruct = false;
+                    var structValueAtEditEnd = GetValue();
+                    
+                    if (!Equals(_structValueAtEditStart, structValueAtEditEnd))
+                    {
+                        // Create undo action for the entire struct change (edit session)
+                        if (!IsUndoDisabled)
+                        {
+                            EditorChangeTracker.PushUndo(
+                                new PathUndoAction(
+                                    GetRootTarget(),
+                                    new List<string>(_pathFromRoot),
+                                    _structValueAtEditStart,
+                                    structValueAtEditEnd,
+                                    $"{GetFullPathDescription()} (struct modified)"
+                                ),
+                                GetRootTarget(),
+                                $"{GetFullPathDescription()} (struct modified)"
+                            );
+                        }
+                    }
+                }
+
+                // Handle immediate changes (boolean, InputInt, etc.) - only when not in edit session
+                if (_hasImmediateFieldChanged && !_isEditingStruct)
                 {
                     var structValueAfterFrame = GetValue();
                     
-                    // Create undo action for the entire struct change
-                    if (!IsUndoDisabled)
+                    if (!Equals(_structValueBeforeFrame, structValueAfterFrame))
                     {
-                        EditorChangeTracker.PushUndo(
-                            new PathUndoAction(
+                        // Create undo action for immediate change
+                        if (!IsUndoDisabled)
+                        {
+                            EditorChangeTracker.PushUndo(
+                                new PathUndoAction(
+                                    GetRootTarget(),
+                                    new List<string>(_pathFromRoot),
+                                    _structValueBeforeFrame,
+                                    structValueAfterFrame,
+                                    $"{GetFullPathDescription()} (struct modified)"
+                                ),
                                 GetRootTarget(),
-                                new List<string>(_pathFromRoot),
-                                _structValueBeforeFrame,
-                                structValueAfterFrame,
                                 $"{GetFullPathDescription()} (struct modified)"
-                            ),
-                            GetRootTarget(),
-                            $"{GetFullPathDescription()} (struct modified)"
-                        );
+                            );
+                        }
                     }
                 }
             }
@@ -104,11 +156,11 @@ namespace Nez.ImGuiTools.TypeInspectors
         }
 
         /// <summary>
-        /// Called by child field inspectors when they detect a change
+        /// Called by child field inspectors when they have immediate changes (boolean, InputInt, etc.)
         /// </summary>
         public void NotifyFieldChanged()
         {
-            _hasAnyFieldChanged = true;
+            _hasImmediateFieldChanged = true;
         }
 
         /// <summary>
