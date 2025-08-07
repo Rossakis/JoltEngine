@@ -50,6 +50,23 @@ public class MainEntityInspector
 		}
 	}
 
+	/// <summary>
+	/// Refreshes all component inspectors. Call this after components are added, removed, or replaced.
+	/// </summary>
+	public void RefreshComponentInspectors()
+	{
+		if (Entity == null)
+			return;
+			
+		_componentInspectors.Clear();
+		
+		// Recreate all component inspectors
+		for (var i = 0; i < Entity.Components.Count; i++)
+		{
+			_componentInspectors.Add(ComponentInspectorFactory.CreateInspector(Entity.Components[i]));
+		}
+	}
+
 	public void SetEntity(Entity entity)
 	{
 		Entity = entity;
@@ -58,8 +75,7 @@ public class MainEntityInspector
 		if (Entity != null)
 		{
 			_transformInspector = new TransformInspector(Entity.Transform);
-			for (var i = 0; i < entity.Components.Count; i++)
-				_componentInspectors.Add(ComponentInspectorFactory.CreateInspector(entity.Components[i])); // Use factory here
+			RefreshComponentInspectors(); // Use the new method
 		}
 	}
 

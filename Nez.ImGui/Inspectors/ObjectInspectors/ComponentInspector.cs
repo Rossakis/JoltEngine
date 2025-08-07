@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using ImGuiNET;
 using Nez.ImGuiTools.TypeInspectors;
+using Nez.ImGuiTools.UndoActions;
+using Nez.Persistence;
 using Nez.Sprites;
 using Nez.Utils.Extensions;
 
@@ -73,20 +75,75 @@ namespace Nez.ImGuiTools.ObjectInspectors
 			// context menu has to be outside the isHeaderOpen block so it works open or closed
 			if (ImGui.BeginPopupContextItem())
 			{
-				//Copy
+				//Copy - FIXED: Clone the component immediately when copying
 				if (ImGui.Selectable("Copy Component")) 
 				{
-					_imGuiManager.SceneGraphWindow.CopiedComponent = _component;
+					// Clone the component RIGHT NOW to capture its current state
+					try
+					{
+						var clonedComponent = _component.Clone();
+						_imGuiManager.SceneGraphWindow.CopiedComponent = clonedComponent;
+						System.Console.WriteLine($"Copied component: {_component.GetType().Name}");
+					}
+					catch (Exception ex)
+					{
+						// Fallback: use JSON serialization if Clone() fails
+						try
+						{
+							var jsonSettings = new JsonSettings
+							{
+								PrettyPrint = false,
+								TypeNameHandling = TypeNameHandling.Auto,
+								PreserveReferencesHandling = false
+							};
+							
+							var sourceData = _component.Data;
+							if (sourceData != null)
+							{
+								// Create a new component instance
+								var componentType = _component.GetType();
+								var clonedComponent = (Component)Activator.CreateInstance(componentType);
+								clonedComponent.Name = _component.Name;
+								clonedComponent.Enabled = _component.Enabled;
+								
+								// Clone the data using JSON
+								var json = Json.ToJson(sourceData, jsonSettings);
+								var clonedData = (ComponentData)Json.FromJson(json, sourceData.GetType());
+								clonedComponent.Data = clonedData;
+								
+								_imGuiManager.SceneGraphWindow.CopiedComponent = clonedComponent;
+								System.Console.WriteLine($"Copied component via JSON fallback: {_component.GetType().Name}");
+							}
+						}
+						catch (Exception jsonEx)
+						{
+							System.Console.WriteLine($"Failed to copy component {_component.GetType().Name}: {ex.Message}. JSON fallback also failed: {jsonEx.Message}");
+						}
+					}
 				}
 
 				NezImGui.SmallVerticalSpace();
 
-				//Paste
-				if(_imGuiManager.SceneGraphWindow.CopiedComponent != null && ImGui.Selectable("Paste Component"))
+				//Paste - Simplified since we now have a true copy
+				var copiedComponent = _imGuiManager.SceneGraphWindow.CopiedComponent;
+				var canPaste = copiedComponent != null && copiedComponent.GetType() == _component.GetType();
+				
+				if (!canPaste)
 				{
-					var temp = _component;
-					_component.Entity.RemoveComponent(_component);
-					temp.Entity.AddComponent(_imGuiManager.SceneGraphWindow.CopiedComponent);
+					ImGui.BeginDisabled();
+				}
+
+				var pasteText = canPaste ? "Paste Component Values" : 
+									   (copiedComponent != null ? $"Can't paste {copiedComponent.GetType().Name} into {_component.GetType().Name}" : "No component copied");
+				
+				if (ImGui.Selectable(pasteText) && canPaste)
+				{
+					PasteComponentValues(copiedComponent, _component);
+				}
+
+				if (!canPaste)
+				{
+					ImGui.EndDisabled();
 				}
 
 				ImGui.Separator();
@@ -122,6 +179,78 @@ namespace Nez.ImGuiTools.ObjectInspectors
 			}
 
 			ImGui.PopID();
+		}
+
+		/// <summary>
+		/// Pastes component data from source to target component of the same type.
+		/// Uses JSON serialization for reliable deep cloning.
+		/// </summary>
+		private void PasteComponentValues(Component sourceComponent, Component targetComponent)
+		{
+			if (sourceComponent == null || targetComponent == null)
+				return;
+
+			if (sourceComponent.GetType() != targetComponent.GetType())
+			{
+				System.Console.WriteLine($"Cannot paste {sourceComponent.GetType().Name} into {targetComponent.GetType().Name} - types must match");
+				return;
+			}
+
+			try
+			{
+				// Store old data for undo
+				var oldData = targetComponent.Data;
+
+				// Get the source component's data
+				var sourceData = sourceComponent.Data;
+
+				if (sourceData == null)
+				{
+					System.Console.WriteLine("Source component has no data to copy");
+					return;
+				}
+
+				// DEEP CLONE using JSON serialization (most reliable approach)
+				ComponentData clonedData;
+				try
+				{
+					var jsonSettings = new JsonSettings
+					{
+						PrettyPrint = false,
+						TypeNameHandling = TypeNameHandling.Auto,
+						PreserveReferencesHandling = false
+					};
+
+					var json = Json.ToJson(sourceData, jsonSettings);
+					clonedData = (ComponentData)Json.FromJson(json, sourceData.GetType());
+				}
+				catch (Exception ex)
+				{
+					System.Console.WriteLine($"Failed to clone component data via JSON: {ex.Message}");
+					return;
+				}
+
+				// Create undo action BEFORE making changes
+				EditorChangeTracker.PushUndo(
+					new ComponentDataChangeAction(
+						targetComponent,
+						oldData,
+						clonedData, // Use the cloned data, not the original
+						$"Paste {targetComponent.GetType().Name} values"
+					),
+					targetComponent.Entity,
+					$"Paste {targetComponent.GetType().Name} values"
+				);
+
+				// Apply the cloned data to the target component
+				targetComponent.Data = clonedData;
+
+				System.Console.WriteLine($"Successfully pasted {sourceComponent.GetType().Name} values");
+			}
+			catch (Exception ex)
+			{
+				System.Console.WriteLine($"Failed to paste component values: {ex.Message}");
+			}
 		}
 	}
 }

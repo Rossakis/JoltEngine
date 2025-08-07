@@ -87,6 +87,7 @@ public class EditorChangeTracker
     /// </summary>
     public static void PushUndo(IEditorAction action, object changedObj = null, string description = null)
     {
+        // Always allow undo - remove the ShouldAllowUndo check entirely
         _undoStack.Push(action);
         _redoStack.Clear();
         if (changedObj != null && description != null)

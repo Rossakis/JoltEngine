@@ -11,6 +11,7 @@ using System.Linq;
 using System.Reflection;
 using Nez.Utils.Coroutines;
 using Nez.ImGuiTools.UndoActions;
+using Nez.Persistence;
 
 namespace Nez.ImGuiTools.SceneGraphPanes;
 
@@ -350,21 +351,76 @@ public class EntityPane
         {
             if (_imGuiManager.SceneGraphWindow.CopiedComponent != null && ImGui.Selectable("Paste Component"))
             {
-                NezImGui.SmallVerticalSpace();
-
-                var index = -1;
-                for (var i = 0; i < entity.Components.Count; i++)
-                    if (entity.Components[i].GetType() == _imGuiManager.SceneGraphWindow.CopiedComponent.GetType())
-                    {
-                        index = i;
-                        break;
-                    }
-
-                if (index > -1)
+                var copiedComponent = _imGuiManager.SceneGraphWindow.CopiedComponent;
+                
+                // Find existing component of the same type
+                var existingComponent = entity.Components.FirstOrDefault(c => c.GetType() == copiedComponent.GetType());
+                
+                if (existingComponent != null)
                 {
-                    var temp = _imGuiManager.SceneGraphWindow.CopiedComponent;
-                    entity.RemoveComponent(entity.Components[index]);
-                    entity.AddComponent(temp);
+                    // Use JSON serialization for reliable deep cloning
+                    try
+                    {
+                        var jsonSettings = new JsonSettings
+                        {
+                            PrettyPrint = false,
+                            TypeNameHandling = TypeNameHandling.Auto,
+                            PreserveReferencesHandling = false
+                        };
+                        
+                        var sourceData = copiedComponent.Data;
+                        if (sourceData != null)
+                        {
+                            // Store old data for undo
+                            var oldData = existingComponent.Data;
+                            
+                            // Clone the source data
+                            var json = Json.ToJson(sourceData, jsonSettings);
+                            var clonedData = (ComponentData)Json.FromJson(json, sourceData.GetType());
+                            
+                            // Create undo action
+                            EditorChangeTracker.PushUndo(
+                                new ComponentDataChangeAction(
+                                    existingComponent,
+                                    oldData,
+                                    clonedData,
+                                    $"Paste {copiedComponent.GetType().Name} to {entity.Name}"
+                            ),
+                            entity,
+                            $"Paste {copiedComponent.GetType().Name} to {entity.Name}"
+                        );
+                        
+                        // Apply the cloned data
+                        existingComponent.Data = clonedData;
+                        
+                        System.Console.WriteLine($"Pasted {copiedComponent.GetType().Name} values to {entity.Name}");
+						}
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Console.WriteLine($"Failed to paste component data: {ex.Message}");
+                        
+                        // Fallback: use component replacement
+                        var clonedComponent = copiedComponent.Clone();
+                        clonedComponent.Name = existingComponent.Name;
+                        entity.ReplaceComponent(clonedComponent);
+                        
+                        System.Console.WriteLine($"Used fallback paste method for {copiedComponent.GetType().Name}");
+                    }
+                    
+                    // Refresh the inspector to show the updated component
+                    _imGuiManager.RefreshMainEntityInspector();
+                }
+                else
+                {
+                    // No existing component of this type, add a clone
+                    var clonedComponent = copiedComponent.Clone();
+                    entity.AddComponent(clonedComponent);
+                    
+                    // Refresh the inspector to show the new component
+                    _imGuiManager.RefreshMainEntityInspector();
+                    
+                    System.Console.WriteLine($"Added {copiedComponent.GetType().Name} to {entity.Name}");
                 }
             }
 
@@ -374,19 +430,19 @@ public class EntityPane
             // Entity Commands
             if (ImGui.Selectable("Move Camera to " + entity.Name))
                 if (Core.Scene.Entities.Count > 0 && Core.IsEditMode)
-	                _imGuiManager.SetCameraTargetPosition(entity.Transform.Position);
+                    _imGuiManager.SetCameraTargetPosition(entity.Transform.Position);
 
-			// Clone logic
+            // Clone logic
             string reason = null;
             if (entity.Type == Entity.InstanceType.HardCoded)
             {
-				reason = "Can't duplicate HardCoded entities!";
-			}
+                reason = "Can't duplicate HardCoded entities!";
+            }
 
-			if (reason == null)
+            if (reason == null)
             {
                 if (ImGui.Selectable("Duplicate Entity " + entity.Name))
-	                DuplicateEntity(entity);
+                    DuplicateEntity(entity);
             }
             else
             {
@@ -493,83 +549,211 @@ public class EntityPane
 	/// <summary>
 	/// Duplicates the given entity and adds it to the scene.
 	/// If the entity is HardCoded, the clone will be of type Dynamic.
+	/// Uses JSON serialization for reliable component copying.
 	/// </summary>
 	public Entity DuplicateEntity(Entity entity, string customName = null, Entity.InstanceType type = Entity.InstanceType.Dynamic)
-    {
-	    if (entity == null || entity.Scene == null)
-		    return null;
+	{
+		if (entity == null || entity.Scene == null)
+			return null;
 
 		var typeName = entity.GetType().Name;
-	    if (EntityFactoryRegistry.TryCreate(typeName, out var clone))
-	    {
-		    // Set up the clone with basic properties first
-		    clone.Name = customName ?? Core.Scene.GetUniqueEntityName(entity.Name, entity);
-		    clone.Type = type;
-		    clone.Transform.Position = entity.Transform.Position;
-		    clone.Transform.Rotation = entity.Rotation;
-		    clone.Transform.Scale = entity.Scale;
-		    clone.SetTag(entity.Tag);
-		    clone.Enabled = entity.Enabled;
-		    clone.DebugRenderEnabled = entity.DebugRenderEnabled;
-		    clone.UpdateInterval = entity.UpdateInterval;
-		    clone.UpdateOrder = entity.UpdateOrder;
+		if (EntityFactoryRegistry.TryCreate(typeName, out var clone))
+		{
+			// Set up the clone with basic properties first
+			clone.Name = customName ?? Core.Scene.GetUniqueEntityName(entity.Name, entity);
+			clone.Type = type;
+			clone.Transform.Position = entity.Transform.Position;
+			clone.Transform.Rotation = entity.Rotation;
+			clone.Transform.Scale = entity.Scale;
+			clone.SetTag(entity.Tag);
+			clone.Enabled = entity.Enabled;
+			clone.DebugRenderEnabled = entity.DebugRenderEnabled;
+			clone.UpdateInterval = entity.UpdateInterval;
+			clone.UpdateOrder = entity.UpdateOrder;
 
-		    // Copy all components directly without using callbacks
-		    foreach (var sourceComponent in entity.Components)
-		    {
-			    // Remove any existing component of the same type and name
-			    var existingComponent = clone.Components.FirstOrDefault(c => c.GetType() == sourceComponent.GetType() && c.Name == sourceComponent.Name);
-			    if (existingComponent != null)
-			    {
-				    clone.RemoveComponent(existingComponent);
-			    }
+			// IMPORTANT: Copy all components from the source entity BEFORE invoking EntityCreated
+			// This ensures we preserve the original component data before OnAddedToScene runs
+			foreach (var sourceComponent in entity.Components)
+			{
+				// Check if clone already has a component of this type (from constructor)
+				var existingComponent = clone.Components.FirstOrDefault(c => 
+					c.GetType() == sourceComponent.GetType() && c.Name == sourceComponent.Name);
+				
+				if (existingComponent != null)
+				{
+					// Component already exists - copy the data from source to existing
+					if (sourceComponent.Data != null)
+					{
+						try
+						{
+							var componentJsonSettings = new JsonSettings
+							{
+								PrettyPrint = false,
+								TypeNameHandling = TypeNameHandling.Auto,
+								PreserveReferencesHandling = false
+							};
+							
+							// Serialize the source component data to JSON
+							var json = Json.ToJson(sourceComponent.Data, componentJsonSettings);
+							
+							// Deserialize back to a new instance (deep clone)
+							var clonedData = (ComponentData)Json.FromJson(json, sourceComponent.Data.GetType());
+							
+							// Apply the cloned data to the existing component
+							existingComponent.Data = clonedData;
+							
+							// Also copy other component properties
+							existingComponent.Enabled = sourceComponent.Enabled;
+							
+							System.Console.WriteLine($"Successfully copied data to existing component: {sourceComponent.GetType().Name}");
+						}
+						catch (Exception ex)
+						{
+							System.Console.WriteLine($"Failed to copy data to existing component {sourceComponent.GetType().Name}: {ex.Message}");
+						}
+					}
+				}
+				else
+				{
+					// Component doesn't exist - create a new one
+					var componentType = sourceComponent.GetType();
+					Component clonedComponent;
+					
+					try
+					{
+						clonedComponent = (Component)Activator.CreateInstance(componentType);
+					}
+					catch (Exception ex)
+					{
+						System.Console.WriteLine($"Failed to create component {componentType.Name}: {ex.Message}");
+						continue;
+					}
 
-			    // Clone and add the component
-			    var clonedComponent = sourceComponent.Clone();
-			    clone.AddComponent(clonedComponent);
-		    }
+					// Copy basic component properties
+					clonedComponent.Name = sourceComponent.Name;
+					clonedComponent.Enabled = sourceComponent.Enabled;
 
+					// Add the component first so it gets properly initialized
+					clone.AddComponent(clonedComponent);
 
-		    // Invoke entity creation to add to scene
-		    EntityFactoryRegistry.InvokeEntityCreated(clone);
+					// Copy component data using JSON serialization
+					if (sourceComponent.Data != null)
+					{
+						try
+						{
+							var componentJsonSettings = new JsonSettings
+							{
+								PrettyPrint = false,
+								TypeNameHandling = TypeNameHandling.Auto,
+								PreserveReferencesHandling = false
+							};
+							
+							// Serialize the source component data to JSON
+							var json = Json.ToJson(sourceComponent.Data, componentJsonSettings);
+							
+							// Deserialize back to a new instance (deep clone)
+							var clonedData = (ComponentData)Json.FromJson(json, sourceComponent.Data.GetType());
+							
+							// Apply the cloned data to the new component
+							clonedComponent.Data = clonedData;
 
-		    // Copy children if any exist, but SKIP HardCoded entities
-		    for (var i = 0; i < entity.Transform.ChildCount; i++)
-		    {
-			    var childEntity = entity.Transform.GetChild(i).Entity;
-			    
-			    // Skip HardCoded children - they should be created by the parent entity's initialization logic
-			    if (childEntity.Type == Entity.InstanceType.HardCoded)
-			    {
-				    continue;
-			    }
-			    
-			    // Only duplicate Dynamic and Prefab children
-			    var clonedChild = DuplicateEntity(childEntity, null, type);
-			    if (clonedChild != null)
-			    {
-				    clonedChild.Transform.SetParent(clone.Transform);
-			    }
-		    }
+							System.Console.WriteLine($"Successfully copied data for new component: {sourceComponent.GetType().Name}");
+						}
+						catch (Exception ex)
+						{
+							System.Console.WriteLine($"Failed to copy data for component {sourceComponent.GetType().Name}: {ex.Message}");
+							
+							// Fallback: try the Clone method if JSON fails
+							try
+							{
+								var fallbackClone = sourceComponent.Clone();
+								if (fallbackClone != null && fallbackClone.Data != null)
+								{
+									clonedComponent.Data = fallbackClone.Data;
+									System.Console.WriteLine($"Used Clone() fallback for component: {sourceComponent.GetType().Name}");
+								}
+							}
+							catch (Exception cloneEx)
+							{
+								System.Console.WriteLine($"Clone() fallback also failed for {sourceComponent.GetType().Name}: {cloneEx.Message}");
+							}
+						}
+					}
+				}
+			}
 
-		    // Undo/Redo support for entity creation
-		    EditorChangeTracker.PushUndo(
-                new EntityCreateDeleteUndoAction(entity.Scene, clone, wasCreated: true, $"Created: Entity {clone.Name}"),
-                clone,
-                $"Created: {clone.Name}"
-            );
+			// NOW invoke entity creation - this will call OnAddedToScene
+			// The components we copied above should be preserved
+			EntityFactoryRegistry.InvokeEntityCreated(clone);
 
-		    SelectedEntity = clone;
-            _imGuiManager.MainEntityInspector.DelayedSetEntity(clone);
-            
-            return clone;
-	    }
+			// After OnAddedToScene, copy any component data again for components that might have been reset
+			// This is a safety measure for components that get reinitialized in OnAddedToScene
+			foreach (var sourceComponent in entity.Components)
+			{
+				var targetComponent = clone.Components.FirstOrDefault(c => 
+					c.GetType() == sourceComponent.GetType() && c.Name == sourceComponent.Name);
+				
+				if (targetComponent != null && sourceComponent.Data != null)
+				{
+					try
+					{
+						var componentJsonSettings = new JsonSettings
+						{
+							PrettyPrint = false,
+							TypeNameHandling = TypeNameHandling.Auto,
+							PreserveReferencesHandling = false
+						};
+						
+						var json = Json.ToJson(sourceComponent.Data, componentJsonSettings);
+						var clonedData = (ComponentData)Json.FromJson(json, sourceComponent.Data.GetType());
+						targetComponent.Data = clonedData;
+						
+						System.Console.WriteLine($"Post-creation data copy for component: {sourceComponent.GetType().Name}");
+					}
+					catch (Exception ex)
+					{
+						System.Console.WriteLine($"Failed post-creation data copy for {sourceComponent.GetType().Name}: {ex.Message}");
+					}
+				}
+			}
+
+			// Copy children if any exist, but SKIP HardCoded entities
+			for (var i = 0; i < entity.Transform.ChildCount; i++)
+			{
+				var childEntity = entity.Transform.GetChild(i).Entity;
+				
+				// Skip HardCoded children - they should be created by the parent entity's initialization logic
+				if (childEntity.Type == Entity.InstanceType.HardCoded)
+				{
+					continue;
+				}
+				
+				// Only duplicate Dynamic and Prefab children
+				var clonedChild = DuplicateEntity(childEntity, null, type);
+				if (clonedChild != null)
+				{
+					clonedChild.Transform.SetParent(clone.Transform);
+				}
+			}
+
+			// Undo/Redo support for entity creation
+			EditorChangeTracker.PushUndo(
+				new EntityCreateDeleteUndoAction(entity.Scene, clone, wasCreated: true, $"Created: Entity {clone.Name}"),
+				clone,
+				$"Created: {clone.Name}"
+			);
+
+			SelectedEntity = clone;
+			_imGuiManager.MainEntityInspector.DelayedSetEntity(clone);
+			
+			return clone;
+		}
 		else
-	    {
-		    throw new InvalidOperationException(
-			    $"EntityFactoryRegistry: Entity type '{typeName}' is not registered in the factory. " +
-			    $"Did you forget to call EntityFactoryRegistry.Register(\"{typeName}\", ...)?");
-	    }
+		{
+			throw new InvalidOperationException(
+				$"EntityFactoryRegistry: Entity type '{typeName}' is not registered in the factory. " +
+				$"Did you forget to call EntityFactoryRegistry.Register(\"{typeName}\", ...)?");
+		}
 	}
 	#endregion
 

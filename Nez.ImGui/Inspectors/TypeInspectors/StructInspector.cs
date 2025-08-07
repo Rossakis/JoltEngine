@@ -91,12 +91,10 @@ namespace Nez.ImGuiTools.TypeInspectors
                     _structValueAtEditStart = GetValue();
                 }
 
-                // Draw all field inspectors with undo disabled
+                // Draw all field inspectors - don't disable undo anymore
                 foreach (var inspector in _inspectors)
                 {
-                    inspector.IsUndoDisabled = true;
-                    inspector.Draw();
-                    inspector.IsUndoDisabled = false;
+                    inspector.Draw(); // Remove undo disabling
                 }
 
                 // End edit session for drag/slider operations
@@ -107,21 +105,18 @@ namespace Nez.ImGuiTools.TypeInspectors
                     
                     if (!Equals(_structValueAtEditStart, structValueAtEditEnd))
                     {
-                        // Create undo action for the entire struct change (edit session)
-                        if (!IsUndoDisabled)
-                        {
-                            EditorChangeTracker.PushUndo(
-                                new PathUndoAction(
-                                    GetRootTarget(),
-                                    new List<string>(_pathFromRoot),
-                                    _structValueAtEditStart,
-                                    structValueAtEditEnd,
-                                    $"{GetFullPathDescription()} (struct modified)"
-                                ),
+                        // Always create undo action for struct changes
+                        EditorChangeTracker.PushUndo(
+                            new PathUndoAction(
                                 GetRootTarget(),
+                                new List<string>(_pathFromRoot),
+                                _structValueAtEditStart,
+                                structValueAtEditEnd,
                                 $"{GetFullPathDescription()} (struct modified)"
-                            );
-                        }
+                            ),
+                            GetRootTarget(),
+                            $"{GetFullPathDescription()} (struct modified)"
+                        );
                     }
                 }
 
@@ -132,21 +127,18 @@ namespace Nez.ImGuiTools.TypeInspectors
                     
                     if (!Equals(_structValueBeforeFrame, structValueAfterFrame))
                     {
-                        // Create undo action for immediate change
-                        if (!IsUndoDisabled)
-                        {
-                            EditorChangeTracker.PushUndo(
-                                new PathUndoAction(
-                                    GetRootTarget(),
-                                    new List<string>(_pathFromRoot),
-                                    _structValueBeforeFrame,
-                                    structValueAfterFrame,
-                                    $"{GetFullPathDescription()} (struct modified)"
-                                ),
+                        // Always create undo action for immediate changes
+                        EditorChangeTracker.PushUndo(
+                            new PathUndoAction(
                                 GetRootTarget(),
+                                new List<string>(_pathFromRoot),
+                                _structValueBeforeFrame,
+                                structValueAfterFrame,
                                 $"{GetFullPathDescription()} (struct modified)"
-                            );
-                        }
+                            ),
+                            GetRootTarget(),
+                            $"{GetFullPathDescription()} (struct modified)"
+                        );
                     }
                 }
             }

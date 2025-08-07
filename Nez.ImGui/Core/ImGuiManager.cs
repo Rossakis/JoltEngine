@@ -240,6 +240,18 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			OnAppExitSaveChanges(true);
 		}
 	}
+	private void ManageUndoAndRedo()
+	{
+		if (ImGui.GetIO().KeyCtrl && ImGui.IsKeyPressed(ImGuiKey.Z, false))
+		{
+			EditorChangeTracker.Undo();
+		}
+
+		if (ImGui.GetIO().KeyCtrl && ImGui.IsKeyPressed(ImGuiKey.Y, false))
+		{
+			EditorChangeTracker.Redo();
+		}
+	}
 
 	/// <summary>
 	/// draws the main menu bar
@@ -613,6 +625,14 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		MainEntityInspector = null;
 	}
 
+	/// <summary>
+	/// Refreshes the main entity inspector's component inspectors.
+	/// Call this after making changes to entity components.
+	/// </summary>
+	public void RefreshMainEntityInspector()
+	{
+	    MainEntityInspector?.RefreshComponentInspectors();
+	}
 	#endregion
 
 	#region Entity Selection

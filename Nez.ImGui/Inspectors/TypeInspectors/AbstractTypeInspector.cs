@@ -29,10 +29,10 @@ namespace Nez.ImGuiTools.TypeInspectors
 		/// </summary>
 		public bool IsTargetDestroyed => _isTargetDestroyed;
 
-		/// <summary>
-		/// When true, this inspector will not create undo actions
-		/// </summary>
-		public bool IsUndoDisabled { get; set; } = false;
+		// /// <summary>
+		// /// When true, this inspector will not create undo actions
+		// /// </summary>
+		// public bool IsUndoDisabled { get; set; } = false;
 
 		/// <summary>
 		/// Public accessor for MemberInfo (needed by StructInspector)
@@ -293,12 +293,6 @@ namespace Nez.ImGuiTools.TypeInspectors
 		/// </summary>
 		protected void SetValueWithUndo(object newValue, string description = null)
 		{
-			if (IsUndoDisabled)
-			{
-				SetValue(newValue);
-				return;
-			}
-			
 			var oldValue = GetValue();
 			if (!Equals(oldValue, newValue))
 			{

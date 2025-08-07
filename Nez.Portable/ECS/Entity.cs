@@ -435,38 +435,81 @@ public class Entity : IComparable<Entity>
 	/// <param name="entity">Entity.</param>
 	public void CopyEntityFrom(Entity entity, string customName = null, InstanceType type = InstanceType.Dynamic)
 	{
-		if(customName != null)
-			Name = customName;
-		else
-			Name = Core.Scene.GetUniqueEntityName(entity.Name, entity);
-
 		Type = type;
-		Transform.Position = entity.Transform.Position;
-		Transform.Rotation = entity.Rotation;
-		Transform.Scale = entity.Scale;
-		SetTag(entity.Tag);
-		Enabled = entity.Enabled;
-		DebugRenderEnabled = entity.DebugRenderEnabled;
-		UpdateInterval = entity.UpdateInterval;
+		Name = customName ?? entity.Name;
+		Tag = entity.Tag;
 		UpdateOrder = entity.UpdateOrder;
+		Enabled = entity.Enabled;
+		Transform.Position = entity.Transform.Position;
+		Transform.Rotation = entity.Transform.Rotation;
+		Transform.Scale = entity.Transform.Scale;
 
-		// Simple component copying - replace existing components with clones
-		foreach (var sourceComponent in entity.Components)
+		for (var i = 0; i < entity.Components.Count; i++)
 		{
-			// Remove any existing component of the same type and name
-			var targetComponent = Components.FirstOrDefault(c => c.GetType() == sourceComponent.GetType() && c.Name == sourceComponent.Name);
-			if (targetComponent != null)
-				RemoveComponent(targetComponent);
+			var sourceComponent = entity.Components[i];
+			
+			// Create new component instance
+			var componentType = sourceComponent.GetType();
+			Component clonedComponent;
+			
+			try
+			{
+				clonedComponent = (Component)Activator.CreateInstance(componentType);
+			}
+			catch (Exception ex)
+			{
+				System.Console.WriteLine($"Failed to create component {componentType.Name}: {ex.Message}");
+				continue;
+			}
 
-			// Clone and add the component
-			var clone = sourceComponent.Clone();
-			AddComponent(clone);
+			// Copy basic component properties
+			clonedComponent.Name = sourceComponent.Name;
+			clonedComponent.Enabled = sourceComponent.Enabled;
+
+			// Add the component first
+			AddComponent(clonedComponent);
+
+			// Use JSON serialization for reliable component data copying
+			if (sourceComponent.Data != null)
+			{
+				try
+				{
+					var componentJsonSettings = new JsonSettings
+					{
+						PrettyPrint = false,
+						TypeNameHandling = TypeNameHandling.Auto,
+						PreserveReferencesHandling = false
+					};
+					
+					var json = Json.ToJson(sourceComponent.Data, componentJsonSettings);
+					var clonedData = (ComponentData)Json.FromJson(json, sourceComponent.Data.GetType());
+					clonedComponent.Data = clonedData;
+				}
+				catch (Exception ex)
+				{
+					System.Console.WriteLine($"Failed to copy component data via JSON for {sourceComponent.GetType().Name}: {ex.Message}");
+					//
+					// // Fallback to Clone method
+					// try
+					// {
+					// 	var fallbackClone = sourceComponent.Clone();
+					// 	if (fallbackClone?.Data != null)
+					// 	{
+					// 		clonedComponent.Data = fallbackClone.Data;
+					// 	}
+					// }
+					// catch (Exception cloneEx)
+					// {
+					// 	System.Console.WriteLine($"Clone fallback also failed for {sourceComponent.GetType().Name}: {cloneEx.Message}");
+					// }
+				}
+			}
 		}
 	}
 
 
 	/// <summary>
-	/// Find a component in this entity that has the same type and name as the source component, and then copies it
+	/// Find a component in this entity that has the same type and name as the source component, and then copies it using JSON serialization
 	/// </summary>
 	/// <param name="entity"></param>
 	public void CopySameComponentFromEntity(Entity entity)
@@ -477,10 +520,111 @@ public class Entity : IComparable<Entity>
 			var targetComponent = Components.FirstOrDefault(c => c.GetType() == sourceComponent.GetType() && c.Name == sourceComponent.Name);
 
 			if (targetComponent != null)
-				RemoveComponent(targetComponent);
+			{
+				// Use the same approach as component paste with JSON serialization
+				if (sourceComponent.Data != null)
+				{
+					try
+					{
+						// Use JSON serialization for reliable component data copying (same as paste)
+						var componentJsonSettings = new JsonSettings
+						{
+							PrettyPrint = false,
+							TypeNameHandling = TypeNameHandling.Auto,
+							PreserveReferencesHandling = false
+						};
+						
+						// Serialize the source component data to JSON
+						var json = Json.ToJson(sourceComponent.Data, componentJsonSettings);
+						
+						// Deserialize back to a new instance (deep clone)
+						var clonedData = (ComponentData)Json.FromJson(json, sourceComponent.Data.GetType());
+						
+						// Apply the cloned data to the target component
+						targetComponent.Data = clonedData;
+						
+						System.Console.WriteLine($"Successfully copied data for component: {sourceComponent.GetType().Name}");
+					}
+					catch (Exception ex)
+					{
+						System.Console.WriteLine($"Failed to copy component data via JSON for {sourceComponent.GetType().Name}: {ex.Message}");
+						
+						// Fallback to Clone method
+						try
+						{
+							var fallbackClone = sourceComponent.Clone();
+							if (fallbackClone?.Data != null)
+							{
+								targetComponent.Data = fallbackClone.Data;
+								System.Console.WriteLine($"Used Clone() fallback for component: {sourceComponent.GetType().Name}");
+							}
+						}
+						catch (Exception cloneEx)
+						{
+							System.Console.WriteLine($"Clone fallback also failed for {sourceComponent.GetType().Name}: {cloneEx.Message}");
+						}
+					}
+				}
+			}
+			else
+			{
+				// No existing component of this type, create a new one using JSON serialization
+				var componentType = sourceComponent.GetType();
+				Component newComponent;
+				
+				try
+				{
+					newComponent = (Component)Activator.CreateInstance(componentType);
+				}
+				catch (Exception ex)
+				{
+					System.Console.WriteLine($"Failed to create component {componentType.Name}: {ex.Message}");
+					continue;
+				}
 
-			var clone = sourceComponent.Clone();
-			AddComponent(clone);
+				// Copy basic component properties
+				newComponent.Name = sourceComponent.Name;
+				newComponent.Enabled = sourceComponent.Enabled;
+
+				// Add the component first
+				AddComponent(newComponent);
+
+				// Use JSON serialization for reliable component data copying
+				if (sourceComponent.Data != null)
+				{
+					try
+					{
+						var componentJsonSettings = new JsonSettings
+						{
+							PrettyPrint = false,
+							TypeNameHandling = TypeNameHandling.Auto,
+							PreserveReferencesHandling = false
+						};
+						
+						var json = Json.ToJson(sourceComponent.Data, componentJsonSettings);
+						var clonedData = (ComponentData)Json.FromJson(json, sourceComponent.Data.GetType());
+						newComponent.Data = clonedData;
+					}
+					catch (Exception ex)
+					{
+						System.Console.WriteLine($"Failed to copy component data via JSON for {sourceComponent.GetType().Name}: {ex.Message}");
+						
+						// Fallback to Clone method
+						try
+						{
+							var fallbackClone = sourceComponent.Clone();
+							if (fallbackClone?.Data != null)
+							{
+								newComponent.Data = fallbackClone.Data;
+							}
+						}
+						catch (Exception cloneEx)
+						{
+							System.Console.WriteLine($"Clone fallback also failed for {sourceComponent.GetType().Name}: {cloneEx.Message}");
+						}
+					}
+				}
+			}
 		}
 	}
 

@@ -527,23 +527,6 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		}
 	}
 
-
-	private void ManageUndoAndRedo()
-	{
-		if(!Core.IsEditMode)
-			return;
-
-		if (ImGui.GetIO().KeyCtrl && ImGui.IsKeyPressed(ImGuiKey.Z, false))
-		{
-			EditorChangeTracker.Undo();
-		}
-
-		if (ImGui.GetIO().KeyCtrl && ImGui.IsKeyPressed(ImGuiKey.Y, false))
-		{
-			EditorChangeTracker.Redo();
-		}
-	}
-
 	#endregion
 
 

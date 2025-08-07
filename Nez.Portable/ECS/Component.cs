@@ -172,15 +172,24 @@ public class Component : IComparable<Component>
 	#endregion
 
 	/// <summary>
-	/// creates a clone of this Component. The default implementation is just a MemberwiseClone so if a Component has object references
-	/// that need to be cloned this method should be overriden.
+	/// Creates a clone of this component. Override this method in derived classes for proper deep copying.
+	/// Default implementation creates a new instance of the same type but doesn't copy any data.
 	/// </summary>
+	/// <returns>A new component instance</returns>
 	public virtual Component Clone()
 	{
-		var component = MemberwiseClone() as Component;
-		component.Entity = null;
-
-		return component;
+		// Default implementation - creates new instance but doesn't copy data
+		var componentType = GetType();
+		var clone = (Component)Activator.CreateInstance(componentType);
+		
+		// Copy basic component properties
+		clone.Name = Name;
+		clone.Enabled = Enabled;
+		
+		// Entity will be set when the component is added to the target entity
+		clone.Entity = null;
+		
+		return clone;
 	}
 
 	public int CompareTo(Component other)
