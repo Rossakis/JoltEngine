@@ -527,6 +527,8 @@ public class Core : Game
 
 	public static event Action OnChangedToEditMode;
 	public static event Action OnChangedToPlayMode;
+	public static event Action OnResetScene;
+	public static event Action<bool> OnSwitchEditMode;
 
 	private static bool _isEditMode;
 	private static bool _hasBeenInEditMode;
@@ -550,9 +552,19 @@ public class Core : Game
 				{
 					OnChangedToPlayMode?.Invoke();
 				}
+
 			}
 		}
 	}
+	public static void InvokeSwitchEditMode(bool isEditMode)
+	{
+		Core.IsEditMode = isEditMode;
+		OnSwitchEditMode?.Invoke(isEditMode);
+	}
 
-    
+
+	public static void InvokeResetScene()
+	{
+		OnResetScene?.Invoke();
+	}
 }

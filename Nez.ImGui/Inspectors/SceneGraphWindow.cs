@@ -121,9 +121,6 @@ public class SceneGraphWindow
 
 		var windowFlags = ImGuiWindowFlags.NoMove;
 
-		if(Input.IsKeyPressed(Keys.F5))
-			_imGuiManager.InvokeResetScene();
-
 		if (ImGui.Begin("Scene Graph", ref isOpen, windowFlags))
 		{
 			// Update width after user resizes
@@ -138,11 +135,11 @@ public class SceneGraphWindow
 				NezImGui.SmallVerticalSpace();
 
 				if (NezImGui.CenteredButton("Edit Mode", 0.8f))
-					_imGuiManager.InvokeSwitchEditMode(Nez.Core.IsEditMode = false);
+					Core.InvokeSwitchEditMode(false); 
 
 				NezImGui.SmallVerticalSpace();
 				if (NezImGui.CenteredButton("Reset Scene", 0.8f))
-					_imGuiManager.InvokeResetScene();
+					Core.InvokeResetScene();
 			}
 			else
 			{
@@ -150,7 +147,7 @@ public class SceneGraphWindow
 				NezImGui.SmallVerticalSpace();
 
 				if (NezImGui.CenteredButton("Play Mode", 0.8f))
-					_imGuiManager.InvokeSwitchEditMode(Nez.Core.IsEditMode = true);
+					Core.InvokeSwitchEditMode(true);
 			}
 
 			NezImGui.MediumVerticalSpace();

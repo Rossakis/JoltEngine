@@ -271,18 +271,21 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 	public override void OnEnabled()
 	{
 		Core.OnChangedToPlayMode += UnPause;
-		Core.OnChangedToEditMode += Pause;
 	}
 
 	public override void OnDisabled()
 	{
 		Core.OnChangedToPlayMode -= UnPause;
-		Core.OnChangedToEditMode -= Pause;
 	}
 #endif
 
 	public virtual void Update()
 	{
+#if DEBUG // Pause in EditMode
+		if(Core.IsEditMode && AnimationState == State.Running)
+			Pause();
+#endif
+
 		if (AnimationState != State.Running || CurrentAnimation == null)
 			return;
 

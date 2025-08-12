@@ -91,8 +91,6 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	/// Can be used to wait for the scene changes to happen first.
 	/// </summary>
 	public event Func<Task> OnSaveSceneAsync;
-	public event Action OnResetScene;
-	public event Action<bool> OnSwitchEditMode;
 	public event Func<Entity, Task<bool>> OnPrefabCreated;
 	public event Func<string, PrefabData> OnPrefabLoadRequested;
 	public event Action<Entity, object> OnLoadEntityData; // Add this for loading entity data
@@ -101,16 +99,6 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	public void InvokeSaveSceneChanges()
 	{
 		OnSaveSceneAsync?.Invoke();
-	}
-
-	public void InvokeResetScene()
-	{
-		OnResetScene?.Invoke();
-	}
-
-	public void InvokeSwitchEditMode(bool isEditMode)
-	{
-		OnSwitchEditMode?.Invoke(isEditMode);
 	}
 
 	public async Task<bool> InvokePrefabCreated(Entity prefabEntity)
@@ -170,8 +158,8 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		Scene.OnFinishedAddingEntitiesWithData += OpenMainEntityInspector;
 		Core.EmitterWithPending.AddObserver(CoreEvents.Exiting, OnAppExitSaveChanges);
 
-		OnResetScene += RequestResetScene;
-		OnSwitchEditMode += OnEditModeSwitched;
+		Core.OnResetScene += RequestResetScene;
+		Core.OnSwitchEditMode += OnEditModeSwitched;
 	}
 
 	/// <summary>
@@ -217,30 +205,19 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		GlobalKeyCommands();
 	}
 
-	private bool isSavePressed;
 	public void GlobalKeyCommands()
 	{
-		if (ImGui.IsKeyPressed(ImGuiKey.F1) || ImGui.IsKeyPressed(ImGuiKey.F2))
-			InvokeSwitchEditMode(Core.IsEditMode = !Core.IsEditMode);
+		if (ImGui.IsKeyPressed(ImGuiKey.F5, false))
+			Core.InvokeResetScene();
 
-		// Save scene changes if Ctrl+S is pressed
-		if (ImGui.GetIO().KeyCtrl && ImGui.IsKeyPressed(ImGuiKey.S) && !isSavePressed)
-		{
-			isSavePressed = true;
+		if (ImGui.IsKeyPressed(ImGuiKey.F1, false) || ImGui.IsKeyPressed(ImGuiKey.F2, false))
+			Core.InvokeSwitchEditMode(!Core.IsEditMode);
+		
+		if (ImGui.GetIO().KeyCtrl && ImGui.IsKeyPressed(ImGuiKey.S, false))
 			InvokeSaveSceneChanges();
-		}
 
-		if(ImGui.IsKeyReleased(ImGuiKey.S) && isSavePressed)
-		{
-			isSavePressed = false;
-		}
-
-		// Handle Alt+F4 (regardless of window focus)
-		if (ImGui.GetIO().KeyAlt && ImGui.IsKeyReleased(ImGuiKey.F4) && !_pendingExit)
-		{
-			// This triggers the same exit/save prompt as the window close event
-			OnAppExitSaveChanges(true);
-		}
+		if (ImGui.GetIO().KeyAlt && ImGui.IsKeyPressed(ImGuiKey.F4, false) && !_pendingExit)
+			OnAppExitSaveChanges(true); // This triggers the same exit/save prompt as the window close event
 	}
 	private void ManageUndoAndRedo()
 	{
