@@ -91,7 +91,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	/// Can be used to wait for the scene changes to happen first.
 	/// </summary>
 	public event Func<Task> OnSaveSceneAsync;
-	public event Func<Entity, Task<bool>> OnPrefabCreated;
+	public event Func<Entity, bool, Task<bool>> OnPrefabCreated;
 	public event Func<string, PrefabData> OnPrefabLoadRequested;
 	public event Action<Entity, object> OnLoadEntityData; // Add this for loading entity data
 
@@ -101,11 +101,11 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		OnSaveSceneAsync?.Invoke();
 	}
 
-	public async Task<bool> InvokePrefabCreated(Entity prefabEntity)
+	public async Task<bool> InvokePrefabCreated(Entity prefabEntity, bool overrideExistingPrefab)
 	{
 		if (OnPrefabCreated != null)
 		{
-			return await OnPrefabCreated.Invoke(prefabEntity);
+			return await OnPrefabCreated.Invoke(prefabEntity, overrideExistingPrefab);
 		}
 		return false;
 	}

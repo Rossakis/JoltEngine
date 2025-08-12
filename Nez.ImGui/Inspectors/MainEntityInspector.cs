@@ -42,6 +42,11 @@ public class MainEntityInspector
 	private bool _showApplyToPrefabCopiesConfirmation = false;
 	private List<Entity> _prefabCopiesToModify = new();
 
+	private ImGuiManager _imGuiManager;
+
+	// Add these fields to MainEntityInspector
+	private bool _showApplyToOriginalPrefabConfirmation = false;
+
 	public MainEntityInspector(Entity entity = null)
 	{
 		Entity = entity;
@@ -330,8 +335,18 @@ public class MainEntityInspector
 					}
 				}
 				
+				if (Entity.Type == Entity.InstanceType.Prefab && !string.IsNullOrEmpty(Entity.OriginalPrefabName))
+				{
+					NezImGui.MediumVerticalSpace();
+					if (NezImGui.CenteredButton("Apply to Original Prefab", 0.8f))
+					{
+						_showApplyToOriginalPrefabConfirmation = true;
+					}
+				}
+				
 				DrawPrefabCreatorPopup();
 				DrawApplyToPrefabCopiesConfirmationPopup(); // Add this new popup
+				DrawApplyToOriginalPrefabConfirmationPopup();
 			}
 		}
 
@@ -423,7 +438,7 @@ public class MainEntityInspector
 	/// Creates a prefab from the current entity using the DuplicateEntity method from EntityPane.
 	/// Handles async saving and notifications.
 	/// </summary>
-	private async void CreatePrefabFromEntity(string prefabName)
+	private async void CreatePrefabFromEntity(string prefabName, bool canOverride = false)
 	{
 		if (Entity == null || _imguiManager?.SceneGraphWindow?.EntityPane == null)
 			return;
@@ -434,7 +449,7 @@ public class MainEntityInspector
 		if (newPrefab != null)
 		{
 			// Save the prefab using the async event system
-			bool saveSuccessful = await _imguiManager.InvokePrefabCreated(newPrefab);
+			bool saveSuccessful = await _imguiManager.InvokePrefabCreated(newPrefab, false);
 			
 			if (saveSuccessful)
 			{
@@ -442,7 +457,7 @@ public class MainEntityInspector
 				_imguiManager.SceneGraphWindow.AddPrefabToCache(newPrefab.Name);
 				NotificationSystem.ShowTimedNotification($"Successfully created and saved prefab: {newPrefab.Name}");
 			}
-			else
+			else if(!canOverride)
 			{
 				NotificationSystem.ShowTimedNotification($"Failed to save prefab: {newPrefab.Name} - Prefab with this name already exists!");
 			}
@@ -722,6 +737,96 @@ public class MainEntityInspector
 			}
 
 			ImGui.EndPopup();
+		}
+	}
+
+	private async void ApplyToOriginalPrefab()
+	{
+		// Save the current entity's data to its original prefab file
+		if (Entity != null && Entity.Type == Entity.InstanceType.Prefab && !string.IsNullOrEmpty(Entity.OriginalPrefabName))
+		{
+			// Save the prefab using the async event system
+			bool saveSuccessful = await _imGuiManager.InvokePrefabCreated(Entity, false);
+
+			if (saveSuccessful)
+			{
+				NotificationSystem.ShowTimedNotification($"Applied changes to original prefab: {Entity.OriginalPrefabName}");
+			}
+			else
+			{
+				NotificationSystem.ShowTimedNotification($"Failed to apply changes to prefab: {Entity.OriginalPrefabName}");
+			}
+		}
+	}
+
+	/// <summary>
+	/// Draws the confirmation popup for applying changes to the original prefab.
+	/// </summary>
+	private void DrawApplyToOriginalPrefabConfirmationPopup()
+	{
+		if (_showApplyToOriginalPrefabConfirmation)
+		{
+			ImGui.OpenPopup("apply-to-original-prefab-confirmation");
+			_showApplyToOriginalPrefabConfirmation = false; // Only open once
+		}
+
+		// Center the popup when it first appears
+		var center = new Num.Vector2(Screen.Width * 0.5f, Screen.Height * 0.5f);
+		ImGui.SetNextWindowPos(center, ImGuiCond.Appearing, new Num.Vector2(0.5f, 0.5f));
+		ImGui.SetNextWindowSize(new Num.Vector2(400, 0), ImGuiCond.Appearing);
+
+		bool open = true;
+		if (ImGui.BeginPopupModal("apply-to-original-prefab-confirmation", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoTitleBar))
+		{
+			ImGui.TextColored(new Num.Vector4(1.0f, 0.6f, 0.2f, 1.0f), $"Are you sure you want to override the data of '{Entity.OriginalPrefabName}'?");
+			ImGui.Separator();
+			ImGui.TextWrapped("This action will overwrite the original prefab file and cannot be undone outside of this session.");
+
+			NezImGui.MediumVerticalSpace();
+
+			// Center the buttons
+			var buttonWidth = 80f;
+			var spacing = 10f;
+			var totalButtonWidth = (buttonWidth * 2) + spacing;
+			var windowWidth = ImGui.GetWindowSize().X;
+			var centerStart = (windowWidth - totalButtonWidth) * 0.5f;
+			
+			ImGui.SetCursorPosX(centerStart);
+
+			if (ImGui.Button("Yes", new Num.Vector2(buttonWidth, 0)))
+			{
+				ApplyToOriginalPrefabWithUndo();
+				ImGui.CloseCurrentPopup();
+			}
+
+			ImGui.SameLine();
+
+			if (ImGui.Button("No", new Num.Vector2(buttonWidth, 0)))
+			{
+				ImGui.CloseCurrentPopup();
+			}
+
+			ImGui.EndPopup();
+		}
+	}
+
+	// Undo-enabled ApplyToOriginalPrefab
+	private async void ApplyToOriginalPrefabWithUndo()
+	{
+		// Save the current entity's data to its original prefab file
+		if (Entity != null && Entity.Type == Entity.InstanceType.Prefab && !string.IsNullOrEmpty(Entity.OriginalPrefabName))
+		{
+			// Save the prefab using the async event system
+			bool saveSuccessful = await Core.GetGlobalManager<ImGuiManager>().InvokePrefabCreated(Entity, true);
+
+			if (saveSuccessful)
+			{
+				NotificationSystem.ShowTimedNotification($"Applied changes to original prefab: {Entity.OriginalPrefabName}");
+			}
+			else
+			{
+				NotificationSystem.ShowTimedNotification($"Failed to apply changes to prefab: {Entity.OriginalPrefabName}");
+			}
 		}
 	}
 }
