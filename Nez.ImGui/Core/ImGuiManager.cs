@@ -215,9 +215,15 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		
 		if (ImGui.GetIO().KeyCtrl && ImGui.IsKeyPressed(ImGuiKey.S, false))
 			InvokeSaveSceneChanges();
-
+		
+		// This triggers the same exit/save prompt as the window close event
+#if OS_WINDOWS || LINUX
 		if (ImGui.GetIO().KeyAlt && ImGui.IsKeyPressed(ImGuiKey.F4, false) && !_pendingExit)
-			OnAppExitSaveChanges(true); // This triggers the same exit/save prompt as the window close event
+			OnAppExitSaveChanges(true); 
+#elif OS_MAC
+		if (ImGui.GetIO().KeySuper && ImGui.IsKeyPressed(ImGuiKey.Q, false) && !_pendingExit)
+			OnAppExitSaveChanges(true); 
+#endif
 	}
 	private void ManageUndoAndRedo()
 	{
