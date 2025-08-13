@@ -196,7 +196,7 @@ namespace Nez.ImGuiTools.TypeInspectors
                 var picker = FilePicker.GetFilePicker(this, Path.Combine(Environment.CurrentDirectory, "Content"), extensions);
                 picker.DontAllowTraverselBeyondRootFolder = true;
 
-                DrawFilePickerContent(picker);
+                FilePicker.DrawFilePickerContent(picker);
 
                 ImGui.Separator();
                 
@@ -240,7 +240,7 @@ namespace Nez.ImGuiTools.TypeInspectors
 
                 ImGui.Separator();
 
-                DrawFilePickerContent(picker);
+                FilePicker.DrawFilePickerContent(picker);
 
                 ImGui.Separator();
                 if (DrawCustomButtons(picker, (sr, path) => LoadAsepriteFileFromPicker(sr, path, _frameNumber, string.IsNullOrEmpty(_layerName) ? null : _layerName), "Load"))
@@ -278,7 +278,7 @@ namespace Nez.ImGuiTools.TypeInspectors
                 {
                     if (ImGui.BeginChild("file-picker", new Num.Vector2(480, 0), true))
                     {
-                        DrawFilePickerContent(picker);
+	                    FilePicker.DrawFilePickerContent(picker);
                         ImGui.EndChild();
                     }
 
@@ -413,47 +413,6 @@ namespace Nez.ImGuiTools.TypeInspectors
 
                 ImGui.EndPopup();
             }
-        }
-
-        private void DrawFilePickerContent(FilePicker picker)
-        {
-            ImGui.Text("Current Folder: " + Path.GetFileName(picker.RootFolder) + picker.CurrentFolder.Replace(picker.RootFolder, ""));
-
-            if (ImGui.BeginChildFrame(1, new Num.Vector2(500, 400)))
-            {
-                var di = new DirectoryInfo(picker.CurrentFolder);
-                if (di.Exists)
-                {
-                    if (di.Parent != null && (!picker.DontAllowTraverselBeyondRootFolder || picker.CurrentFolder != picker.RootFolder))
-                    {
-                        ImGui.PushStyleColor(ImGuiCol.Text, Color.Yellow.PackedValue);
-                        if (ImGui.Selectable("../", false, ImGuiSelectableFlags.DontClosePopups))
-                            picker.CurrentFolder = di.Parent.FullName;
-                        ImGui.PopStyleColor();
-                    }
-
-                    var fileSystemEntries = GetFileSystemEntries(picker, di.FullName);
-                    foreach (var fse in fileSystemEntries)
-                    {
-                        if (Directory.Exists(fse))
-                        {
-                            var name = Path.GetFileName(fse);
-                            ImGui.PushStyleColor(ImGuiCol.Text, Color.Yellow.PackedValue);
-                            if (ImGui.Selectable(name + "/", false, ImGuiSelectableFlags.DontClosePopups))
-                                picker.CurrentFolder = fse;
-                            ImGui.PopStyleColor();
-                        }
-                        else
-                        {
-                            var name = Path.GetFileName(fse);
-                            bool isSelected = picker.SelectedFile == fse;
-                            if (ImGui.Selectable(name, isSelected, ImGuiSelectableFlags.DontClosePopups))
-                                picker.SelectedFile = fse;
-                        }
-                    }
-                }
-            }
-            ImGui.EndChildFrame();
         }
 
         private bool DrawCustomButtons(FilePicker picker, Action<SpriteRenderer, string> loadAction, string confirmText)

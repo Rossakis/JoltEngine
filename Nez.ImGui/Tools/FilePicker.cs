@@ -204,5 +204,45 @@ namespace Nez.ImGuiTools
 			return ret;
 		}
 	
+		public static void DrawFilePickerContent(FilePicker picker)
+		{
+			ImGui.Text("Current Folder: " + Path.GetFileName(picker.RootFolder) + picker.CurrentFolder.Replace(picker.RootFolder, ""));
+
+			if (ImGui.BeginChildFrame(1, new Num.Vector2(500, 400)))
+			{
+				var di = new DirectoryInfo(picker.CurrentFolder);
+				if (di.Exists)
+				{
+					if (di.Parent != null && (!picker.DontAllowTraverselBeyondRootFolder || picker.CurrentFolder != picker.RootFolder))
+					{
+						ImGui.PushStyleColor(ImGuiCol.Text, Microsoft.Xna.Framework.Color.Yellow.PackedValue);
+						if (ImGui.Selectable("../", false, ImGuiSelectableFlags.DontClosePopups))
+							picker.CurrentFolder = di.Parent.FullName;
+						ImGui.PopStyleColor();
+					}
+
+					var fileSystemEntries = picker.GetFileSystemEntries(di.FullName);
+					foreach (var fse in fileSystemEntries)
+					{
+						if (Directory.Exists(fse))
+						{
+							var name = Path.GetFileName(fse);
+							ImGui.PushStyleColor(ImGuiCol.Text, Microsoft.Xna.Framework.Color.Yellow.PackedValue);
+							if (ImGui.Selectable(name + "/", false, ImGuiSelectableFlags.DontClosePopups))
+								picker.CurrentFolder = fse;
+							ImGui.PopStyleColor();
+						}
+						else
+						{
+							var name = Path.GetFileName(fse);
+							bool isSelected = picker.SelectedFile == fse;
+							if (ImGui.Selectable(name, isSelected, ImGuiSelectableFlags.DontClosePopups))
+								picker.SelectedFile = fse;
+						}
+					}
+				}
+			}
+			ImGui.EndChildFrame();
+		}
 	}
 }

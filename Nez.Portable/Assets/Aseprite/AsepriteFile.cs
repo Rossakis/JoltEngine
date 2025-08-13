@@ -86,6 +86,7 @@ public sealed class AsepriteFile
 		CanvasHeight = height;
 		ColorDepth = colorDepth;
 		Frames = frames;
+		Layers = layers;
 		Tags = tags;
 		Slices = slices;
 		Warnings = warnings;

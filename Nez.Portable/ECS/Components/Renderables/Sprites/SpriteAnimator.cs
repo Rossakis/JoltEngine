@@ -7,6 +7,19 @@ using Microsoft.Xna.Framework;
 
 namespace Nez.Sprites;
 
+public struct AnimationEvent
+{
+	public float Time;
+	public string Name;
+	public Action Callback;
+	public AnimationEvent(float time, string name, Action callback)
+	{
+		Time = time;
+		Name = name;
+		Callback = callback;
+	}
+}
+
 /// <summary>
 /// SpriteAnimator handles the display and animation of a sprite
 /// </summary>
@@ -23,7 +36,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 		public SpriteAnimator.LoopMode CurrentLoopMode = SpriteAnimator.LoopMode.Loop;
 		public int CurrentFrame = 0;
 		public float ElapsedTime = 0f;
-		
+
 		// SpriteRenderer properties - store color as individual RGBA components for proper serialization
 		public string TextureFilePath = "";
 		public byte ColorR = 255;
@@ -36,6 +49,11 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 		public int RenderLayer = 0;
 		public bool Enabled = true;
 		public SpriteEffects SpriteEffects = SpriteEffects.None;
+		public List<string> LoadedLayers = new();
+		public string LoadedTag = "";
+
+		// Animation events
+		public List<AnimationEvent> AnimationEvents = new();
 
 		// Helper property to get/set Color easily (not serialized)
 		public Color Color
@@ -59,7 +77,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 			CurrentLoopMode = SpriteAnimator.LoopMode.Loop;
 			CurrentFrame = 0;
 			ElapsedTime = 0f;
-			
+
 			// SpriteRenderer defaults
 			TextureFilePath = "";
 			ColorR = 255;
@@ -72,6 +90,8 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 			RenderLayer = 0;
 			Enabled = true;
 			SpriteEffects = SpriteEffects.None;
+
+			AnimationEvents = new List<AnimationEvent>();
 		}
 
 		public SpriteAnimatorComponentData(SpriteAnimator animator)
@@ -83,9 +103,9 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 			CurrentLoopMode = animator.CurrentLoopMode;
 			CurrentFrame = animator.CurrentFrame;
 			ElapsedTime = animator.CurrentElapsedTime;
-			
+
 			// Capture SpriteRenderer properties using the Color helper property
-			TextureFilePath = animator.Sprite?.Texture2D?.Name ?? "";
+			TextureFilePath = animator.TextureFilePath ?? "";
 			Color = animator.Color;  // This uses the helper property to set RGBA components
 			LocalOffset = animator.LocalOffset;
 			Origin = animator.Origin;
@@ -93,10 +113,31 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 			RenderLayer = animator.RenderLayer;
 			Enabled = animator.Enabled;
 			SpriteEffects = animator.SpriteEffects;
+
+			// Copy animation events
+			AnimationEvents = animator.AnimationEvents != null
+				? new List<AnimationEvent>(animator.AnimationEvents)
+				: new List<AnimationEvent>();
+
+			LoadedLayers = animator.LoadedLayers != null ? new List<string>(animator.LoadedLayers) : new List<string>();
+			LoadedTag = animator.LoadedTag ?? "";
 		}
 	}
 
 	private SpriteAnimatorComponentData _animatorData = new SpriteAnimatorComponentData();
+
+	/// <summary>
+	/// List of animation events for this animator.
+	/// </summary>
+	public List<AnimationEvent> AnimationEvents { get; set; } = new();
+
+	/// <summary>
+	/// The file path to the Aseprite file used for loading animations.
+	/// </summary>
+	public string TextureFilePath { get; set; } = "";
+
+	public List<string> LoadedLayers { get; set; } = new();
+	public string LoadedTag { get; set; } = "";
 
 	public override ComponentData Data
 	{
@@ -123,11 +164,16 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 			_animatorData.Enabled = Enabled;
 			_animatorData.SpriteEffects = SpriteEffects;
 
-			// Only update TextureFilePath if we don't already have one stored
-			if (string.IsNullOrEmpty(_animatorData.TextureFilePath) && Sprite?.Texture2D?.Name != null)
-			{
-				_animatorData.TextureFilePath = Sprite.Texture2D.Name;
-			}
+			// Update TextureFilePath for animator
+			_animatorData.TextureFilePath = TextureFilePath;
+
+			// Update animation events
+			_animatorData.AnimationEvents = AnimationEvents != null
+				? new List<AnimationEvent>(AnimationEvents)
+				: new List<AnimationEvent>();
+
+			_animatorData.LoadedLayers = LoadedLayers != null ? new List<string>(LoadedLayers) : new List<string>();
+			_animatorData.LoadedTag = LoadedTag ?? "";
 
 			return _animatorData;
 		}
@@ -149,6 +195,17 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 
 				// Apply animation properties
 				Speed = animatorData.PlaybackRate;
+
+				// Apply animation events
+				AnimationEvents = animatorData.AnimationEvents != null
+					? new List<AnimationEvent>(animatorData.AnimationEvents)
+					: new List<AnimationEvent>();
+
+				// Apply TextureFilePath
+				TextureFilePath = animatorData.TextureFilePath ?? "";
+
+				LoadedLayers = animatorData.LoadedLayers != null ? new List<string>(animatorData.LoadedLayers) : new List<string>();
+				LoadedTag = animatorData.LoadedTag ?? "";
 			}
 		}
 	}
@@ -293,6 +350,29 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 		FrameTimeLeft -= Time.DeltaTime;
 
 		if (ShouldChangeFrame()) NextFrame();
+	}
+
+	/// <summary>
+	/// Called when this component is added to an entity. 
+	/// If we have saved texture file path data, load the image automatically.
+	/// </summary>
+	public override void OnAddedToEntity()
+	{
+		base.OnAddedToEntity();
+
+		// If we have texture file path, tag, and layers, load and play the animation
+		if (!string.IsNullOrEmpty(TextureFilePath) && !string.IsNullOrEmpty(LoadedTag))
+		{
+			if (LoadedLayers != null && LoadedLayers.Count > 0)
+			{
+				Utils.AnimationUtils.LoadAsepriteAnimationWithLayers(Entity, TextureFilePath, LoadedTag, null, LoadedLayers.ToArray());
+			}
+			else
+			{
+				Utils.AnimationUtils.LoadAsepriteAnimation(Entity, TextureFilePath, LoadedTag);
+			}
+			Play(LoadedTag);
+		}
 	}
 
 	public virtual void NextFrame()
@@ -531,5 +611,24 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 		}
 
 		return (CurrentFrame + 1) / (float)CurrentAnimation.Sprites.Length;
+	}
+
+	/// <summary>
+	/// Loads an animation from an Aseprite file using AnimationUtils. Only ".ase" or ".aseprite" files are accepted.
+	/// </summary>
+	/// <param name="animationTagName">The tag name of the animation in the Aseprite file.</param>
+	/// <param name="callableAnimationName">The name to use for the animation in the animator (optional).</param>
+	/// <param name="layerName">Optional layer name to filter the animation (null for all layers).</param>
+	/// <exception cref="ArgumentException">Thrown if the file type is not supported.</exception>
+	public void LoadAsepriteAnimation(string animationTagName, string callableAnimationName = null, string layerName = null)
+	{
+		if (string.IsNullOrEmpty(TextureFilePath))
+			throw new ArgumentException("TextureFilePath must be set before loading an animation.");
+
+		var ext = System.IO.Path.GetExtension(TextureFilePath).ToLowerInvariant();
+		if (ext != ".ase" && ext != ".aseprite")
+			throw new ArgumentException("Only .ase or .aseprite files are supported for SpriteAnimator animation loading.");
+
+		Nez.Utils.AnimationUtils.LoadAsepriteAnimation(Entity, TextureFilePath, animationTagName, callableAnimationName, layerName);
 	}
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using ImGuiNET;
+using Nez.ImGuiTools.Inspectors.CustomInspectors;
 using Nez.ImGuiTools.TypeInspectors;
 using Nez.ImGuiTools.UndoActions;
 using Nez.Persistence;
@@ -25,14 +26,25 @@ namespace Nez.ImGuiTools.ObjectInspectors
 			_component = component;
 
 			// Special handling for SpriteRenderer (like Transform)
-			if (component is SpriteRenderer spriteRenderer)
+			if (component.GetType().FullName == typeof(SpriteRenderer).FullName)
 			{
 				// For SpriteRenderer, create a mix of standard + custom inspectors
 				_inspectors = TypeInspectorUtils.GetInspectableProperties(component);
 				
 				// Add the custom file inspector as an additional inspector
 				var fileInspector = new SpriteRendererFileInspector();
-				fileInspector.SetTarget(spriteRenderer, typeof(SpriteRenderer).GetProperty("Sprite"));
+				fileInspector.SetTarget((SpriteRenderer)component, typeof(SpriteRenderer).GetProperty("Sprite"));
+				fileInspector.Initialize();
+				_inspectors.Add(fileInspector);
+			}
+			else if(component.GetType().FullName == typeof(SpriteAnimator).FullName)
+			{
+				// For SpriteAnimator, create a mix of standard + custom inspectors
+				_inspectors = TypeInspectorUtils.GetInspectableProperties(component);
+				
+				// Add the custom file inspector as an additional inspector
+				var fileInspector = new SpriteAnimatorFileInspector();
+				fileInspector.SetTarget((SpriteAnimator)component, typeof(SpriteAnimator).GetProperty("TextureFilePath"));
 				fileInspector.Initialize();
 				_inspectors.Add(fileInspector);
 			}
