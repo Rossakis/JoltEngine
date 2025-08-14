@@ -790,6 +790,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		var newScene = (Scene)Activator.CreateInstance(_requestedResetSceneType ?? Core.Scene.GetType());
 		Core.Scene = newScene;
 		EditorChangeTracker.Clear();
+		ShowAnimationEventInspector = false;
 	}
 
 	private async Task SaveSceneAsyncAndThenAct()
@@ -798,4 +799,20 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			await OnSaveSceneAsync();
 	}
 	#endregion
+
+	public void OpenAnimationEventInspector(SpriteAnimator animator)
+	{
+		if (_animationEventInspector == null)
+		{
+			_animationEventInspector = new AnimationEventInspector(animator);
+			AnimationEventInspectorInstance = _animationEventInspector;
+			RegisterDrawCommand(_animationEventInspector.Draw);
+		}
+		else
+		{
+			_animationEventInspector.SetAnimator(animator);
+		}
+
+		ShowAnimationEventInspector = true;
+	}
 }

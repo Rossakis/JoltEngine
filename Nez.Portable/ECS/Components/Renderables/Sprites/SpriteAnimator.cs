@@ -7,17 +7,22 @@ using Microsoft.Xna.Framework;
 
 namespace Nez.Sprites;
 
-public struct AnimationEvent
+public class AnimationEvent
 {
-	public float Time;
-	public string Name;
-	public Action Callback;
-	public AnimationEvent(float time, string name, Action callback)
-	{
-		Time = time;
-		Name = name;
-		Callback = callback;
-	}
+    public int Frame;
+    public string Name;
+    public Action Callback;
+    public string AnimationName;
+
+    public AnimationEvent() { }
+
+    public AnimationEvent(int frame, string name, Action callback, string animationName = null)
+    {
+        Frame = frame;
+        Name = name;
+        Callback = callback;
+        AnimationName = animationName;
+    }
 }
 
 /// <summary>
@@ -130,7 +135,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 	/// List of animation events for this animator.
 	/// </summary>
 	public List<AnimationEvent> AnimationEvents { get; set; } = new();
-
+	private Dictionary<(string animationName, string eventName), List<Action>> _animationEventSubscribers = new();
 	/// <summary>
 	/// The file path to the Aseprite file used for loading animations.
 	/// </summary>
@@ -352,6 +357,25 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 		if (ShouldChangeFrame()) NextFrame();
 	}
 
+	private bool LoadLastAnimation()
+	{
+		if (!string.IsNullOrEmpty(TextureFilePath) && !string.IsNullOrEmpty(LoadedTag) && LoadedLayers.Count > 0)
+		{
+			if (LoadedLayers != null && LoadedLayers.Count > 0)
+			{
+				AnimationUtils.LoadAsepriteAnimationWithLayers(this, TextureFilePath, LoadedTag, null, LoadedLayers.ToArray());
+			}
+			else
+			{
+				AnimationUtils.LoadAsepriteAnimation(this, TextureFilePath, LoadedTag);
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
 	/// <summary>
 	/// Called when this component is added to an entity. 
 	/// If we have saved texture file path data, load the image automatically.
@@ -360,19 +384,8 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 	{
 		base.OnAddedToEntity();
 
-		// If we have texture file path, tag, and layers, load and play the animation
-		if (!string.IsNullOrEmpty(TextureFilePath) && !string.IsNullOrEmpty(LoadedTag))
-		{
-			if (LoadedLayers != null && LoadedLayers.Count > 0)
-			{
-				Utils.AnimationUtils.LoadAsepriteAnimationWithLayers(Entity, TextureFilePath, LoadedTag, null, LoadedLayers.ToArray());
-			}
-			else
-			{
-				Utils.AnimationUtils.LoadAsepriteAnimation(Entity, TextureFilePath, LoadedTag);
-			}
+		if(LoadLastAnimation())
 			Play(LoadedTag);
-		}
 	}
 
 	public virtual void NextFrame()
@@ -386,13 +399,15 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 			case LoopMode.Once:
 			case LoopMode.ClampForever:
 				var newFrame = CurrentFrame + 1;
-				if (newFrame >= FrameCount)
 				{
-					SetCompleted(CurrentLoopMode == LoopMode.Once);
-				}
-				else
-				{
-					SetFrame(newFrame);
+					if (newFrame >= FrameCount)
+					{
+						SetCompleted(CurrentLoopMode == LoopMode.Once);
+					}
+					else
+					{
+						SetFrame(newFrame);
+					}
 				}
 				break;
 
@@ -518,9 +533,25 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 	/// <param name="frameIndex">Index of the desired frame</param>
 	public void SetFrame(int frameIndex)
 	{
+		frameIndex = Math.Clamp(frameIndex, 0, CurrentAnimation.Sprites.Length - 1);
 		CurrentFrame = frameIndex;
 		Sprite = CurrentAnimation.Sprites[frameIndex];
 		FrameTimeLeft = ConvertFrameRateToSeconds(CurrentAnimation.FrameRates[frameIndex]);
+
+		// Trigger AnimationEvents for this frame
+		foreach (var evt in AnimationEvents)
+		{
+			if (evt.Frame == frameIndex && !string.IsNullOrEmpty(evt.Name))
+			{
+				var key = (CurrentAnimationName, evt.Name);
+				if (_animationEventSubscribers.TryGetValue(key, out var subscribers))
+				{
+					foreach (var subscriber in subscribers)
+						subscriber?.Invoke();
+				}
+				evt.Callback?.Invoke();
+			}
+		}
 	}
 
 	/// <summary>
@@ -630,5 +661,16 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 			throw new ArgumentException("Only .ase or .aseprite files are supported for SpriteAnimator animation loading.");
 
 		Nez.Utils.AnimationUtils.LoadAsepriteAnimation(Entity, TextureFilePath, animationTagName, callableAnimationName, layerName);
+	}
+
+	public void SubscribeToEvent(string animationName, string eventName, Action callback)
+	{
+		var key = (animationName, eventName);
+		if (!_animationEventSubscribers.TryGetValue(key, out var list))
+		{
+			list = new List<Action>();
+			_animationEventSubscribers[key] = list;
+		}
+		list.Add(callback);
 	}
 }

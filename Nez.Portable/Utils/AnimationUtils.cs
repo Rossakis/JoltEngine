@@ -27,15 +27,25 @@ public class AnimationUtils
             entity.GetComponent<SpriteAnimator>().AddAnimation(callableAnimationName, sprite.GetAnimation(animationTagName));
     }
 
-    /// <summary>
-    /// Create animation only based on its specific layers 
-    /// </summary>
-    /// <param name="entity"></param>
-    /// <param name="asepriteFilePath"></param>
-    /// <param name="animationTagName"></param>
-    /// <param name="callableAnimationName"></param>
-    /// <param name="layers"></param>
-    public static void LoadAsepriteAnimationWithLayers(Entity entity, string asepriteFilePath, string animationTagName, string callableAnimationName = null, params string[] layers)
+    public static void LoadAsepriteAnimation(SpriteAnimator animator, string asepriteFilePath, string animationTagName, string callableAnimationName = null, string layerName = null)
+    {
+	    SpriteAtlas sprite = Core.Scene.Content.LoadAsepriteFile(asepriteFilePath).ToSpriteAtlas(layerName);
+
+	    if (callableAnimationName == null) // animation name not assigned
+		    animator.AddAnimation(animationTagName, sprite.GetAnimation(animationTagName));
+	    else
+		    animator.AddAnimation(callableAnimationName, sprite.GetAnimation(animationTagName));
+    }
+
+	/// <summary>
+	/// Create animation only based on its specific layers 
+	/// </summary>
+	/// <param name="entity"></param>
+	/// <param name="asepriteFilePath"></param>
+	/// <param name="animationTagName"></param>
+	/// <param name="callableAnimationName"></param>
+	/// <param name="layers"></param>
+	public static void LoadAsepriteAnimationWithLayers(Entity entity, string asepriteFilePath, string animationTagName, string callableAnimationName = null, params string[] layers)
     {
         SpriteAtlas sprite = entity.Scene.Content.LoadAsepriteFile(asepriteFilePath).ToSpriteAtlasFromLayers(true, 0, 0 ,0 , null, layers);
 
@@ -45,17 +55,27 @@ public class AnimationUtils
             entity.GetComponent<SpriteAnimator>().AddAnimation(callableAnimationName, sprite.GetAnimation(animationTagName));
     }
 
-    /// <summary>
-    /// Loads a specific frame from an Aseprite file as a Sprite, with optional layer filtering.
-    /// </summary>
-    /// <param name="entity">The entity to load the frame for (used to access the content manager)</param>
-    /// <param name="asepriteFilePath">The path to the Aseprite file</param>
-    /// <param name="frameNumber">The frame number to load (0-based index)</param>
-    /// <param name="onlyVisibleLayers">Whether to only include visible layers when flattening the frame</param>
-    /// <param name="includeBackgroundLayer">Whether to include the background layer when flattening the frame</param>
-    /// <param name="layerNames">Optional array of specific layer names to include. If null, all layers (subject to other filters) will be included</param>
-    /// <returns>A Sprite containing the flattened frame data as a Texture2D</returns>
-    public static Sprite LoadAsepriteFrame(Entity entity, string asepriteFilePath, int frameNumber, bool onlyVisibleLayers = true, bool includeBackgroundLayer = false, params string[] layerNames)
+	public static void LoadAsepriteAnimationWithLayers(SpriteAnimator animator, string asepriteFilePath, string animationTagName, string callableAnimationName = null, params string[] layers)
+	{
+		SpriteAtlas sprite = Core.Scene.Content.LoadAsepriteFile(asepriteFilePath).ToSpriteAtlasFromLayers(true, 0, 0, 0, null, layers);
+
+		if (callableAnimationName == null)
+			animator.AddAnimation(animationTagName, sprite.GetAnimation(animationTagName));
+		else
+			animator.AddAnimation(callableAnimationName, sprite.GetAnimation(animationTagName));
+	}
+
+	/// <summary>
+	/// Loads a specific frame from an Aseprite file as a Sprite, with optional layer filtering.
+	/// </summary>
+	/// <param name="entity">The entity to load the frame for (used to access the content manager)</param>
+	/// <param name="asepriteFilePath">The path to the Aseprite file</param>
+	/// <param name="frameNumber">The frame number to load (0-based index)</param>
+	/// <param name="onlyVisibleLayers">Whether to only include visible layers when flattening the frame</param>
+	/// <param name="includeBackgroundLayer">Whether to include the background layer when flattening the frame</param>
+	/// <param name="layerNames">Optional array of specific layer names to include. If null, all layers (subject to other filters) will be included</param>
+	/// <returns>A Sprite containing the flattened frame data as a Texture2D</returns>
+	public static Sprite LoadAsepriteFrame(Entity entity, string asepriteFilePath, int frameNumber, bool onlyVisibleLayers = true, bool includeBackgroundLayer = false, params string[] layerNames)
     {
         // Handle case where entity might not be in a scene yet
         var contentManager = entity?.Scene?.Content ?? Core.Content;
