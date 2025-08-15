@@ -465,12 +465,9 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	{
 		if (Core.IsEditMode && Input.MouseWheelDelta != 0)
 		{
-			// Check if we're actively moving camera with WASD while holding Shift
-			bool isMovingCamera = Input.IsKeyDown(Keys.W) || Input.IsKeyDown(Keys.A) || 
-						 Input.IsKeyDown(Keys.S) || Input.IsKeyDown(Keys.D);
 			bool isShiftHeld = Input.IsKeyDown(Keys.LeftShift);
 
-			if (isShiftHeld && isMovingCamera)
+			if (isShiftHeld)
 			{
 				// Modify camera movement speed instead of zoom
 				float speedDelta = Input.MouseWheelDelta * CameraSpeedAdjustmentStep * Time.DeltaTime;

@@ -17,12 +17,18 @@ namespace Nez.ImGuiTools.Inspectors.CustomInspectors
 
         private int _selectedAnimationIndex = 0;
         private int _selectedFrame = 0;
-        private bool _isPlaying = true;
+        private bool _isPlaying = false;
         private float _previewTimer = 0f;
 
-        // Local editable event list
         private List<AnimationEvent> _editableEvents = new();
         private string _saveStatusMessage = "";
+
+        private bool _showAddEventPopup = false;
+        private int _newEventTypeIndex = 0; // 0 = AnimationEvent, 1 = LongAnimationEvent
+        private int _newEventStartFrame = 0;
+        private int _newEventEndFrame = 0;
+        private string _newEventName = "NewEvent";
+        private string _newEventAnimationName = null;
 
         public AnimationEventInspector(SpriteAnimator animator)
         {
@@ -31,12 +37,17 @@ namespace Nez.ImGuiTools.Inspectors.CustomInspectors
 
         public void SetAnimator(SpriteAnimator animator)
         {
-            _animator = animator;
-			// Copy events for editing
-			_editableEvents = animator?.AnimationEvents != null
-				? animator.AnimationEvents.Select(e => new AnimationEvent(e.Frame, e.Name, e.Callback, e.AnimationName)).ToList()
-				: new List<AnimationEvent>();
-		}
+	        _animator = animator;
+
+	        // Copy events for editing
+	        _editableEvents = animator?.AnimationEvents != null
+		        ? animator.AnimationEvents.Select(e =>
+			        e is LongAnimationEvent le
+				        ? new LongAnimationEvent(le.StartFrame, le.EndFrame, le.Name, le.Callback, le.AnimationName)
+				        : new AnimationEvent(e.StartFrame, e.Name, e.Callback, e.AnimationName)
+		        ).ToList()
+		        : new List<AnimationEvent>();
+        }
 
         public void SetWindowFocus()
         {
@@ -75,10 +86,18 @@ namespace Nez.ImGuiTools.Inspectors.CustomInspectors
 
                 // Animation selection
                 var animationNames = _animator.Animations.Keys.ToArray();
+                string[] animationDisplayNames = new string[animationNames.Length];
+                for (int i = 0; i < animationNames.Length; i++)
+                {
+                    int eventCount = _editableEvents.Count(e => e.AnimationName == animationNames[i]);
+                    animationDisplayNames[i] = eventCount > 0
+                        ? $"{animationNames[i]} ({eventCount})"
+                        : animationNames[i];
+                }
                 if (_selectedAnimationIndex >= animationNames.Length)
                     _selectedAnimationIndex = 0;
 
-                if (ImGui.Combo("Animation", ref _selectedAnimationIndex, animationNames, animationNames.Length))
+                if (ImGui.Combo("Animation", ref _selectedAnimationIndex, animationDisplayNames, animationDisplayNames.Length))
                 {
                     _animator.Play(animationNames[_selectedAnimationIndex]);
                     _selectedFrame = 0;
@@ -120,9 +139,18 @@ namespace Nez.ImGuiTools.Inspectors.CustomInspectors
 
                 ImGui.Separator();
 
-                // Event list
+                // Only show events for the current animation
+                string selectedAnimationName = animationNames[_selectedAnimationIndex];
+                var eventsForCurrentAnimation = _editableEvents
+                    .Where(e => e.AnimationName == selectedAnimationName)
+                    .ToList();
+
                 ImGui.Text("Events:");
-                if (ImGui.BeginTable("EventsTable", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders))
+                if (eventsForCurrentAnimation.Count == 0)
+                {
+                    ImGui.TextColored(new Num.Vector4(1, 1, 0, 1), "No events have been added to this animation");
+                }
+                else if (ImGui.BeginTable("EventsTable", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders))
                 {
                     ImGui.TableSetupColumn("Frame");
                     ImGui.TableSetupColumn("Name");
@@ -131,21 +159,27 @@ namespace Nez.ImGuiTools.Inspectors.CustomInspectors
                     ImGui.TableSetupColumn("Actions");
                     ImGui.TableHeadersRow();
 
-	                animationNames = _animator.Animations.Keys.ToArray();
-
-                    for (int i = 0; i < _editableEvents.Count; i++)
+                    for (int i = 0; i < eventsForCurrentAnimation.Count; i++)
                     {
-                        var evt = _editableEvents[i];
+                        var evt = eventsForCurrentAnimation[i];
+                        int evtIndex = _editableEvents.IndexOf(evt); // For correct editing/deleting
+
                         ImGui.TableNextRow();
 
                         // Frame column
                         ImGui.TableSetColumnIndex(0);
-                        ImGui.InputInt($"##frame_{i}", ref evt.Frame);
+                        ImGui.Text("startFrame");
+                        ImGui.InputInt($"##startFrame_{evtIndex}", ref evt.StartFrame);
+                        if (evt is LongAnimationEvent longEvt)
+                        {
+                            ImGui.Text("endFrame");
+                            ImGui.InputInt($"##endFrame_{evtIndex}", ref longEvt.EndFrame);
+                        }
 
                         // Name column
                         ImGui.TableSetColumnIndex(1);
                         string name = evt.Name ?? "";
-                        if (ImGui.InputText($"##name_{i}", ref name, 32))
+                        if (ImGui.InputText($"##name_{evtIndex}", ref name, 32))
                         {
                             // Ensure uniqueness
                             if (_editableEvents.Any(e => e != evt && e.Name == name))
@@ -170,7 +204,7 @@ namespace Nez.ImGuiTools.Inspectors.CustomInspectors
                         if (!string.IsNullOrEmpty(evt.AnimationName))
                             selectedAnimIdx = Array.IndexOf(animationNames, evt.AnimationName);
 
-                        string listboxLabel = $"##anim_select_{i}";
+                        string listboxLabel = $"##anim_select_{evtIndex}";
                         if (ImGui.BeginCombo(listboxLabel, selectedAnimIdx >= 0 ? animationNames[selectedAnimIdx] : "Not Selected"))
                         {
                             // "Not Selected" option
@@ -193,9 +227,9 @@ namespace Nez.ImGuiTools.Inspectors.CustomInspectors
 
                         // Actions column
                         ImGui.TableSetColumnIndex(4);
-                        if (ImGui.Button($"Delete##{i}"))
+                        if (ImGui.Button($"Delete##{evtIndex}"))
                         {
-                            _editableEvents.RemoveAt(i);
+                            _editableEvents.RemoveAt(evtIndex);
                             break;
                         }
                     }
@@ -205,21 +239,64 @@ namespace Nez.ImGuiTools.Inspectors.CustomInspectors
                 // Add new event
                 if (ImGui.Button("Add Event"))
                 {
-                    var oldEvents = new List<AnimationEvent>(_editableEvents);
-                    _editableEvents.Add(new AnimationEvent { Frame = _selectedFrame, Name = "NewEvent", AnimationName = null });
+                    _showAddEventPopup = true;
+                    _newEventTypeIndex = 0;
+                }
 
-                    // Push undo for event creation
-                    EditorChangeTracker.PushUndo(
-                        new GenericValueChangeAction(
-                            _animator,
-                            typeof(SpriteAnimator).GetProperty(nameof(SpriteAnimator.AnimationEvents)),
-                            oldEvents,
-                            new List<AnimationEvent>(_editableEvents),
-                            $"{_animator.Entity?.Name ?? "Animator"}.AnimationEvents"
-                        ),
-                        _animator,
-                        $"{_animator.Entity?.Name ?? "Animator"}.AnimationEvents"
-                    );
+                // Add Event Popup
+                if (_showAddEventPopup)
+                {
+                    ImGui.OpenPopup("AddEventPopup");
+                    if (ImGui.BeginPopupModal("AddEventPopup", ref _showAddEventPopup, ImGuiWindowFlags.AlwaysAutoResize))
+                    {
+                        ImGui.Text("Select Event Type:");
+                        string[] eventTypes = { "AnimationEvent", "LongAnimationEvent" };
+                        ImGui.Combo("Type", ref _newEventTypeIndex, eventTypes, eventTypes.Length);
+
+                        if (ImGui.Button("Create"))
+                        {
+                            var oldEvents = new List<AnimationEvent>(_editableEvents);
+                            if (_newEventTypeIndex == 0)
+                            {
+                                _editableEvents.Add(new AnimationEvent
+                                {
+                                    StartFrame = 0,
+                                    Name = "",
+                                    AnimationName = null
+                                });
+                            }
+                            else
+                            {
+                                _editableEvents.Add(new LongAnimationEvent
+                                {
+                                    StartFrame = 0,
+                                    EndFrame = 0,
+                                    Name = "",
+                                    AnimationName = null
+                                });
+                            }
+                            EditorChangeTracker.PushUndo(
+                                new GenericValueChangeAction(
+                                    _animator,
+                                    typeof(SpriteAnimator).GetProperty(nameof(SpriteAnimator.AnimationEvents)),
+                                    oldEvents,
+                                    new List<AnimationEvent>(_editableEvents),
+                                    $"{_animator.Entity?.Name ?? "Animator"}.AnimationEvents"
+                                ),
+                                _animator,
+                                $"{_animator.Entity?.Name ?? "Animator"}.AnimationEvents"
+                            );
+                            ImGui.CloseCurrentPopup();
+                            _showAddEventPopup = false;
+                        }
+                        ImGui.SameLine();
+                        if (ImGui.Button("Cancel"))
+                        {
+                            ImGui.CloseCurrentPopup();
+                            _showAddEventPopup = false;
+                        }
+                        ImGui.EndPopup();
+                    }
                 }
 
                 ImGui.Separator();
@@ -237,7 +314,13 @@ namespace Nez.ImGuiTools.Inspectors.CustomInspectors
                                 evt.AnimationName = animationName;
                         }
                         _animator.AnimationEvents = _editableEvents
-                            .Select(e => new AnimationEvent(e.Frame, e.Name, e.Callback, e.AnimationName))
+                            .Select(e =>
+                            {
+                                if (e is LongAnimationEvent le)
+                                    return new LongAnimationEvent(le.StartFrame, le.EndFrame, le.Name, le.Callback, le.AnimationName);
+                                else
+                                    return new AnimationEvent(e.StartFrame, e.Name, e.Callback, e.AnimationName);
+                            })
                             .ToList();
                         _saveStatusMessage = "Events saved successfully!";
 

@@ -3,13 +3,14 @@ using Nez.Textures;
 using Nez.Utils;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 
 namespace Nez.Sprites;
 
 public class AnimationEvent
 {
-    public int Frame;
+    public int StartFrame;
     public string Name;
     public Action Callback;
     public string AnimationName;
@@ -18,11 +19,27 @@ public class AnimationEvent
 
     public AnimationEvent(int frame, string name, Action callback, string animationName = null)
     {
-        Frame = frame;
+        StartFrame = frame;
         Name = name;
         Callback = callback;
         AnimationName = animationName;
     }
+}
+
+public class LongAnimationEvent : AnimationEvent
+{
+	public int EndFrame;
+
+	public LongAnimationEvent() { }
+
+	public LongAnimationEvent(int frameStart, int frameEnd, string name, Action callback, string animationName = null)
+	{
+		StartFrame = frameStart;
+		EndFrame = frameEnd;
+		Name = name;
+		Callback = callback;
+		AnimationName = animationName;
+	}
 }
 
 /// <summary>
@@ -354,6 +371,24 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 		CurrentElapsedTime += Time.DeltaTime;
 		FrameTimeLeft -= Time.DeltaTime;
 
+		// Execute LongAnimationEvent every tick if in range
+		foreach (var evt in AnimationEvents)
+		{
+			if (evt is LongAnimationEvent longEvt)
+			{
+				if (CurrentFrame >= longEvt.StartFrame && CurrentFrame <= longEvt.EndFrame && !string.IsNullOrEmpty(longEvt.Name))
+				{
+					var key = (CurrentAnimationName, longEvt.Name);
+					if (_animationEventSubscribers.TryGetValue(key, out var subscribers))
+					{
+						foreach (var subscriber in subscribers)
+							subscriber?.Invoke();
+					}
+					longEvt.Callback?.Invoke();
+				}
+			}
+		}
+
 		if (ShouldChangeFrame()) NextFrame();
 	}
 
@@ -538,10 +573,13 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 		Sprite = CurrentAnimation.Sprites[frameIndex];
 		FrameTimeLeft = ConvertFrameRateToSeconds(CurrentAnimation.FrameRates[frameIndex]);
 
-		// Trigger AnimationEvents for this frame
+		// Trigger AnimationEvents for this frame (only normal events)
 		foreach (var evt in AnimationEvents)
 		{
-			if (evt.Frame == frameIndex && !string.IsNullOrEmpty(evt.Name))
+			if (evt is LongAnimationEvent)
+				continue; // Skip, handled in Update
+
+			if (evt.StartFrame == frameIndex && !string.IsNullOrEmpty(evt.Name))
 			{
 				var key = (CurrentAnimationName, evt.Name);
 				if (_animationEventSubscribers.TryGetValue(key, out var subscribers))
@@ -665,12 +703,20 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 
 	public void SubscribeToEvent(string animationName, string eventName, Action callback)
 	{
-		var key = (animationName, eventName);
-		if (!_animationEventSubscribers.TryGetValue(key, out var list))
-		{
-			list = new List<Action>();
-			_animationEventSubscribers[key] = list;
-		}
-		list.Add(callback);
+	    // Check if the event exists for the given animation
+	    bool eventExists = AnimationEvents.Any(e =>
+	        e.AnimationName == animationName && e.Name == eventName);
+
+	    if (!eventExists)
+	        throw new InvalidOperationException(
+	            $"AnimationEvent '{eventName}' does not exist for animation '{animationName}'.");
+
+	    var key = (animationName, eventName);
+	    if (!_animationEventSubscribers.TryGetValue(key, out var list))
+	    {
+	        list = new List<Action>();
+	        _animationEventSubscribers[key] = list;
+	    }
+	    list.Add(callback);
 	}
 }
