@@ -345,7 +345,7 @@ public class EntityPane
 			bool ctrlDown = Input.IsKeyDown(Keys.LeftControl) || Input.IsKeyDown(Keys.RightControl) || ImGui.GetIO().KeyCtrl || ImGui.GetIO().KeySuper;
 			bool shiftDown = Input.IsKeyDown(Keys.LeftShift) || Input.IsKeyDown(Keys.RightShift) || ImGui.GetIO().KeyShift;
 			SetSelectedEntity(entity, ctrlDown, shiftDown);
-			if (!ctrlDown)
+			//if (!ctrlDown)// && !shiftDown)
 				_imGuiManager.OpenMainEntityInspector(entity);
 
 			ImGui.SetWindowFocus();

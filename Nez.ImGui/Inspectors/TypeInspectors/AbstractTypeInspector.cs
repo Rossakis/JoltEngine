@@ -252,28 +252,34 @@ namespace Nez.ImGuiTools.TypeInspectors
 
 		#region Get/set values
 
-		protected T GetValue<T>()
+		public T GetValue<T>()
 		{
 		    return (T)_getter(_target);
 		}
 
-		protected object GetValue()
+		public object GetValue()
 		{
 		    return _getter(_target);
 		}
 
-		// Add public accessor for StructInspector to use
-		public object GetValuePublic()
-		{
-		    return _getter(_target);
-		}
 
 		protected void SetValue(object value)
 		{
 		    _setter.Invoke(value);
 		}
 
-#endregion
+		public FieldInfo GetFieldInfo()
+		{
+			return _memberInfo as FieldInfo;
+		}
+
+		public PropertyInfo GetPropertyInfo()
+		{
+			return _memberInfo as PropertyInfo;
+		}
+
+
+		#endregion
 
 		#region Undo/Redo Support
 		protected EditSession GetEditSession(string fieldName)

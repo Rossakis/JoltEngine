@@ -221,15 +221,18 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 				}
 				ImGui.EndTabBar();
 			}
-			ImGui.End();
+			// ImGui.End();
 
 			// Draw the selected inspector window at the same position/size
 			ImGui.SetNextWindowPos(windowPos, ImGuiCond.Always);
 			ImGui.SetNextWindowSize(windowSize, ImGuiCond.Always);
 
+			// Add NoMove to prevent dragging
+			var inspectorFlags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoMove;
 			if (_selectedInspectorTab == InspectorTab.EntityInspector)
 			{
-				MainEntityInspector.Draw();
+				// Pass the flags to MainEntityInspector.Draw
+				MainEntityInspector.Draw(inspectorFlags);
 			}
 			else if (_selectedInspectorTab == InspectorTab.Core && ShowCoreWindow)
 			{
@@ -614,7 +617,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	/// </summary>
 	/// <param name="texture"></param>
 	/// <returns></returns>
-	public IntPtr BindTexture(Texture2D texture)
+public IntPtr BindTexture(Texture2D texture)
 	{
 		return _renderer.BindTexture(texture);
 	}

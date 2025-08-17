@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using Nez.Editor;
+using Nez.ImGuiTools.Inspectors.ObjectInspectors;
+using Nez.ImGuiTools.TypeInspectors;
 using Nez.Persistence;
 using Num = System.Numerics;
 
@@ -47,17 +49,64 @@ public class MainEntityInspector
 	// Add these fields to MainEntityInspector
 	private bool _showApplyToOriginalPrefabConfirmation = false;
 
+	// New fields for multi-entity selection
+	private List<Entity> _selectedEntities = new();
+
 	public MainEntityInspector(Entity entity = null)
 	{
 		Entity = entity;
 		_componentInspectors.Clear();
 
-		if (Entity != null)
+		// Get selected entities from ImGuiManager
+		var imGuiManager = Core.GetGlobalManager<ImGuiManager>();
+		if (imGuiManager != null)
+			_selectedEntities = imGuiManager.SceneGraphWindow.EntityPane.SelectedEntities.ToList();
+		else
+			_selectedEntities = entity != null ? new List<Entity> { entity } : new List<Entity>();
+
+		if (_selectedEntities.Count == 1 && Entity != null)
 		{
 			_transformInspector = new TransformInspector(Entity.Transform);
-			for (var i = 0; i < entity.Components.Count; i++)
-				_componentInspectors.Add(ComponentInspectorFactory.CreateInspector(entity.Components[i])); // Use factory here
+			for (var i = 0; i < Entity.Components.Count; i++)
+				_componentInspectors.Add(ComponentInspectorFactory.CreateInspector(Entity.Components[i])); // Use factory here
 		}
+		else if (_selectedEntities.Count > 1)
+		{
+			// For multiple selection, find common components
+			var commonComponents = GetCommonComponents(_selectedEntities);
+			_componentInspectors.Clear();
+			foreach (var compType in commonComponents)
+			{
+				// Create a MultiComponentInspector for each common type
+				var multiInspector = new MultiComponentInspector(compType, _selectedEntities);
+				_componentInspectors.Add(multiInspector);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Finds the set of component types that are common to all selected entities.
+	/// </summary>
+	private List<Type> GetCommonComponents(List<Entity> entities)
+	{
+		if (entities == null || entities.Count == 0)
+			return new List<Type>();
+
+		var firstEntity = entities[0];
+		var commonTypes = firstEntity.Components.Select(c => c.GetType().FullName).ToHashSet();
+
+		foreach (var entity in entities.Skip(1))
+		{
+			var types = entity.Components.Select(c => c.GetType().FullName).ToHashSet();
+			commonTypes.IntersectWith(types);
+		}
+
+		// Convert back to Type
+		return firstEntity.Components
+			.Where(c => commonTypes.Contains(c.GetType().FullName))
+			.Select(c => c.GetType())
+			.Distinct()
+			.ToList();
 	}
 
 	/// <summary>
@@ -80,281 +129,309 @@ public class MainEntityInspector
 	public void SetEntity(Entity entity)
 	{
 		Entity = entity;
+		var imGuiManager = Core.GetGlobalManager<ImGuiManager>();
+		_selectedEntities = imGuiManager?.SceneGraphWindow.EntityPane.SelectedEntities.ToList() ?? (entity != null ? new List<Entity> { entity } : new List<Entity>());
 		_componentInspectors.Clear();
 		_transformInspector = null;
-		if (Entity != null)
+
+		if (_selectedEntities.Count == 1 && Entity != null)
 		{
 			_transformInspector = new TransformInspector(Entity.Transform);
-			RefreshComponentInspectors(); // Use the new method
+			RefreshComponentInspectors();
+		}
+		else if (_selectedEntities.Count > 1)
+		{
+			var commonComponents = GetCommonComponents(_selectedEntities);
+			foreach (var compType in commonComponents)
+			{
+				var multiInspector = new MultiComponentInspector(compType, _selectedEntities);
+				_componentInspectors.Add(multiInspector);
+			}
 		}
 	}
 
-	public void Draw()
+	public void Draw(ImGuiWindowFlags windowFlags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoMove)
 	{
 		if (!IsOpen)
 			return;
 
-		if(_imguiManager == null)
+		if (_imguiManager == null)
 			_imguiManager = Core.GetGlobalManager<ImGuiManager>();
 
-		//TODO: Change this
-		var selectedEntities = _imguiManager.SceneGraphWindow.EntityPane.SelectedEntities;
-		if (selectedEntities.Count > 1)
-		{
-			ImGui.TextColored(new Num.Vector4(1, 1, 0, 1), "You selected multiple entities.");
-			ImGui.End();
-			return;
-		}
-
-		ImGui.PushStyleVar(ImGuiStyleVar.GrabMinSize, 0.0f);
-		ImGui.PushStyleColor(ImGuiCol.ResizeGrip, new Num.Vector4(0, 0, 0, 0));
+		_selectedEntities = _imguiManager.SceneGraphWindow.EntityPane.SelectedEntities.ToList();
 
 		var windowPosX = Screen.Width - _mainInspectorWidth;
+		var windowPosY = MainEntityInspector.MainInspectorPosY;
+		var windowWidth = _mainInspectorWidth;
 		var windowHeight = Screen.Height - MainInspectorPosY;
 
-		ImGui.SetNextWindowPos(new Num.Vector2(windowPosX, MainInspectorPosY), ImGuiCond.Always);
-
-		// Only set window size on first use, not every frame
-		ImGui.SetNextWindowSize(new Num.Vector2(_mainInspectorWidth, windowHeight), ImGuiCond.FirstUseEver);
+		ImGui.SetNextWindowPos(new Num.Vector2(windowPosX, windowPosY), ImGuiCond.Once);
+		ImGui.SetNextWindowSize(new Num.Vector2(windowWidth, windowHeight), ImGuiCond.Once);
 
 		var open = IsOpen;
-		// Use flags to hide title bar and prevent collapsing
-		var windowFlags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse;
 
 		if (ImGui.Begin("##MainEntityInspector", ref open, windowFlags))
 		{
-			var entityName = Entity != null ? Entity.Name : "";
-			ImGui.SetWindowFontScale(1.5f); // Double the font size for header effect
-			ImGui.Text(entityName);
-			ImGui.SetWindowFontScale(1.0f); // Reset to default
-
-			NezImGui.BigVerticalSpace();
-
-			// Always update width, regardless of entity selection
-			var currentWidth = ImGui.GetWindowSize().X;
-			if (Math.Abs(currentWidth - _mainInspectorWidth) > 0.01f)
-				_mainInspectorWidth = Math.Clamp(currentWidth, _minInspectorWidth, _maxInspectorWidth);
-
-			if (Entity == null)
+			// 1) Show "Multiple Entities Selected" if more than one entity is selected
+			if (_selectedEntities.Count > 1)
 			{
-				ImGui.TextColored(new Num.Vector4(1, 1, 0, 1), "No entity selected.");
+				ImGui.SetWindowFontScale(1.5f);
+				ImGui.Text("Multiple Entities Selected");
+				ImGui.SetWindowFontScale(1.0f);
+				NezImGui.BigVerticalSpace();
+
+				// 2) Show common components
+				foreach (var inspector in _componentInspectors)
+				{
+					inspector.Draw();
+					NezImGui.MediumVerticalSpace();
+				}
+			}
+			else if (_selectedEntities.Count == 1 && Entity != null)
+			{
+				// Original single-entity logic
+				var entityName = Entity.Name;
+				ImGui.SetWindowFontScale(1.5f);
+				ImGui.Text(entityName);
+				ImGui.SetWindowFontScale(1.0f);
+				NezImGui.BigVerticalSpace();
+
+				// Always update width, regardless of entity selection
+				var currentWidth = ImGui.GetWindowSize().X;
+				if (Math.Abs(currentWidth - _mainInspectorWidth) > 0.01f)
+					_mainInspectorWidth = Math.Clamp(currentWidth, _minInspectorWidth, _maxInspectorWidth);
+
+				if (Entity == null)
+				{
+					ImGui.TextColored(new Num.Vector4(1, 1, 0, 1), "No entity selected.");
+				}
+				else
+				{
+					// Draw main entity UI
+					var type = Entity.Type.ToString();
+					ImGui.InputText("InstanceType", ref type, 30);
+
+					// Show OriginalPrefabName for Prefab entities (readonly)
+					if (Entity.Type == Entity.InstanceType.Prefab && !string.IsNullOrEmpty(Entity.OriginalPrefabName))
+					{
+						var originalPrefabName = Entity.OriginalPrefabName;
+						ImGui.InputText("Original Prefab Name", ref originalPrefabName, 50, ImGuiInputTextFlags.ReadOnly);
+					}
+
+					// Enabled
+					{
+						bool oldEnabled = Entity.Enabled;
+						bool enabled = oldEnabled;
+						if (ImGui.Checkbox("Enabled", ref enabled) && enabled != oldEnabled)
+						{
+							EditorChangeTracker.PushUndo(
+								new GenericValueChangeAction(
+									Entity,
+									typeof(Entity).GetProperty(nameof(Entity.Enabled)),
+									oldEnabled,
+									enabled,
+									$"{Entity.Name}.Enabled"
+								),
+								Entity,
+								$"{Entity.Name}.Enabled"
+							);
+							Entity.SetEnabled(enabled);
+						}
+					}
+
+					// Name (edit session)
+					{
+						string name = Entity.Name;
+						bool changed = ImGui.InputText("Name", ref name, 25);
+
+						if (ImGui.IsItemActive() && !_isEditingName)
+						{
+							_isEditingName = true;
+							_nameEditStartValue = Entity.Name;
+						}
+
+						if (_isEditingName && ImGui.IsItemDeactivatedAfterEdit())
+						{
+							_isEditingName = false;
+							Entity.Name = name; 
+							
+							if (Entity.Name != _nameEditStartValue)
+							{
+								EditorChangeTracker.PushUndo(
+									new GenericValueChangeAction(
+										Entity,
+										typeof(Entity).GetProperty(nameof(Entity.Name)),
+										_nameEditStartValue,
+										Entity.Name,
+										$"{_nameEditStartValue}.Name"
+									),
+									Entity,
+									$"{_nameEditStartValue}.Name"
+								);
+							}
+						}
+					}
+
+
+					// UpdateOrder
+					{
+						int oldUpdateOrder = Entity.UpdateOrder;
+						int updateOrder = oldUpdateOrder;
+						if (ImGui.InputInt("Update Order", ref updateOrder) && updateOrder != oldUpdateOrder)
+						{
+							EditorChangeTracker.PushUndo(
+								new GenericValueChangeAction(
+									Entity,
+									typeof(Entity).GetProperty(nameof(Entity.UpdateOrder)),
+									oldUpdateOrder,
+									updateOrder,
+									$"{Entity.Name}.UpdateOrder"
+								),
+								Entity,
+								$"{Entity.Name}.UpdateOrder"
+							);
+							Entity.SetUpdateOrder(updateOrder);
+						}
+					}
+
+					// UpdateInterval
+					{
+						int updateInterval = (int)Entity.UpdateInterval;
+
+						// Draw the slider first
+						bool changed = ImGui.SliderInt("Update Interval", ref updateInterval, 1, 100);
+
+						// Start of edit session: store the initial value
+						if (ImGui.IsItemActive() && !_isEditingUpdateInterval)
+						{
+							_isEditingUpdateInterval = true;
+							_updateIntervalEditStartValue = Entity.UpdateInterval;
+						}
+
+						// Apply the value while dragging
+						if (changed)
+							Entity.UpdateInterval = (uint)updateInterval;
+
+						// End of edit session: push undo if value changed
+						if (_isEditingUpdateInterval && ImGui.IsItemDeactivatedAfterEdit())
+						{
+							_isEditingUpdateInterval = false;
+							if (Entity.UpdateInterval != _updateIntervalEditStartValue)
+							{
+								EditorChangeTracker.PushUndo(
+									new GenericValueChangeAction(
+										Entity,
+										(obj, val) => ((Entity)obj).UpdateInterval = (uint)val,
+										_updateIntervalEditStartValue,
+										Entity.UpdateInterval,
+										$"{Entity.Name}.UpdateInterval"
+									),
+									Entity,
+									$"{Entity.Name}.UpdateInterval"
+								);
+							}
+						}
+					}
+
+					// Tag
+					{
+						int oldTag = Entity.Tag;
+						int tag = oldTag;
+						if (ImGui.InputInt("Tag", ref tag) && tag != oldTag)
+						{
+							EditorChangeTracker.PushUndo(
+								new GenericValueChangeAction(
+									Entity,
+									typeof(Entity).GetProperty(nameof(Entity.Tag)),
+									oldTag,
+									tag,
+									$"{Entity.Name}.Tag"
+								),
+								Entity,
+								$"{Entity.Name}.Tag"
+							);
+							Entity.Tag = tag;
+						}
+					}
+
+					// DebugRenderEnabled
+					{
+						bool oldDebugEnabled = Entity.DebugRenderEnabled;
+						bool debugEnabled = oldDebugEnabled;
+						if (ImGui.Checkbox("Debug Render Enabled", ref debugEnabled) && debugEnabled != oldDebugEnabled)
+						{
+							EditorChangeTracker.PushUndo(
+								new GenericValueChangeAction(
+									Entity,
+									typeof(Entity).GetProperty(nameof(Entity.DebugRenderEnabled)),
+									oldDebugEnabled,
+									debugEnabled,
+									$"{Entity.Name}.DebugRenderEnabled"
+								),
+								Entity,
+								$"{Entity.Name}.DebugRenderEnabled"
+							);
+							Entity.DebugRenderEnabled = debugEnabled;
+						}
+					}
+
+					NezImGui.MediumVerticalSpace();
+
+					if(_transformInspector != null)
+					{
+						_transformInspector.Draw();
+					}
+					
+					NezImGui.MediumVerticalSpace();
+
+					for (var i = _componentInspectors.Count - 1; i >= 0; i--)
+					{
+						if (_componentInspectors[i].Entity == null)
+						{
+							_componentInspectors.RemoveAt(i);
+							continue;
+						}
+
+						_componentInspectors[i].Draw();
+						NezImGui.MediumVerticalSpace();
+					}
+
+					if (Entity.Type != Entity.InstanceType.HardCoded && NezImGui.CenteredButton("Create Prefab", 0.6f))
+					{
+						_prefabName = Entity.Name + "_Prefab";
+						ImGui.OpenPopup("prefab-creator");
+					}
+
+					// Add "Apply to Prefab Copies" button for prefab entities
+					if (Entity.Type == Entity.InstanceType.Prefab && !string.IsNullOrEmpty(Entity.OriginalPrefabName))
+					{
+						NezImGui.MediumVerticalSpace();
+						if (NezImGui.CenteredButton("Apply to Prefab Copies", 0.8f))
+						{
+							// Find prefab copies and show confirmation
+							ShowApplyToPrefabCopiesConfirmation();
+						}
+					}
+					
+					if (Entity.Type == Entity.InstanceType.Prefab && !string.IsNullOrEmpty(Entity.OriginalPrefabName))
+					{
+						NezImGui.MediumVerticalSpace();
+						if (NezImGui.CenteredButton("Apply to Original Prefab", 0.8f))
+						{
+							_showApplyToOriginalPrefabConfirmation = true;
+						}
+					}
+					
+					DrawPrefabCreatorPopup();
+					DrawApplyToPrefabCopiesConfirmationPopup();
+					DrawApplyToOriginalPrefabConfirmationPopup();
+				}
 			}
 			else
 			{
-				// Draw main entity UI
-				var type = Entity.Type.ToString();
-				ImGui.InputText("InstanceType", ref type, 30);
-
-				// Show OriginalPrefabName for Prefab entities (readonly)
-				if (Entity.Type == Entity.InstanceType.Prefab && !string.IsNullOrEmpty(Entity.OriginalPrefabName))
-				{
-					var originalPrefabName = Entity.OriginalPrefabName;
-					ImGui.InputText("Original Prefab Name", ref originalPrefabName, 50, ImGuiInputTextFlags.ReadOnly);
-				}
-
-				// Enabled
-				{
-					bool oldEnabled = Entity.Enabled;
-					bool enabled = oldEnabled;
-					if (ImGui.Checkbox("Enabled", ref enabled) && enabled != oldEnabled)
-					{
-						EditorChangeTracker.PushUndo(
-							new GenericValueChangeAction(
-								Entity,
-								typeof(Entity).GetProperty(nameof(Entity.Enabled)),
-								oldEnabled,
-								enabled,
-								$"{Entity.Name}.Enabled"
-							),
-							Entity,
-							$"{Entity.Name}.Enabled"
-						);
-						Entity.SetEnabled(enabled);
-					}
-				}
-
-				// Name (edit session)
-				{
-					string name = Entity.Name;
-					bool changed = ImGui.InputText("Name", ref name, 25);
-
-					if (ImGui.IsItemActive() && !_isEditingName)
-					{
-						_isEditingName = true;
-						_nameEditStartValue = Entity.Name;
-					}
-
-					if (_isEditingName && ImGui.IsItemDeactivatedAfterEdit())
-					{
-						_isEditingName = false;
-						Entity.Name = name; 
-						
-						if (Entity.Name != _nameEditStartValue)
-						{
-							EditorChangeTracker.PushUndo(
-								new GenericValueChangeAction(
-									Entity,
-									typeof(Entity).GetProperty(nameof(Entity.Name)),
-									_nameEditStartValue,
-									Entity.Name,
-									$"{_nameEditStartValue}.Name"
-								),
-								Entity,
-								$"{_nameEditStartValue}.Name"
-							);
-						}
-					}
-				}
-
-
-				// UpdateOrder
-				{
-					int oldUpdateOrder = Entity.UpdateOrder;
-					int updateOrder = oldUpdateOrder;
-					if (ImGui.InputInt("Update Order", ref updateOrder) && updateOrder != oldUpdateOrder)
-					{
-						EditorChangeTracker.PushUndo(
-							new GenericValueChangeAction(
-								Entity,
-								typeof(Entity).GetProperty(nameof(Entity.UpdateOrder)),
-								oldUpdateOrder,
-								updateOrder,
-								$"{Entity.Name}.UpdateOrder"
-							),
-							Entity,
-							$"{Entity.Name}.UpdateOrder"
-						);
-						Entity.SetUpdateOrder(updateOrder);
-					}
-				}
-
-				// UpdateInterval
-				{
-					int updateInterval = (int)Entity.UpdateInterval;
-
-					// Draw the slider first
-					bool changed = ImGui.SliderInt("Update Interval", ref updateInterval, 1, 100);
-
-					// Start of edit session: store the initial value
-					if (ImGui.IsItemActive() && !_isEditingUpdateInterval)
-					{
-						_isEditingUpdateInterval = true;
-						_updateIntervalEditStartValue = Entity.UpdateInterval;
-					}
-
-					// Apply the value while dragging
-					if (changed)
-						Entity.UpdateInterval = (uint)updateInterval;
-
-					// End of edit session: push undo if value changed
-					if (_isEditingUpdateInterval && ImGui.IsItemDeactivatedAfterEdit())
-					{
-						_isEditingUpdateInterval = false;
-						if (Entity.UpdateInterval != _updateIntervalEditStartValue)
-						{
-							EditorChangeTracker.PushUndo(
-								new GenericValueChangeAction(
-									Entity,
-									(obj, val) => ((Entity)obj).UpdateInterval = (uint)val,
-									_updateIntervalEditStartValue,
-									Entity.UpdateInterval,
-									$"{Entity.Name}.UpdateInterval"
-								),
-								Entity,
-								$"{Entity.Name}.UpdateInterval"
-							);
-						}
-					}
-				}
-
-				// Tag
-				{
-					int oldTag = Entity.Tag;
-					int tag = oldTag;
-					if (ImGui.InputInt("Tag", ref tag) && tag != oldTag)
-					{
-						EditorChangeTracker.PushUndo(
-							new GenericValueChangeAction(
-								Entity,
-								typeof(Entity).GetProperty(nameof(Entity.Tag)),
-								oldTag,
-								tag,
-								$"{Entity.Name}.Tag"
-							),
-							Entity,
-							$"{Entity.Name}.Tag"
-						);
-						Entity.Tag = tag;
-					}
-				}
-
-				// DebugRenderEnabled
-				{
-					bool oldDebugEnabled = Entity.DebugRenderEnabled;
-					bool debugEnabled = oldDebugEnabled;
-					if (ImGui.Checkbox("Debug Render Enabled", ref debugEnabled) && debugEnabled != oldDebugEnabled)
-					{
-						EditorChangeTracker.PushUndo(
-							new GenericValueChangeAction(
-								Entity,
-								typeof(Entity).GetProperty(nameof(Entity.DebugRenderEnabled)),
-								oldDebugEnabled,
-								debugEnabled,
-								$"{Entity.Name}.DebugRenderEnabled"
-							),
-							Entity,
-							$"{Entity.Name}.DebugRenderEnabled"
-						);
-						Entity.DebugRenderEnabled = debugEnabled;
-					}
-				}
-
-				NezImGui.MediumVerticalSpace();
-				_transformInspector.Draw();
-				NezImGui.MediumVerticalSpace();
-
-				for (var i = _componentInspectors.Count - 1; i >= 0; i--)
-				{
-					if (_componentInspectors[i].Entity == null)
-					{
-						_componentInspectors.RemoveAt(i);
-						continue;
-					}
-
-					_componentInspectors[i].Draw();
-					NezImGui.MediumVerticalSpace();
-				}
-
-				if (Entity.Type != Entity.InstanceType.HardCoded && NezImGui.CenteredButton("Create Prefab", 0.6f))
-				{
-					_prefabName = Entity.Name + "_Prefab";
-					ImGui.OpenPopup("prefab-creator");
-				}
-
-				// Add "Apply to Prefab Copies" button for prefab entities
-				if (Entity.Type == Entity.InstanceType.Prefab && !string.IsNullOrEmpty(Entity.OriginalPrefabName))
-				{
-					NezImGui.MediumVerticalSpace();
-					if (NezImGui.CenteredButton("Apply to Prefab Copies", 0.8f))
-					{
-						// Find prefab copies and show confirmation
-						ShowApplyToPrefabCopiesConfirmation();
-					}
-				}
-				
-				if (Entity.Type == Entity.InstanceType.Prefab && !string.IsNullOrEmpty(Entity.OriginalPrefabName))
-				{
-					NezImGui.MediumVerticalSpace();
-					if (NezImGui.CenteredButton("Apply to Original Prefab", 0.8f))
-					{
-						_showApplyToOriginalPrefabConfirmation = true;
-					}
-				}
-				
-				DrawPrefabCreatorPopup();
-				DrawApplyToPrefabCopiesConfirmationPopup(); // Add this new popup
-				DrawApplyToOriginalPrefabConfirmationPopup();
+				ImGui.TextColored(new Num.Vector4(1, 1, 0, 1), "No entity selected.");
 			}
+
 		}
 
 		ImGui.End();
@@ -744,25 +821,6 @@ public class MainEntityInspector
 			}
 
 			ImGui.EndPopup();
-		}
-	}
-
-	private async void ApplyToOriginalPrefab()
-	{
-		// Save the current entity's data to its original prefab file
-		if (Entity != null && Entity.Type == Entity.InstanceType.Prefab && !string.IsNullOrEmpty(Entity.OriginalPrefabName))
-		{
-			// Save the prefab using the async event system
-			bool saveSuccessful = await _imGuiManager.InvokePrefabCreated(Entity, false);
-
-			if (saveSuccessful)
-			{
-				NotificationSystem.ShowTimedNotification($"Applied changes to original prefab: {Entity.OriginalPrefabName}");
-			}
-			else
-			{
-				NotificationSystem.ShowTimedNotification($"Failed to apply changes to prefab: {Entity.OriginalPrefabName}");
-			}
 		}
 	}
 
