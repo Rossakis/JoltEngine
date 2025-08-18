@@ -88,35 +88,32 @@ public class EntityPane
 	/// Main entry point for drawing the entity pane UI and gizmos.
 	/// </summary>
 	public unsafe void Draw()
-    {
+	{
 		if (_imGuiManager == null)
-            _imGuiManager = Core.GetGlobalManager<ImGuiManager>();
+			_imGuiManager = Core.GetGlobalManager<ImGuiManager>();
 
 		// Draw entity tree (with clipper for large lists)
 		if (Core.Scene.Entities.Count > MIN_ENTITIES_FOR_CLIPPER)
-        {
-            var clipperPtr = ImGuiNative.ImGuiListClipper_ImGuiListClipper();
-            var clipper = new ImGuiListClipperPtr(clipperPtr);
+		{
+			var clipperPtr = ImGuiNative.ImGuiListClipper_ImGuiListClipper();
+			var clipper = new ImGuiListClipperPtr(clipperPtr);
 
-            clipper.Begin(Core.Scene.Entities.Count, -1);
+			clipper.Begin(Core.Scene.Entities.Count, -1);
 
-            while (clipper.Step())
-                for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
-                    DrawEntity(Core.Scene.Entities[i]);
+			while (clipper.Step())
+				for (var i = clipper.DisplayStart; i < clipper.DisplayEnd; i++)
+					DrawEntity(Core.Scene.Entities[i]);
 
-            ImGuiNative.ImGuiListClipper_destroy(clipperPtr);
-        }
-        else
-        {
-            for (var i = 0; i < Core.Scene.Entities.Count; i++)
-                DrawEntity(Core.Scene.Entities[i]);
-        }
+			ImGuiNative.ImGuiListClipper_destroy(clipperPtr);
+		}
+		else
+		{
+			for (var i = 0; i < Core.Scene.Entities.Count; i++)
+				DrawEntity(Core.Scene.Entities[i]);
+		}
 
-        NezImGui.MediumVerticalSpace();
-
-        // Draw gizmo for selected entity (arrows)
-        DrawSelectedEntityGizmo();
-        EntityDuplicationAndDeletion();
+		NezImGui.MediumVerticalSpace();
+		EntityDuplicationAndDeletion();
 	}
 	#endregion
 
@@ -181,83 +178,83 @@ public class EntityPane
 			prevCameraPos = camera.Position;
 
 		// Start dragging if not already dragging
-		if (!_draggingX && !_draggingY)
-		{
-			if ((xHovered && yHovered && Input.LeftMouseButtonPressed) ||
-			    (xHovered && Input.LeftMouseButtonPressed) ||
-			    (yHovered && Input.LeftMouseButtonPressed))
-			{
-				if (xHovered && yHovered)
-				{
-					_draggingX = true;
-					_draggingY = true;
-				}
-				else if (yHovered)
-				{
-					_draggingY = true;
-				}
-
-				_dragStartEntityPositions.Clear();
-				foreach (var entity in _selectedEntities)
-                    _dragStartEntityPositions[entity] = entity.Transform.Position;
-
-				_dragStartWorldMouse = camera.ScreenToWorldPoint(mousePos);
-			}
-		}
-
-		// Keep dragging as long as mouse is held down 
-		if ((_draggingX || _draggingY) && Input.LeftMouseButtonDown)
-		{
-			var worldMouse = camera.ScreenToWorldPoint(mousePos);
-			var delta = worldMouse - _dragStartWorldMouse;
-
-			foreach (var entity in _selectedEntities)
-			{
-				var startPos = _dragStartEntityPositions.TryGetValue(entity, out var pos) ? pos : entity.Transform.Position;
-				if (_draggingX && _draggingY)
-				{
-					ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeAll);
-					entity.Transform.Position = startPos + delta;
-				}
-				else if (_draggingX)
-				{
-					ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
-					entity.Transform.Position = new Vector2(startPos.X + delta.X, startPos.Y);
-				}
-				else if (_draggingY)
-				{
-					ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
-					entity.Transform.Position = new Vector2(startPos.X, startPos.Y + delta.Y);
-				}
-			}
-		}
-
-		// Undo/Redo: End of drag session
-		if ((_draggingX || _draggingY) && !Input.LeftMouseButtonDown)
-		{
-			_draggingX = false;
-			_draggingY = false;
-
-			_dragEndEntityPositions = new Dictionary<Entity, Vector2>();
-			foreach (var entity in _selectedEntities)
-				_dragEndEntityPositions[entity] = entity.Transform.Position;
-
-			// Only push undo if any entity moved
-			bool anyMoved = _selectedEntities.Any(e => _dragStartEntityPositions[e] != _dragEndEntityPositions[e]);
-			if (anyMoved)
-			{
-				EditorChangeTracker.PushUndo(
-					new MultiEntityTransformUndoAction(
-						_selectedEntities.ToList(),
-						_dragStartEntityPositions,
-						_dragEndEntityPositions,
-						$"Move {string.Join(", ", _selectedEntities.Select(e => e.Name))}"
-					),
-					_selectedEntities.First(),
-					$"Move {string.Join(", ", _selectedEntities.Select(e => e.Name))}"
-				);
-			}
-		}
+		// if (!_draggingX && !_draggingY)
+		// {
+		// 	if ((xHovered && yHovered && Input.LeftMouseButtonPressed) ||
+		// 	    (xHovered && Input.LeftMouseButtonPressed) ||
+		// 	    (yHovered && Input.LeftMouseButtonPressed))
+		// 	{
+		// 		if (xHovered && yHovered)
+		// 		{
+		// 			_draggingX = true;
+		// 			_draggingY = true;
+		// 		}
+		// 		else if (yHovered)
+		// 		{
+		// 			_draggingY = true;
+		// 		}
+  //
+		// 		_dragStartEntityPositions.Clear();
+		// 		foreach (var entity in _selectedEntities)
+  //                   _dragStartEntityPositions[entity] = entity.Transform.Position;
+  //
+		// 		_dragStartWorldMouse = camera.ScreenToWorldPoint(mousePos);
+		// 	}
+		// }
+  //
+		// // Keep dragging as long as mouse is held down 
+		// if ((_draggingX || _draggingY) && Input.LeftMouseButtonDown)
+		// {
+		// 	var worldMouse = camera.ScreenToWorldPoint(mousePos);
+		// 	var delta = worldMouse - _dragStartWorldMouse;
+  //
+		// 	foreach (var entity in _selectedEntities)
+		// 	{
+		// 		var startPos = _dragStartEntityPositions.TryGetValue(entity, out var pos) ? pos : entity.Transform.Position;
+		// 		if (_draggingX && _draggingY)
+		// 		{
+		// 			ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeAll);
+		// 			entity.Transform.Position = startPos + delta;
+		// 		}
+		// 		else if (_draggingX)
+		// 		{
+		// 			ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
+		// 			entity.Transform.Position = new Vector2(startPos.X + delta.X, startPos.Y);
+		// 		}
+		// 		else if (_draggingY)
+		// 		{
+		// 			ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
+		// 			entity.Transform.Position = new Vector2(startPos.X, startPos.Y + delta.Y);
+		// 		}
+		// 	}
+		// }
+  //
+		// // Undo/Redo: End of drag session
+		// if ((_draggingX || _draggingY) && !Input.LeftMouseButtonDown)
+		// {
+		// 	_draggingX = false;
+		// 	_draggingY = false;
+  //
+		// 	_dragEndEntityPositions = new Dictionary<Entity, Vector2>();
+		// 	foreach (var entity in _selectedEntities)
+		// 		_dragEndEntityPositions[entity] = entity.Transform.Position;
+  //
+		// 	// Only push undo if any entity moved
+		// 	bool anyMoved = _selectedEntities.Any(e => _dragStartEntityPositions[e] != _dragEndEntityPositions[e]);
+		// 	if (anyMoved)
+		// 	{
+		// 		EditorChangeTracker.PushUndo(
+		// 			new MultiEntityTransformUndoAction(
+		// 				_selectedEntities.ToList(),
+		// 				_dragStartEntityPositions,
+		// 				_dragEndEntityPositions,
+		// 				$"Move {string.Join(", ", _selectedEntities.Select(e => e.Name))}"
+		// 			),
+		// 			_selectedEntities.First(),
+		// 			$"Move {string.Join(", ", _selectedEntities.Select(e => e.Name))}"
+		// 		);
+		// 	}
+		// }
 
 		prevCameraPos = camera.Position;
 	}
@@ -360,7 +357,7 @@ public class EntityPane
                     _previousEntity = entity;
                 }
 
-                _imGuiManager.SetCameraTargetPosition(entity.Transform.Position);
+                _imGuiManager.CursorSelectionManager.SetCameraTargetPosition(entity.Transform.Position);
             }
 
 		// Recursively draw children
@@ -459,8 +456,6 @@ public class EntityPane
                     
                     // Refresh the inspector to show the new component
                     _imGuiManager.RefreshMainEntityInspector();
-                    
-                    System.Console.WriteLine($"Added {copiedComponent.GetType().Name} to {entity.Name}");
                 }
             }
 
@@ -470,7 +465,7 @@ public class EntityPane
             // Entity Commands
             if (ImGui.Selectable("Move Camera to " + entity.Name))
                 if (Core.Scene.Entities.Count > 0 && Core.IsEditMode)
-                    _imGuiManager.SetCameraTargetPosition(entity.Transform.Position);
+                    _imGuiManager.CursorSelectionManager.SetCameraTargetPosition(entity.Transform.Position);
 
             // Clone logic
             string reason = null;

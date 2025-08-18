@@ -14,6 +14,7 @@ namespace Nez
 		{
 			Line,
 			HollowRectangle,
+			FilledRectangle, 
 			Pixel,
 			BitmapFontText,
 			SpriteFontText,
@@ -122,6 +123,9 @@ namespace Nez
 					break;
 				case DebugDrawType.HollowRectangle:
 					batcher.DrawHollowRect(Rectangle, Color);
+					break;
+				case DebugDrawType.FilledRectangle:
+					batcher.DrawRect(Rectangle, Color);
 					break;
 				case DebugDrawType.Pixel:
 					batcher.DrawPixel(X, Y, Color, Size);

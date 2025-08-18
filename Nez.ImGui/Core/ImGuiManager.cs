@@ -36,6 +36,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	private System.Reflection.MethodInfo[] _themes;
 
 	private CoreWindow _coreWindow = new();
+	public string GameWindowTitle => _gameWindowTitle;
 	public SceneGraphWindow SceneGraphWindow { get; private set; }
 	public MainEntityInspector MainEntityInspector { get; private set; }
 
@@ -54,6 +55,8 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	private List<EntityInspector> _entityInspectors = new();
 	private List<Action> _drawCommands = new();
 	private ImGuiRenderer _renderer;
+	private ImGuiCursorSelectionManager _cursorSelectionManager;
+	public ImGuiCursorSelectionManager CursorSelectionManager => _cursorSelectionManager;
 
 	private Num.Vector2 _gameWindowFirstPosition;
 	private string _gameWindowTitle;
@@ -83,6 +86,11 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
     
     public static float CurrentCameraSpeed { get; private set; }
 
+    public Vector2 CameraTargetPosition
+    {
+		get => _cameraTargetPosition;
+		set => _cameraTargetPosition = value;
+	}
     private Vector2 _cameraTargetPosition;
     private float _cameraLerp = 0.4f;
 
@@ -99,9 +107,6 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	private Task _pendingSaveTask = null;
 	private ExitPromptType _pendingActionAfterSave;
 
-	private bool ctrlDown; 
-	private bool shiftDown;
-
 	#region Event Handlers
 
 	/// <summary>
@@ -111,7 +116,6 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	public event Func<Entity, bool, Task<bool>> OnPrefabCreated;
 	public event Func<string, PrefabData> OnPrefabLoadRequested;
 	public event Action<Entity, object> OnLoadEntityData; // Add this for loading entity data
-
 
 	public void InvokeSaveSceneChanges()
 	{
@@ -170,6 +174,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		_themes = typeof(NezImGuiThemes).GetMethods(System.Reflection.BindingFlags.Static |
 		                                            System.Reflection.BindingFlags.Public);
 		SceneGraphWindow = new SceneGraphWindow();
+		_cursorSelectionManager = new ImGuiCursorSelectionManager(this);
 
 		// Create default Main Entity Inspector window when current scene is finished loading the entities
 		Scene.OnFinishedAddingEntitiesWithData += OpenMainEntityInspector;
@@ -273,6 +278,9 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		NotificationSystem.Draw();
 		GlobalKeyCommands();
 
+		// Delegate entity selection logic to the manager
+		_cursorSelectionManager.UpdateSelection();
+
 		if (ShowAnimationEventInspector)
 		{
 			if (_animationEventInspector == null)
@@ -310,9 +318,6 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		if (ImGui.GetIO().KeySuper && ImGui.IsKeyPressed(ImGuiKey.Q, false) && !_pendingExit)
 			OnAppExitSaveChanges(true); 
 #endif
-
-		ctrlDown = Input.IsKeyDown(Keys.LeftControl) || Input.IsKeyDown(Keys.RightControl) || ImGui.GetIO().KeyCtrl || ImGui.GetIO().KeySuper;
-		shiftDown = Input.IsKeyDown(Keys.LeftShift) || Input.IsKeyDown(Keys.RightShift) || ImGui.GetIO().KeyShift;
 	}
 
 	private void ManageUndoAndRedo()
@@ -452,8 +457,6 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			else if (_isCameraDragging && Input.MiddleMouseButtonDown)
 			{
 				var delta = mousePos - _cameraDragStartMouse;
-				
-				// Move camera opposite to mouse drag direction
 				_cameraTargetPosition = _cameraDragStartPosition - delta;
 			}
 			else if (_isCameraDragging && !Input.MiddleMouseButtonDown)
@@ -464,31 +467,25 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			if (_cameraTargetPosition == default)
 				_cameraTargetPosition = Core.Scene.Camera.Position;
 
-			// Check if we're actively moving the camera with WASD
-			bool isMovingCamera = Input.IsKeyDown(Keys.W) || Input.IsKeyDown(Keys.A) || 
+			bool isMovingCamera = Input.IsKeyDown(Keys.W) || Input.IsKeyDown(Keys.A) ||
 								 Input.IsKeyDown(Keys.S) || Input.IsKeyDown(Keys.D);
 
-			// Handle camera speed - use dynamic speed when Shift is held and moving
 			if (Input.IsKeyDown(Keys.LeftShift))
 			{
 				if (isMovingCamera)
 				{
-					// Use dynamic speed when actively moving with Shift
 					CurrentCameraSpeed = _dynamicCameraSpeed;
 				}
 				else
 				{
-					// When just holding Shift but not moving, use fast speed
 					CurrentCameraSpeed = EditModeCameraFastSpeed;
 				}
 			}
 			else
 			{
-				// Normal speed when Shift is not held
 				CurrentCameraSpeed = EditModeCameraSpeed;
 			}
 
-			// Camera movement with WASD (only when not holding Ctrl)
 			if (!Input.IsKeyDown(Keys.LeftControl) && !Input.IsKeyDown(Keys.RightControl))
 			{
 				if (Input.IsKeyDown(Keys.D))
@@ -504,23 +501,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			Core.Scene.Camera.Position = Vector2.Lerp(Core.Scene.Camera.Position, _cameraTargetPosition, _cameraLerp);
 		}
 
-		// Double-click selection logic (keep inside ImGui window hovered check)
-		if (ImGui.IsWindowHovered(ImGuiHoveredFlags.AnyWindow))
-		{
-			if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
-			{
-				TrySelectEntityAtMouse();
-			}
-			else if (!ctrlDown && !shiftDown && (Input.LeftMouseButtonPressed || ImGui.IsMouseClicked(ImGuiMouseButton.Left)))
-			{
-				// Only deselect if not clicking on an entity node and not dragging gizmo
-				if (!SceneGraphWindow.EntityPane.IsDraggingGizmo)
-				{
-					SceneGraphWindow.EntityPane.DeselectAllEntities();
-					DeselectEntity();
-				}
-			}
-		}
+		// Remove entity selection logic from here
 	}
 
 	private void ManageCameraZoom()
@@ -708,79 +689,8 @@ public IntPtr BindTexture(Texture2D texture)
 	#endregion
 
 	#region Entity Selection
-	private void TrySelectEntityAtMouse()
-	{
-		var mouseWorld = Core.Scene.Camera.ScreenToWorldPoint(Input.ScaledMousePosition);
-	    Entity selected = null;
-
-	    // Check entities with colliders (topmost first)
-	    for (int i = Core.Scene.Entities.Count - 1; i >= 0; i--)
-	    {
-	        var entity = Core.Scene.Entities[i];
-	        var collider = entity.GetComponent<Collider>();
-	        if (collider != null && collider.Bounds.Contains(mouseWorld))
-	        {
-	            selected = entity;
-	            break;
-	        }
-	    }
-
-	    // If not found, check entities with SpriteRenderer or by proximity to Transform.Position
-	    if (selected == null)
-	    {
-	        float minDist = 16f; // pixel threshold
-	        for (int i = Core.Scene.Entities.Count - 1; i >= 0; i--)
-	        {
-	            var entity = Core.Scene.Entities[i];
-	            var sprite = entity.GetComponent<SpriteRenderer>();
-	            if (sprite != null)
-	            {
-	                // Only select if IsSelectableInEditor is true
-	                if (!sprite.IsSelectableInEditor)
-	                    continue;
-
-	                var bounds = sprite.Bounds;
-	                if (bounds.Contains(mouseWorld))
-	                {
-	                    selected = entity;
-	                    break;
-                    }
-	            }
-	            else
-	            {
-	                // Fallback: select if mouse is close to entity's position
-	                float dist = Vector2.Distance(entity.Transform.Position, mouseWorld);
-	                if (dist < minDist)
-	                {
-	                    selected = entity;
-	                    minDist = dist;
-	                }
-	            }
-	        }
-	    }
-
-	    // Set selection in the editor
-	    if (selected != null)
-	    {
-	        // Detect modifiers
-	        SceneGraphWindow.EntityPane.SetSelectedEntity(selected, ctrlDown, shiftDown);
-	        OpenMainEntityInspector(selected);
-
-	        // Move camera to the selected entity
-	        SetCameraTargetPosition(selected.Transform.Position);
-		}
-	}
-	
-	public void SetCameraTargetPosition(Vector2 position)
-	{
-		_cameraTargetPosition = SceneGraphWindow.EntityPane.GetSelectedEntitiesCenter();
-	}
-
-	public void DeselectEntity()
-	{
-		if (SceneGraphWindow?.EntityPane != null)
-		    SceneGraphWindow.EntityPane.SetSelectedEntity(null, false);
-	}
+	// Remove the entire #region Entity Selection
+	// (TrySelectEntityAtMouse, SetCameraTargetPosition, DeselectEntity)
 	#endregion
 
 	#region Save Changes for AppExit/ SceneChange / SceneReset

@@ -576,7 +576,7 @@ public class SceneGraphWindow
 				_imGuiManager.OpenMainEntityInspector(next);
 				EntityPane.SetSelectedEntity(next, false);
 				ExpandParentsAndChildren(next);
-				_imGuiManager.SetCameraTargetPosition(next.Transform.Position);
+				_imGuiManager.CursorSelectionManager.SetCameraTargetPosition(next.Transform.Position);
 			}
 			_lastRepeatTime = now;
 		}
@@ -590,7 +590,7 @@ public class SceneGraphWindow
 					_imGuiManager.OpenMainEntityInspector(next);
 					EntityPane.SetSelectedEntity(next, false);
 					ExpandParentsAndChildren(next);
-					_imGuiManager.SetCameraTargetPosition(next.Transform.Position);
+					_imGuiManager.CursorSelectionManager.SetCameraTargetPosition(next.Transform.Position);
 				}
 				_lastRepeatTime = now;
 			}
@@ -610,7 +610,7 @@ public class SceneGraphWindow
 				_imGuiManager.OpenMainEntityInspector(next);
 				EntityPane.SetSelectedEntity(next, false);
 				ExpandParentsAndChildren(next);
-				_imGuiManager.SetCameraTargetPosition(next.Transform.Position); 
+				_imGuiManager.CursorSelectionManager.SetCameraTargetPosition(next.Transform.Position); 
 			}
 			_lastRepeatTime = now;
 		}
@@ -624,7 +624,7 @@ public class SceneGraphWindow
 					_imGuiManager.OpenMainEntityInspector(next);
 					EntityPane.SetSelectedEntity(next, false);
 					ExpandParentsAndChildren(next);
-					_imGuiManager.SetCameraTargetPosition(next.Transform.Position);
+					_imGuiManager.CursorSelectionManager.SetCameraTargetPosition(next.Transform.Position);
 				}
 				_lastRepeatTime = now;
 			}

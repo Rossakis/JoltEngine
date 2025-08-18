@@ -163,6 +163,16 @@ namespace Nez
 			_screenSpaceDebugDrawItems.Add(new DebugDrawItem(text, color, duration, scale));
 		}
 
+		[Conditional("DEBUG")]
+		public static void DrawRect(Rectangle rectangle, Color color, float duration = 0f)
+		{
+			if (!Core.DebugRenderEnabled)
+				return;
+
+			// This will draw a filled rectangle using the pixel texture
+			_debugDrawItems.Add(new DebugDrawItem(rectangle, color, duration) { drawType = DebugDrawItem.DebugDrawType.FilledRectangle });
+		}
+
 		/// <summary>
 		/// Draws an arrow from start to end, with customizable arrowhead.
 		/// </summary>
