@@ -237,6 +237,24 @@ namespace Nez
 			return this;
 		}
 
+		/// <summary>
+		/// Remove the specified layer from the CollidesWithLayers bitmask
+		/// </summary>
+		/// <param name="layerToIgnore"></param>
+		public void IgnoreLayer(int layerToIgnore)
+		{
+			CollidesWithLayers &= ~layerToIgnore;
+		}
+
+		/// <summary>
+		/// Adds the specified layer to the CollidesWithLayers bitmask
+		/// </summary>
+		/// <param name="layerToAdd"></param>
+		public void AddLayer(int layerToAdd)
+		{
+			CollidesWithLayers |= layerToAdd;
+		}
+
 		#endregion
 
 
