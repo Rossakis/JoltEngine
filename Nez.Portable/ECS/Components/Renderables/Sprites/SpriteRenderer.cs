@@ -1,12 +1,15 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Nez.Data;
+using Nez.DeferredLighting;
+using Nez.Materials;
 using Nez.Systems;
 using Nez.Textures;
 using Nez.Tiled;
 using Nez.Utils;
 using System;
 using System.IO;
+using System.Reflection.Metadata;
 
 
 namespace Nez.Sprites
@@ -22,6 +25,7 @@ namespace Nez.Sprites
 		public class SpriteRendererComponentData : ComponentData
 		{
 			public string TextureFilePath = "";
+			public string NormalMapFilePath = ""; 
 			
 			// Store color as individual RGBA components for proper serialization
 			public byte ColorR = 255;
@@ -35,6 +39,7 @@ namespace Nez.Sprites
 			public int RenderLayer = 0;
 			public SpriteEffects SpriteEffects = SpriteEffects.None;
 			public ImageFileType FileType = ImageFileType.None;
+			public ImageFileType NormalMapFileType = ImageFileType.None;
 			
 			// File type specific data
 			public AsepriteImageData? AsepriteData = null;
@@ -103,6 +108,8 @@ namespace Nez.Sprites
 				FileType = ImageFileType.None;
 				AsepriteData = null;
 				TiledData = null;
+				NormalMapFilePath = ""; 
+				NormalMapFileType = ImageFileType.None; 
 			}
 
 			public SpriteRendererComponentData(SpriteRenderer renderer)
@@ -132,6 +139,10 @@ namespace Nez.Sprites
 					{
 						TextureFilePath = renderer._data.TextureFilePath;
 					}
+					
+					
+					NormalMapFilePath = renderer._data.NormalMapFilePath;
+					NormalMapFileType = renderer._data.NormalMapFileType;
 				}
 				else
 				{
@@ -345,6 +356,11 @@ namespace Nez.Sprites
 			set => SetSprite(value);
 		}
 
+		/// <summary>
+		/// The normal map sprite used for deferred lighting. Set via SetNormal().
+		/// </summary>
+		public Sprite NormalMap;
+
 		public bool IsSelectableInEditor { get; set; } = true;
 
 		protected Vector2 _origin;
@@ -413,6 +429,42 @@ namespace Nez.Sprites
 			return this;
 		}
 
+		/// <summary>
+		/// Sets the normal map sprite for this renderer. Updates the material if using deferred lighting.
+		/// </summary>
+		/// <param name="normalMap">The normal map sprite to use.</param>
+		/// <returns>This SpriteRenderer for chaining.</returns>
+		public void SetNormalMap(Sprite normalMap)
+		{
+			NormalMap = normalMap;
+
+			// If using a deferred material, update it with the new normal map
+			if (Material is DeferredSpriteMaterial deferredMaterial)
+			{
+				if(normalMap == null)
+					deferredMaterial.Effect.SetNormalMap(Entity.Scene.GetRenderer<DeferredLightingRenderer>().NullNormalMapTexture);
+				else
+					deferredMaterial.Effect.SetNormalMap(NormalMap.Texture2D);
+			}
+		}
+
+
+		/// <summary>
+		/// Sets the normal map sprite for this renderer. Updates the material if using deferred lighting.
+		/// </summary>
+		/// <param name="normalMap">The normal map sprite to use.</param>
+		/// <returns>This SpriteRenderer for chaining.</returns>
+		public void SetNormalMap(Texture2D normalMap)
+		{
+			NormalMap = new Sprite(normalMap);
+
+			// If using a deferred material, update it with the new normal map
+			if (Material is DeferredSpriteMaterial deferredMaterial && normalMap != null)
+			{
+				deferredMaterial.Effect.SetNormalMap(normalMap);
+			}
+		}
+
 		#endregion
 
 
@@ -470,6 +522,19 @@ namespace Nez.Sprites
 			if (!string.IsNullOrEmpty(_data?.TextureFilePath) && Sprite == null)
 			{
 				LoadImageFromData();
+			}
+
+			if (Entity.Scene.GetRenderer<DeferredLightingRenderer>() != null)
+			{
+				if (!string.IsNullOrEmpty(_data?.NormalMapFilePath)) //Has normal map
+				{
+					SetNormalMap(LoadNormalMap(_data.NormalMapFilePath, _data.NormalMapFileType));
+					SetMaterial(new DeferredSpriteMaterial(NormalMap));
+				}
+				else // doesn't have
+					SetMaterial(new DeferredSpriteMaterial(Entity.Scene.GetRenderer<DeferredLightingRenderer>().NullNormalMapTexture));
+
+				Material.SamplerState = SamplerState.PointClamp;
 			}
 		}
 
@@ -550,6 +615,48 @@ namespace Nez.Sprites
 				default:
 					Debug.Error($"Unknown or unsupported file type for: {_data.TextureFilePath}");
 					break;
+			}
+
+			// After loading the main image, load the normal map if specified
+			if (!string.IsNullOrEmpty(_data.NormalMapFilePath))
+			{
+				contentManager = Entity?.Scene?.Content ?? Core.Content;
+				Texture2D normalMapTexture = null;
+
+				switch (_data.NormalMapFileType)
+				{
+					case SpriteRendererComponentData.ImageFileType.Png:
+						normalMapTexture = contentManager.LoadTexture(_data.NormalMapFilePath);
+						break;
+					case SpriteRendererComponentData.ImageFileType.Aseprite:
+						// For Aseprite, you may want to load a specific layer or frame as the normal map
+						var aseFile = contentManager.LoadAsepriteFile(_data.NormalMapFilePath);
+						if (aseFile != null)
+						{
+							var aseData = _data.AsepriteData.Value;
+							// Use the first frame/layer as normal map by default
+							normalMapTexture = aseFile.GetTextureFromFrameNumber(aseData.FrameNumber);
+						}
+						break;
+					case SpriteRendererComponentData.ImageFileType.Tiled:
+						var tiledMap = contentManager.LoadTiledMap(_data.NormalMapFilePath);
+						if (tiledMap.ImageLayers.Count > 0)
+							normalMapTexture = tiledMap.ImageLayers[0].Image.Texture;
+						break;
+					case SpriteRendererComponentData.ImageFileType.None:
+					default:
+						// Try to infer from extension
+						var ext = Path.GetExtension(_data.NormalMapFilePath).ToLower();
+						if (ext == ".png")
+							normalMapTexture = contentManager.LoadTexture(_data.NormalMapFilePath);
+						break;
+				}
+
+				if (normalMapTexture != null)
+				{
+					// Assign a DeferredSpriteMaterial with the normal map
+					SetMaterial(new DeferredSpriteMaterial(normalMapTexture));
+				}
 			}
 		}
 
@@ -825,6 +932,58 @@ namespace Nez.Sprites
 			}
 			
 			return clone;
+		}
+		
+		public Texture2D LoadNormalMap(string normalMapFilePath, SpriteRendererComponentData.ImageFileType fileType)
+		{
+			_data.NormalMapFilePath = normalMapFilePath;
+			_data.NormalMapFileType = fileType;
+			
+			// Remove normal map if path is empty
+			if (string.IsNullOrEmpty(_data.NormalMapFilePath))
+			{
+				// Optionally reset to default material
+				Material = null;
+				return null;
+			}
+
+			var contentManager = Entity?.Scene?.Content ?? Core.Content;
+			Texture2D normalMapTexture = null;
+
+			try
+			{
+				switch (fileType)
+				{
+					case SpriteRendererComponentData.ImageFileType.Png:
+						normalMapTexture = contentManager.LoadTexture(_data.NormalMapFilePath);
+						break;
+					case SpriteRendererComponentData.ImageFileType.Aseprite:
+						var aseFile = contentManager.LoadAsepriteFile(_data.NormalMapFilePath);
+						if (aseFile != null)
+						{
+							// Use first frame by default, or extend as needed
+							normalMapTexture = aseFile.GetTextureFromFrameNumber(0);
+						}
+						break;
+					case SpriteRendererComponentData.ImageFileType.Tiled:
+						var tiledMap = contentManager.LoadTiledMap(_data.NormalMapFilePath);
+						if (tiledMap.ImageLayers.Count > 0)
+							normalMapTexture = tiledMap.ImageLayers[0].Image.Texture;
+						break;
+					default:
+						// Try to infer from extension
+						var ext = System.IO.Path.GetExtension(_data.NormalMapFilePath).ToLower();
+						if (ext == ".png")
+							normalMapTexture = contentManager.LoadTexture(_data.NormalMapFilePath);
+						break;
+				}
+			}
+			catch (Exception e)
+			{
+				Debug.Error($"Error loading normal map: {e.Message}");
+			}
+
+			return normalMapTexture;
 		}
 	}
 }

@@ -18,22 +18,11 @@ namespace Nez.DeferredLighting
 			public Vector3 Direction;
 			public float SpecularIntensity;
 			public float SpecularPower;
-			public bool Enabled;
 
 			public byte ColorR = 255;
 			public byte ColorG = 255;
 			public byte ColorB = 255;
 			public byte ColorA = 255;
-
-			public DirLightComponentData() { }
-
-			public DirLightComponentData(Color color)
-			{
-				ColorR = color.R;
-				ColorG = color.G;
-				ColorB = color.B;
-				ColorA = color.A;
-			}
 
 			public Color Color
 			{
@@ -48,25 +37,29 @@ namespace Nez.DeferredLighting
 			}
 		}
 
+		private DirLightComponentData _data = new DirLightComponentData();
+
 		public override ComponentData Data
 		{
-			get => new DirLightComponentData
+			get
 			{
-				Enabled = Enabled,
-				Color = Color,
-				Direction = Direction,
-				SpecularIntensity = SpecularIntensity,
-				SpecularPower = SpecularPower
-			};
+				_data.Enabled = Enabled;
+				_data.Color = Color;
+				_data.Direction = Direction;
+				_data.SpecularIntensity = SpecularIntensity;
+				_data.SpecularPower = SpecularPower;
+				return _data;
+			}
 			set
 			{
-				if (value is DirLightComponentData data)
+				if (value is DirLightComponentData d)
 				{
-					Enabled = data.Enabled;
-					Color = data.Color;
-					Direction = data.Direction;
-					SpecularIntensity = data.SpecularIntensity;
-					SpecularPower = data.SpecularPower;
+					Enabled = d.Enabled;
+					Color = d.Color;
+					Direction = d.Direction;
+					SpecularIntensity = d.SpecularIntensity;
+					SpecularPower = d.SpecularPower;
+					_data = d;
 				}
 			}
 		}

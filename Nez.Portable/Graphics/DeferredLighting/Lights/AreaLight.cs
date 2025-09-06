@@ -9,6 +9,61 @@ namespace Nez.DeferredLighting
 	/// </summary>
 	public class AreaLight : DeferredLight
 	{
+		public class AreaLightComponentData : ComponentData
+		{
+			public float Width;
+			public float Height;
+			public float Intensity;
+			public Vector3 Direction;
+
+			public byte ColorR = 255;
+			public byte ColorG = 255;
+			public byte ColorB = 255;
+			public byte ColorA = 255;
+
+			public Color Color
+			{
+				get => new Color(ColorR, ColorG, ColorB, ColorA);
+				set
+				{
+					ColorR = value.R;
+					ColorG = value.G;
+					ColorB = value.B;
+					ColorA = value.A;
+				}
+			}
+		}
+
+		private AreaLightComponentData _data = new AreaLightComponentData();
+
+		public override ComponentData Data
+		{
+			get
+			{
+				_data.Enabled = Enabled;
+				_data.Color = Color;
+				_data.Width = Width;
+				_data.Height = Height;
+				_data.Intensity = Intensity;
+				_data.Direction = Direction;
+				return _data;
+			}
+			set
+			{
+				if (value is AreaLightComponentData d)
+				{
+					Enabled = d.Enabled;
+					Color = d.Color;
+					_areaWidth = d.Width;
+					_areaHeight = d.Height;
+					Intensity = d.Intensity;
+					Direction = d.Direction;
+					_areBoundsDirty = true;
+					_data = d;
+				}
+			}
+		}
+
 		public override float Width => _areaWidth;
 		public override float Height => _areaHeight;
 

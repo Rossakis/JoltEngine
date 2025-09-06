@@ -17,7 +17,7 @@ public class AnimationUtils
     /// <param name="animationTagName">The name of the tag containing the desired animation in the aseprite file.</param>
     /// <param name="callableAnimationName">The name we want to give the animation, which we will need to call when using Animator.Play("animation")</param>
     /// <param name="layerName">If left as null, then animator will select ALL layers for the animation.</param>
-    public static void LoadAsepriteAnimation(Entity entity, string asepriteFilePath, string animationTagName, string callableAnimationName = null, string layerName = null)
+    public static SpriteAnimation LoadAsepriteAnimation(Entity entity, string asepriteFilePath, string animationTagName, string callableAnimationName = null, string layerName = null)
     {
         SpriteAtlas sprite = entity.Scene.Content.LoadAsepriteFile(asepriteFilePath).ToSpriteAtlas(layerName);
 
@@ -25,9 +25,11 @@ public class AnimationUtils
             entity.GetComponent<SpriteAnimator>().AddAnimation(animationTagName, sprite.GetAnimation(animationTagName));
         else
             entity.GetComponent<SpriteAnimator>().AddAnimation(callableAnimationName, sprite.GetAnimation(animationTagName));
+
+        return sprite.GetAnimation(animationTagName);
     }
 
-    public static void LoadAsepriteAnimation(SpriteAnimator animator, string asepriteFilePath, string animationTagName, string callableAnimationName = null, string layerName = null)
+    public static SpriteAnimation LoadAsepriteAnimation(SpriteAnimator animator, string asepriteFilePath, string animationTagName, string callableAnimationName = null, string layerName = null)
     {
 	    SpriteAtlas sprite = Core.Scene.Content.LoadAsepriteFile(asepriteFilePath).ToSpriteAtlas(layerName);
 
@@ -35,7 +37,9 @@ public class AnimationUtils
 		    animator.AddAnimation(animationTagName, sprite.GetAnimation(animationTagName));
 	    else
 		    animator.AddAnimation(callableAnimationName, sprite.GetAnimation(animationTagName));
-    }
+
+	    return sprite.GetAnimation(animationTagName);
+	}
 
 	/// <summary>
 	/// Create animation only based on its specific layers 
@@ -45,7 +49,7 @@ public class AnimationUtils
 	/// <param name="animationTagName"></param>
 	/// <param name="callableAnimationName"></param>
 	/// <param name="layers"></param>
-	public static void LoadAsepriteAnimationWithLayers(Entity entity, string asepriteFilePath, string animationTagName, string callableAnimationName = null, params string[] layers)
+	public static SpriteAnimation LoadAsepriteAnimationWithLayers(Entity entity, string asepriteFilePath, string animationTagName, string callableAnimationName = null, params string[] layers)
     {
         SpriteAtlas sprite = entity.Scene.Content.LoadAsepriteFile(asepriteFilePath).ToSpriteAtlasFromLayers(true, 0, 0 ,0 , null, layers);
 
@@ -53,9 +57,11 @@ public class AnimationUtils
             entity.GetComponent<SpriteAnimator>().AddAnimation(animationTagName, sprite.GetAnimation(animationTagName));
         else
             entity.GetComponent<SpriteAnimator>().AddAnimation(callableAnimationName, sprite.GetAnimation(animationTagName));
-    }
 
-	public static void LoadAsepriteAnimationWithLayers(SpriteAnimator animator, string asepriteFilePath, string animationTagName, string callableAnimationName = null, params string[] layers)
+        return sprite.GetAnimation(animationTagName);
+	}
+
+	public static SpriteAnimation LoadAsepriteAnimationWithLayers(SpriteAnimator animator, string asepriteFilePath, string animationTagName, string callableAnimationName = null, params string[] layers)
 	{
 		SpriteAtlas sprite = Core.Scene.Content.LoadAsepriteFile(asepriteFilePath).ToSpriteAtlasFromLayers(true, 0, 0, 0, null, layers);
 
@@ -63,6 +69,8 @@ public class AnimationUtils
 			animator.AddAnimation(animationTagName, sprite.GetAnimation(animationTagName));
 		else
 			animator.AddAnimation(callableAnimationName, sprite.GetAnimation(animationTagName));
+
+		return sprite.GetAnimation(animationTagName);
 	}
 
 	/// <summary>

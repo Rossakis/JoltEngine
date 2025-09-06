@@ -1,16 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using ImGuiNET;
+﻿using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Nez.ImGuiTools.TypeInspectors;
 using Nez.ImGuiTools.UndoActions;
 using Nez.Sprites;
 using Nez.Systems;
+using Nez.Textures;
 using Nez.Tiled;
 using Nez.Utils.Extensions;
-using Nez.Textures;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Nez.Utils;
 using Num = System.Numerics;
 
 namespace Nez.ImGuiTools.TypeInspectors
@@ -27,9 +28,14 @@ namespace Nez.ImGuiTools.TypeInspectors
         private List<string> _currentImageLayers = null;
         private string _lastSelectedTmxFile = null;
 
-        public SpriteRendererFileInspector()
-        {
-        }
+        private enum ImageLoadMode { MainImage, NormalMap }
+
+        private (string popup, ImageLoadMode mode)? _pendingFilePickerPopup = null;
+        private ImageLoadMode _nextImageLoadMode = ImageLoadMode.MainImage;
+
+        private ImageLoadMode? _activeFilePickerMode = null;
+
+        public SpriteRendererFileInspector() { }
 
         public override void Initialize()
         {
@@ -43,51 +49,143 @@ namespace Nez.ImGuiTools.TypeInspectors
             if (spriteRenderer == null)
                 return;
 
-            // ONLY draw the file loading UI - no standard properties
             DrawImageSourceSelector(spriteRenderer);
         }
 
         private void DrawImageSourceSelector(SpriteRenderer spriteRenderer)
         {
+            if (_pendingFilePickerPopup.HasValue)
+            {
+                ImGui.OpenPopup(_pendingFilePickerPopup.Value.popup);
+                _activeFilePickerMode = _pendingFilePickerPopup.Value.mode;
+                _pendingFilePickerPopup = null;
+            }
+
             ImGui.TextColored(new Num.Vector4(0.8f, 0.9f, 1.0f, 1.0f), "Sprite Image Selection");
 
-            // Show current texture info if available
             if (spriteRenderer.Sprite?.Texture2D != null)
             {
-                ImGui.Text($"Current: {spriteRenderer.Sprite.Texture2D.Name ?? "Unknown"}");
-                ImGui.Text($"Size: {spriteRenderer.Sprite.Texture2D.Width}x{spriteRenderer.Sprite.Texture2D.Height}");
-
-                // Show file type if available from component data
-                if (spriteRenderer.Data is SpriteRenderer.SpriteRendererComponentData data)
+                if (ImGui.CollapsingHeader("Image Info", ImGuiTreeNodeFlags.DefaultOpen))
                 {
-                    ImGui.Text($"Type: {data.FileType}");
+                    ImGui.Text($"Path: {spriteRenderer.Sprite.Texture2D.Name ?? "Unknown"}");
 
-                    // Show additional info based on file type
-                    switch (data.FileType)
+                    if (spriteRenderer.Data is SpriteRenderer.SpriteRendererComponentData data)
                     {
-                        case SpriteRenderer.SpriteRendererComponentData.ImageFileType.Aseprite:
-                            if (data.AsepriteData.HasValue)
-                            {
-                                var aseData = data.AsepriteData.Value;
-                                ImGui.Text($"Frame: {aseData.FrameNumber}");
-                                if (!string.IsNullOrEmpty(aseData.LayerName))
-                                    ImGui.Text($"Layer: {aseData.LayerName}");
-                            }
-                            break;
-                        case SpriteRenderer.SpriteRendererComponentData.ImageFileType.Tiled:
-                            if (data.TiledData.HasValue)
-                            {
-                                var tiledData = data.TiledData.Value;
-                                if (!string.IsNullOrEmpty(tiledData.ImageLayerName))
-                                    ImGui.Text($"Image Layer: {tiledData.ImageLayerName}");
-                            }
-                            break;
+                        ImGui.Text($"Type: {data.FileType}");
+
+                        switch (data.FileType)
+                        {
+                            case SpriteRenderer.SpriteRendererComponentData.ImageFileType.Aseprite:
+                                if (data.AsepriteData.HasValue)
+                                {
+                                    var aseData = data.AsepriteData.Value;
+                                    ImGui.Text($"Frame: {aseData.FrameNumber}");
+                                    if (!string.IsNullOrEmpty(aseData.LayerName))
+                                        ImGui.Text($"Layer: {aseData.LayerName}");
+                                }
+                                break;
+                            case SpriteRenderer.SpriteRendererComponentData.ImageFileType.Tiled:
+                                if (data.TiledData.HasValue)
+                                {
+                                    var tiledData = data.TiledData.Value;
+                                    if (!string.IsNullOrEmpty(tiledData.ImageLayerName))
+                                        ImGui.Text($"Tiled Layer: {tiledData.ImageLayerName}");
+                                }
+                                break;
+                        }
                     }
+
+                    float regionWidth = ImGui.GetContentRegionAvail().X;
+                    float buttonLoadWidth = ImGui.CalcTextSize("Load Image").X + ImGui.GetStyle().FramePadding.X * 2.0f;
+                    float buttonClearWidth = ImGui.CalcTextSize("Clear Sprite Image").X + ImGui.GetStyle().FramePadding.X * 2.0f;
+                    float totalButtonWidth = buttonLoadWidth + ImGui.GetStyle().ItemSpacing.X + buttonClearWidth;
+                    float cursorX = (regionWidth - totalButtonWidth) * 0.5f;
+                    if (cursorX > 0)
+                        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + cursorX);
+
+                    bool loadImagePressed = ImGui.Button("Load Image", new Num.Vector2(buttonLoadWidth, 0));
+                    ImGui.SameLine();
+                    bool clearImagePressed = ImGui.Button("Clear Sprite Image", new Num.Vector2(buttonClearWidth, 0));
+
+                    if (loadImagePressed)
+                    {
+                        _nextImageLoadMode = ImageLoadMode.MainImage;
+                        ImGui.OpenPopup("image-type-popup");
+                    }
+                    if (clearImagePressed)
+                    {
+                        ClearSpriteWithUndo(spriteRenderer);
+                        _errorMessage = "";
+                    }
+
+                    NezImGui.MediumVerticalSpace();
                 }
             }
             else
             {
                 ImGui.TextColored(new Num.Vector4(0.7f, 0.7f, 0.7f, 1.0f), "No image loaded");
+
+                float regionWidth = ImGui.GetContentRegionAvail().X;
+                float buttonLoadWidth = ImGui.CalcTextSize("Load Image").X + ImGui.GetStyle().FramePadding.X * 2.0f;
+                float cursorX = (regionWidth - buttonLoadWidth) * 0.5f;
+                if (cursorX > 0)
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + cursorX);
+
+                if (ImGui.Button("Load Image", new Num.Vector2(buttonLoadWidth, 0)))
+                {
+                    _nextImageLoadMode = ImageLoadMode.MainImage;
+                    ImGui.OpenPopup("image-type-popup");
+                }
+            }
+
+            if (spriteRenderer.NormalMap != null)
+            {
+                if (ImGui.CollapsingHeader("Normal Map Info", ImGuiTreeNodeFlags.DefaultOpen))
+                {
+                    ImGui.Text($"Path: {spriteRenderer.NormalMap.Texture2D.Name ?? "Unknown"}");
+                    ImGui.Spacing();
+
+                    float regionWidth = ImGui.GetContentRegionAvail().X;
+                    float buttonLoadWidth = ImGui.CalcTextSize("Load Normal Map").X + ImGui.GetStyle().FramePadding.X * 2.0f;
+                    float buttonClearWidth = ImGui.CalcTextSize("Clear Normal Map").X + ImGui.GetStyle().FramePadding.X * 2.0f;
+                    float totalButtonWidth = buttonLoadWidth + ImGui.GetStyle().ItemSpacing.X + buttonClearWidth;
+                    float cursorX = (regionWidth - totalButtonWidth) * 0.5f;
+                    if (cursorX > 0)
+                        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + cursorX);
+
+                    bool loadNormalPressed = ImGui.Button("Load Normal Map", new Num.Vector2(buttonLoadWidth, 0));
+                    ImGui.SameLine();
+                    bool clearNormalPressed = ImGui.Button("Clear Normal Map", new Num.Vector2(buttonClearWidth, 0));
+
+                    if (loadNormalPressed)
+                    {
+                        _nextImageLoadMode = ImageLoadMode.NormalMap;
+                        ImGui.OpenPopup("image-type-popup");
+                    }
+                    if (clearNormalPressed)
+                    {
+	                    ClearNormalWithUndo(spriteRenderer);
+	                    _errorMessage = "";
+                    }
+
+                    NezImGui.MediumVerticalSpace();
+                }
+            }
+            else
+            {
+                ImGui.TextColored(new Num.Vector4(0.7f, 0.9f, 0.7f, 1.0f), "No normal map loaded");
+
+                float regionWidth = ImGui.GetContentRegionAvail().X;
+                float buttonLoadWidth = ImGui.CalcTextSize("Load Normal Map").X + ImGui.GetStyle().FramePadding.X * 2.0f;
+                float cursorX = (regionWidth - buttonLoadWidth) * 0.5f;
+                if (cursorX > 0)
+                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + cursorX);
+
+                if (ImGui.Button("Load Normal Map", new Num.Vector2(buttonLoadWidth, 0)))
+                {
+                    _nextImageLoadMode = ImageLoadMode.NormalMap;
+                    ImGui.OpenPopup("image-type-popup");
+                }
             }
 
             ImGui.Spacing();
@@ -101,42 +199,30 @@ namespace Nez.ImGuiTools.TypeInspectors
                 ImGui.Spacing();
             }
 
-            // File selection buttons - REMOVED JPG SUPPORT
-            if (ImGui.Button("Load PNG"))
+            if (ImGui.BeginPopup("image-type-popup"))
             {
-                _errorMessage = "";
-                ImGui.OpenPopup("png-file-picker");
-            }
-
-            ImGui.SameLine();
-            if (ImGui.Button("Load Aseprite"))
-            {
-                _errorMessage = "";
-                ImGui.OpenPopup("aseprite-file-picker");
-            }
-
-            ImGui.SameLine();
-            if (ImGui.Button("Load TMX"))
-            {
-                _errorMessage = "";
-                ImGui.OpenPopup("tmx-file-picker");
-            }
-
-            // Clear button with undo support
-            if (spriteRenderer.Sprite != null)
-            {
-                ImGui.Spacing();
-                if (ImGui.Button("Clear Sprite", new Num.Vector2(-1, 0)))
+                if (ImGui.Selectable("PNG"))
                 {
-                    ClearSpriteWithUndo(spriteRenderer);
-                    _errorMessage = "";
+                    _pendingFilePickerPopup = ("file-picker-png", _nextImageLoadMode);
+                    ImGui.CloseCurrentPopup();
                 }
+                if (ImGui.Selectable("Aseprite"))
+                {
+                    _pendingFilePickerPopup = ("file-picker-aseprite", _nextImageLoadMode);
+                    ImGui.CloseCurrentPopup();
+                }
+                if (ImGui.Selectable("TMX"))
+                {
+                    _pendingFilePickerPopup = ("file-picker-tmx", _nextImageLoadMode);
+                    ImGui.CloseCurrentPopup();
+                }
+                ImGui.EndPopup();
             }
 
-            // File picker popups - UPDATED TO PNG ONLY
-            DrawFilePickerPopup("png-file-picker", ".png", (sr, path) => LoadPngFileFromPicker(sr, path));
-            DrawAsepriteFilePickerPopup(spriteRenderer);
-            DrawTmxFilePickerPopup(spriteRenderer);
+            // File picker popups (shared for both image and normal map)
+            DrawFilePickerPopup((sr, path) => LoadFileFromPicker(sr, path, _nextImageLoadMode, SpriteRenderer.SpriteRendererComponentData.ImageFileType.Png));
+            DrawAsepriteFilePickerPopup(spriteRenderer, _nextImageLoadMode);
+            DrawTmxFilePickerPopup(spriteRenderer, _nextImageLoadMode);
         }
 
         /// <summary>
@@ -146,13 +232,13 @@ namespace Nez.ImGuiTools.TypeInspectors
         {
             // Store the old state for undo
             var oldSprite = spriteRenderer.Sprite;
-            var oldData = spriteRenderer.Data != null ? 
-                new SpriteRenderer.SpriteRendererComponentData(spriteRenderer) : 
+            var oldData = spriteRenderer.Data != null ?
+                new SpriteRenderer.SpriteRendererComponentData(spriteRenderer) :
                 new SpriteRenderer.SpriteRendererComponentData();
 
             // Clear the sprite
             spriteRenderer.SetSprite(null);
-            
+
             // Create new empty data
             var newData = new SpriteRenderer.SpriteRendererComponentData
             {
@@ -166,9 +252,11 @@ namespace Nez.ImGuiTools.TypeInspectors
                 SpriteEffects = spriteRenderer.SpriteEffects,
                 FileType = SpriteRenderer.SpriteRendererComponentData.ImageFileType.None,
                 AsepriteData = null,
-                TiledData = null
+                TiledData = null,
+				NormalMapFilePath = oldData.NormalMapFilePath,
+				NormalMapFileType = oldData.NormalMapFileType
             };
-            
+
             spriteRenderer.Data = newData;
 
             // Push undo action
@@ -188,19 +276,64 @@ namespace Nez.ImGuiTools.TypeInspectors
             Debug.Log($"Cleared sprite from {spriteRenderer.Entity?.Name}");
         }
 
-        private void DrawFilePickerPopup(string popupId, string extensions, Action<SpriteRenderer, string> loadAction)
+        private void ClearNormalWithUndo(SpriteRenderer spriteRenderer)
+        {
+	        var oldData = spriteRenderer.Data != null
+		        ? new SpriteRenderer.SpriteRendererComponentData(spriteRenderer)
+		        : new SpriteRenderer.SpriteRendererComponentData();
+
+	        spriteRenderer.SetNormalMap(null);
+
+	        var newData = new SpriteRenderer.SpriteRendererComponentData
+	        {
+		        TextureFilePath = oldData.TextureFilePath,
+		        Color = spriteRenderer.Color,
+		        LocalOffset = spriteRenderer.LocalOffset,
+		        Origin = spriteRenderer.Origin,
+		        LayerDepth = spriteRenderer.LayerDepth,
+		        RenderLayer = spriteRenderer.RenderLayer,
+		        Enabled = spriteRenderer.Enabled,
+		        SpriteEffects = spriteRenderer.SpriteEffects,
+		        FileType = oldData.FileType,
+		        AsepriteData = oldData.AsepriteData,
+		        TiledData = oldData.TiledData,
+
+		        // Only change the normal map
+				NormalMapFilePath = null,
+				NormalMapFileType = SpriteRenderer.SpriteRendererComponentData.ImageFileType.None
+			};
+
+	        spriteRenderer.Data = newData;
+
+			// Push undo action
+			EditorChangeTracker.PushUndo(
+		        new SpriteLoadUndoAction(
+			        spriteRenderer,
+			        spriteRenderer.Sprite,
+			        oldData,
+			        spriteRenderer.Sprite,
+			        newData,
+			        $"Clear Normal Map: {spriteRenderer.Entity?.Name ?? "Unknown Entity"}"
+		        ),
+		        spriteRenderer.Entity,
+		        $"Clear Normal Map: {spriteRenderer.Entity?.Name ?? "Unknown Entity"}"
+	        );
+
+	        Debug.Log($"Cleared normal map from {spriteRenderer.Entity?.Name}");
+        }
+
+		private void DrawFilePickerPopup(Action<SpriteRenderer, string> loadAction)
         {
             bool isOpen = true;
-            if (ImGui.BeginPopupModal(popupId, ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
+            if (ImGui.BeginPopupModal("file-picker-png", ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
             {
-                var picker = FilePicker.GetFilePicker(this, Path.Combine(Environment.CurrentDirectory, "Content"), extensions);
+                var picker = FilePicker.GetFilePicker(this, Path.Combine(Environment.CurrentDirectory, "Content"), ".png");
                 picker.DontAllowTraverselBeyondRootFolder = true;
 
                 FilePicker.DrawFilePickerContent(picker);
 
                 ImGui.Separator();
-                
-                // Handle the return value from DrawCustomButtons
+
                 if (DrawCustomButtons(picker, loadAction, "Open"))
                 {
                     string contentRoot = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "Content"));
@@ -209,7 +342,7 @@ namespace Nez.ImGuiTools.TypeInspectors
                         string relativePath = Path.GetRelativePath(Environment.CurrentDirectory, picker.SelectedFile).Replace('\\', '/');
                         loadAction(GetSpriteRenderer(), relativePath);
                         ImGui.CloseCurrentPopup();
-                        FilePicker.RemoveFilePicker(this);
+                        FilePicker.RemoveFilePicker(picker);
                     }
                     else
                     {
@@ -219,14 +352,20 @@ namespace Nez.ImGuiTools.TypeInspectors
 
                 ImGui.EndPopup();
             }
+
+            if (!isOpen)
+            {
+	            FilePicker.RemoveFilePicker(this);
+				_activeFilePickerMode = null;
+            }
         }
 
-        private void DrawAsepriteFilePickerPopup(SpriteRenderer spriteRenderer)
+        private void DrawAsepriteFilePickerPopup(SpriteRenderer spriteRenderer, ImageLoadMode mode)
         {
             bool isOpen = true;
-            if (ImGui.BeginPopupModal("aseprite-file-picker", ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
+            if (ImGui.BeginPopupModal("file-picker-aseprite", ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
             {
-                var picker = FilePicker.GetFilePicker(this, Path.Combine(Environment.CurrentDirectory, "Content"), ".ase|.aseprite");
+                var picker = FilePicker.GetFilePicker(this, Path.Combine(Environment.CurrentDirectory, "Content"), ".aseprite");
                 picker.DontAllowTraverselBeyondRootFolder = true;
 
                 ImGui.Text("Aseprite Options:");
@@ -243,15 +382,15 @@ namespace Nez.ImGuiTools.TypeInspectors
                 FilePicker.DrawFilePickerContent(picker);
 
                 ImGui.Separator();
-                if (DrawCustomButtons(picker, (sr, path) => LoadAsepriteFileFromPicker(sr, path, _frameNumber, string.IsNullOrEmpty(_layerName) ? null : _layerName), "Load"))
+                if (DrawCustomButtons(picker, (sr, path) => LoadAsepriteFileFromPicker(sr, path, _frameNumber, string.IsNullOrEmpty(_layerName) ? null : _layerName, mode), "Load"))
                 {
                     string contentRoot = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "Content"));
                     if (picker.SelectedFile.StartsWith(contentRoot, StringComparison.OrdinalIgnoreCase))
                     {
                         string relativePath = Path.GetRelativePath(Environment.CurrentDirectory, picker.SelectedFile).Replace('\\', '/');
-                        LoadAsepriteFileFromPicker(spriteRenderer, relativePath, _frameNumber, string.IsNullOrEmpty(_layerName) ? null : _layerName);
+                        LoadAsepriteFileFromPicker(spriteRenderer, relativePath, _frameNumber, string.IsNullOrEmpty(_layerName) ? null : _layerName, mode);
                         ImGui.CloseCurrentPopup();
-                        FilePicker.RemoveFilePicker(this);
+                        FilePicker.RemoveFilePicker(picker);
                     }
                     else
                     {
@@ -261,12 +400,18 @@ namespace Nez.ImGuiTools.TypeInspectors
 
                 ImGui.EndPopup();
             }
-        }
 
-        private void DrawTmxFilePickerPopup(SpriteRenderer spriteRenderer)
+            if (!isOpen)
+            {
+	            FilePicker.RemoveFilePicker(this);
+				_activeFilePickerMode = null;
+            }
+		}
+
+        private void DrawTmxFilePickerPopup(SpriteRenderer spriteRenderer, ImageLoadMode mode)
         {
             bool isOpen = true;
-            if (ImGui.BeginPopupModal("tmx-file-picker", ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
+            if (ImGui.BeginPopupModal("file-picker-tmx", ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
             {
                 var picker = FilePicker.GetFilePicker(this, Path.Combine(Environment.CurrentDirectory, "Content"), ".tmx");
                 picker.DontAllowTraverselBeyondRootFolder = true;
@@ -278,7 +423,7 @@ namespace Nez.ImGuiTools.TypeInspectors
                 {
                     if (ImGui.BeginChild("file-picker", new Num.Vector2(480, 0), true))
                     {
-	                    FilePicker.DrawFilePickerContent(picker);
+                        FilePicker.DrawFilePickerContent(picker);
                         ImGui.EndChild();
                     }
 
@@ -371,7 +516,7 @@ namespace Nez.ImGuiTools.TypeInspectors
                 if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
                 {
                     ImGui.CloseCurrentPopup();
-                    FilePicker.RemoveFilePicker(this);
+                    FilePicker.RemoveFilePicker(picker);
                     tmxLayerIndex = 0;
                     _imageLayerName = "";
                     _currentImageLayers = null;
@@ -391,9 +536,9 @@ namespace Nez.ImGuiTools.TypeInspectors
                     if (picker.SelectedFile.StartsWith(contentRoot, StringComparison.OrdinalIgnoreCase))
                     {
                         string relativePath = Path.GetRelativePath(Environment.CurrentDirectory, picker.SelectedFile).Replace('\\', '/');
-                        LoadTmxFileFromPicker(spriteRenderer, relativePath, string.IsNullOrEmpty(_imageLayerName) ? null : _imageLayerName);
+                        LoadTmxFileFromPicker(spriteRenderer, relativePath, string.IsNullOrEmpty(_imageLayerName) ? null : _imageLayerName, mode);
                         ImGui.CloseCurrentPopup();
-                        FilePicker.RemoveFilePicker(this);
+                        FilePicker.RemoveFilePicker(picker);
 
                         tmxLayerIndex = 0;
                         _imageLayerName = "";
@@ -413,27 +558,30 @@ namespace Nez.ImGuiTools.TypeInspectors
 
                 ImGui.EndPopup();
             }
-        }
+
+            if (!isOpen)
+            {
+	            FilePicker.RemoveFilePicker(this);
+				_activeFilePickerMode = null;
+            }
+		}
 
         private bool DrawCustomButtons(FilePicker picker, Action<SpriteRenderer, string> loadAction, string confirmText)
         {
             bool shouldLoad = false;
 
-            // Calculate button widths
             float buttonWidth = 100f;
             float totalWidth = ImGui.GetContentRegionAvail().X;
             float rightButtonStart = totalWidth - buttonWidth;
 
-            // Cancel button on the left
             if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
             {
                 ImGui.CloseCurrentPopup();
                 FilePicker.RemoveFilePicker(this);
             }
 
-            // Confirm button on the right
             ImGui.SameLine(rightButtonStart);
-            
+
             bool canConfirm = !string.IsNullOrEmpty(picker.SelectedFile);
             if (!canConfirm)
             {
@@ -453,194 +601,6 @@ namespace Nez.ImGuiTools.TypeInspectors
             return shouldLoad;
         }
 
-        // Helper method to replicate FilePicker's GetFileSystemEntries functionality
-        private List<string> GetFileSystemEntries(FilePicker picker, string fullName)
-        {
-            var files = new List<string>();
-            var dirs = new List<string>();
-
-            foreach (var fse in Directory.GetFileSystemEntries(fullName))
-            {
-                if (Directory.Exists(fse) && (!picker.HideHiddenFolders || !Path.GetFileName(fse).StartsWith(".")))
-                {
-                    dirs.Add(fse);
-                }
-                else if (!picker.OnlyAllowFolders)
-                {
-                    if (picker.AllowedExtensions != null)
-                    {
-                        var ext = Path.GetExtension(fse);
-                        if (picker.AllowedExtensions.Contains(ext))
-                            files.Add(fse);
-                    }
-                    else
-                    {
-                        files.Add(fse);
-                    }
-                }
-            }
-
-            dirs.Sort();
-            files.Sort();
-
-            var ret = new List<string>(dirs);
-            ret.AddRange(files);
-
-            return ret;
-        }
-        
-        private void LoadPngFileFromPicker(SpriteRenderer spriteRenderer, string relativePath)
-        {
-            try
-            {
-                var contentManager = spriteRenderer.Entity?.Scene?.Content ?? Core.Content;
-                if (contentManager != null)
-                {
-                    // Store the old state for undo
-                    var oldSprite = spriteRenderer.Sprite;
-                    var oldData = spriteRenderer.Data != null ? 
-                        new SpriteRenderer.SpriteRendererComponentData(spriteRenderer) : 
-                        new SpriteRenderer.SpriteRendererComponentData();
-
-                    // Load the new PNG
-                    spriteRenderer.LoadPngFile(relativePath);
-                    
-                    // Store the new state
-                    var newSprite = spriteRenderer.Sprite;
-                    var newData = new SpriteRenderer.SpriteRendererComponentData(spriteRenderer);
-
-                    // Push undo action
-                    EditorChangeTracker.PushUndo(
-                        new SpriteLoadUndoAction(
-                            spriteRenderer,
-                            oldSprite,
-                            oldData,
-                            newSprite,
-                            newData,
-                            $"Load PNG: {Path.GetFileName(relativePath)}"
-                        ),
-                        spriteRenderer.Entity,
-                        $"Load PNG: {Path.GetFileName(relativePath)}"
-                    );
-
-                    Debug.Log($"Loaded PNG from editor: {relativePath}");
-                    _errorMessage = ""; // Clear error on success
-                }
-                else
-                {
-                    _errorMessage = "Content manager not available";
-                }
-            }
-            catch (Exception ex)
-            {
-                _errorMessage = $"Failed to load PNG: {ex.Message}";
-                Debug.Error($"Error loading PNG from editor: {ex.Message}");
-            }
-        }
-
-        private void LoadAsepriteFileFromPicker(SpriteRenderer spriteRenderer, string relativePath, int frameNumber, string layerName)
-        {
-            try
-            {
-                var contentManager = spriteRenderer.Entity?.Scene?.Content ?? Core.Content;
-                if (contentManager != null)
-                {
-                    // Store the old state for undo
-                    var oldSprite = spriteRenderer.Sprite;
-                    var oldData = spriteRenderer.Data != null ? 
-                        new SpriteRenderer.SpriteRendererComponentData(spriteRenderer) : 
-                        new SpriteRenderer.SpriteRendererComponentData();
-
-                    // Load the new Aseprite file
-                    spriteRenderer.LoadAsepriteFile(relativePath, layerName, frameNumber);
-                    
-                    // Store the new state
-                    var newSprite = spriteRenderer.Sprite;
-                    var newData = new SpriteRenderer.SpriteRendererComponentData(spriteRenderer);
-
-                    // Push undo action
-                    EditorChangeTracker.PushUndo(
-                        new SpriteLoadUndoAction(
-                            spriteRenderer,
-                            oldSprite,
-                            oldData,
-                            newSprite,
-                            newData,
-                            $"Load Aseprite: {Path.GetFileName(relativePath)} (frame {frameNumber}, layer: {layerName ?? "all"})"
-                        ),
-                        spriteRenderer.Entity,
-                        $"Load Aseprite: {Path.GetFileName(relativePath)}"
-                    );
-
-                    Debug.Log($"Loaded Aseprite from editor: {relativePath} (frame {frameNumber}, layer: {layerName ?? "all"})");
-                    _errorMessage = ""; // Clear error on success
-                }
-                else
-                {
-                    _errorMessage = "Content manager not available";
-                }
-            }
-            catch (Exception ex)
-            {
-                _errorMessage = $"Failed to load Aseprite: {ex.Message}";
-                Debug.Error($"Error loading Aseprite from editor: {ex.Message}");
-            }
-        }
-
-        private void LoadTmxFileFromPicker(SpriteRenderer spriteRenderer, string relativePath, string imageLayerName)
-        {
-            try
-            {
-                var contentManager = spriteRenderer.Entity?.Scene?.Content ?? Core.Content;
-                if (contentManager != null)
-                {
-                    // Store the old state for undo
-                    var oldSprite = spriteRenderer.Sprite;
-                    var oldData = spriteRenderer.Data != null ? 
-                        new SpriteRenderer.SpriteRendererComponentData(spriteRenderer) : 
-                        new SpriteRenderer.SpriteRendererComponentData();
-
-                    // Load the new TMX file
-                    spriteRenderer.LoadTmxFile(relativePath, imageLayerName);
-                    
-                    // Store the new state
-                    var newSprite = spriteRenderer.Sprite;
-                    var newData = new SpriteRenderer.SpriteRendererComponentData(spriteRenderer);
-
-                    // Push undo action
-                    EditorChangeTracker.PushUndo(
-                        new SpriteLoadUndoAction(
-                            spriteRenderer,
-                            oldSprite,
-                            oldData,
-                            newSprite,
-                            newData,
-                            $"Load TMX: {Path.GetFileName(relativePath)} (layer: {imageLayerName ?? "first"})"
-                        ),
-                        spriteRenderer.Entity,
-                        $"Load TMX: {Path.GetFileName(relativePath)}"
-                    );
-
-                    Debug.Log($"Loaded TMX from editor: {relativePath} (layer: {imageLayerName ?? "first"})");
-                    _errorMessage = ""; // Clear error on success
-                }
-                else
-                {
-                    _errorMessage = "Content manager not available";
-                }
-            }
-            catch (Exception ex)
-            {
-                _errorMessage = $"Failed to load TMX: {ex.Message}";
-                Debug.Error($"Error loading TMX from editor: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Scans a TMX file and returns the available image layer names
-        /// </summary>
-        /// <param name="filePath">Full path to the TMX file</param>
-        /// <returns>List of image layer names, or null if file couldn't be read</returns>
         private List<string> GetImageLayersFromTmxFile(string filePath)
         {
             if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath) || !filePath.EndsWith(".tmx"))
@@ -648,19 +608,14 @@ namespace Nez.ImGuiTools.TypeInspectors
 
             try
             {
-                // Convert absolute path to relative path for NezContentManager
                 string relativePath = Path.GetRelativePath(Environment.CurrentDirectory, filePath).Replace('\\', '/');
-                
-                // Use the relative path with NezContentManager
                 var tiledMap = Core.Content.LoadTiledMap(relativePath);
 
-                // Get all image layer names from the main map
                 var imageLayerNames = tiledMap.ImageLayers
                     .Where(layer => !string.IsNullOrEmpty(layer.Name))
                     .Select(layer => layer.Name)
                     .ToList();
 
-                // Also check for image layers inside groups (nested layers)
                 foreach (var group in tiledMap.Groups)
                 {
                     AddImageLayersFromGroup(group, imageLayerNames);
@@ -674,37 +629,409 @@ namespace Nez.ImGuiTools.TypeInspectors
                 Debug.Error($"Error reading TMX file for image layers: {e.Message}");
                 return null;
             }
-		}
+        }
 
-
-        /// <summary>
-        /// Recursively adds image layer names from groups and nested groups
-        /// </summary>
         private void AddImageLayersFromGroup(TmxGroup group, List<string> imageLayerNames)
         {
-	        // Add image layers from this group
-	        foreach (var imageLayer in group.ImageLayers)
-	        {
-		        if (!string.IsNullOrEmpty(imageLayer.Name))
-		        {
-			        // Optionally prefix with group name for clarity
-			        var layerName = !string.IsNullOrEmpty(group.Name)
-				        ? $"{group.Name}/{imageLayer.Name}"
-				        : imageLayer.Name;
-			        imageLayerNames.Add(layerName);
-		        }
-	        }
+            foreach (var imageLayer in group.ImageLayers)
+            {
+                if (!string.IsNullOrEmpty(imageLayer.Name))
+                {
+                    var layerName = !string.IsNullOrEmpty(group.Name)
+                        ? $"{group.Name}/{imageLayer.Name}"
+                        : imageLayer.Name;
+                    imageLayerNames.Add(layerName);
+                }
+            }
 
-	        // Recursively check nested groups
-	        foreach (var nestedGroup in group.Groups)
-	        {
-		        AddImageLayersFromGroup(nestedGroup, imageLayerNames);
-	        }
+            foreach (var nestedGroup in group.Groups)
+            {
+                AddImageLayersFromGroup(nestedGroup, imageLayerNames);
+            }
         }
 
         private SpriteRenderer GetSpriteRenderer()
         {
-	        return _target as SpriteRenderer;
+            return _target as SpriteRenderer;
         }
-	}
+
+        private void LoadFileFromPicker(SpriteRenderer spriteRenderer, string relativePath, ImageLoadMode mode, SpriteRenderer.SpriteRendererComponentData.ImageFileType fileType)
+        {
+            var data = spriteRenderer.Data as SpriteRenderer.SpriteRendererComponentData;
+            if (data == null)
+                throw new Exception("SpriteRendererData is null");
+
+            if (mode == ImageLoadMode.MainImage)
+            {
+                try
+                {
+                    var contentManager = spriteRenderer.Entity?.Scene?.Content ?? Core.Content;
+                    if (contentManager != null)
+                    {
+                        var oldSprite = spriteRenderer.Sprite;
+                        var oldData = spriteRenderer.Data != null ?
+                            new SpriteRenderer.SpriteRendererComponentData(spriteRenderer) :
+                            new SpriteRenderer.SpriteRendererComponentData();
+
+                        spriteRenderer.LoadPngFile(relativePath);
+
+                        var newSprite = spriteRenderer.Sprite;
+                        var newData = new SpriteRenderer.SpriteRendererComponentData(spriteRenderer);
+
+                        EditorChangeTracker.PushUndo(
+                            new SpriteLoadUndoAction(
+                                spriteRenderer,
+                                oldSprite,
+                                oldData,
+                                newSprite,
+                                newData,
+                                $"Load PNG: {Path.GetFileName(relativePath)}"
+                            ),
+                            spriteRenderer.Entity,
+                            $"Load PNG: {Path.GetFileName(relativePath)}"
+                        );
+
+                        Debug.Log($"Loaded PNG from editor: {relativePath}");
+                        _errorMessage = "";
+                    }
+                    else
+                    {
+                        _errorMessage = "Content manager not available";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _errorMessage = $"Failed to load PNG: {ex.Message}";
+                    Debug.Error($"Error loading PNG from editor: {ex.Message}");
+                }
+            }
+            else
+            {
+                // Use SetNormalMap instead of LoadNormalMap, with error and undo support
+                var contentManager = spriteRenderer.Entity?.Scene?.Content ?? Core.Content;
+                Sprite normalMapSprite = null;
+                string errorMsg = null;
+                try
+                {
+                    switch (fileType)
+                    {
+                        case SpriteRenderer.SpriteRendererComponentData.ImageFileType.Png:
+                            var texture = contentManager.LoadTexture(relativePath);
+                            if (texture != null)
+                                normalMapSprite = new Sprite(texture);
+                            else
+                                errorMsg = "Failed to load PNG normal map texture.";
+                            break;
+                        case SpriteRenderer.SpriteRendererComponentData.ImageFileType.Aseprite:
+                            var aseFile = contentManager.LoadAsepriteFile(relativePath);
+                            if (aseFile != null)
+                                normalMapSprite = aseFile.Frames.Count > 0 ? aseFile.Frames[0].ToSprite() : null;
+                            else
+                                errorMsg = "Failed to load Aseprite normal map file.";
+                            break;
+                        case SpriteRenderer.SpriteRendererComponentData.ImageFileType.Tiled:
+                            var tiledMap = contentManager.LoadTiledMap(relativePath);
+                            if (tiledMap.ImageLayers.Count > 0 && tiledMap.ImageLayers[0].Image.Texture != null)
+                                normalMapSprite = new Sprite(tiledMap.ImageLayers[0].Image.Texture);
+                            else
+                                errorMsg = "Failed to load Tiled normal map image layer.";
+                            break;
+                        default:
+                            var ext = Path.GetExtension(relativePath).ToLower();
+                            if (ext == ".png")
+                            {
+                                var tex = contentManager.LoadTexture(relativePath);
+                                if (tex != null)
+                                    normalMapSprite = new Sprite(tex);
+                                else
+                                    errorMsg = "Failed to load PNG normal map texture.";
+                            }
+                            else
+                            {
+                                errorMsg = "Unknown normal map file type.";
+                            }
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errorMsg = $"Error loading normal map: {ex.Message}";
+                }
+
+                var oldData = spriteRenderer.Data != null
+                    ? new SpriteRenderer.SpriteRendererComponentData(spriteRenderer)
+                    : new SpriteRenderer.SpriteRendererComponentData();
+
+                spriteRenderer.LoadNormalMap(relativePath, fileType);
+                spriteRenderer.SetNormalMap(normalMapSprite);
+
+                var newData = new SpriteRenderer.SpriteRendererComponentData(spriteRenderer);
+
+                EditorChangeTracker.PushUndo(
+                    new SpriteLoadUndoAction(
+                        spriteRenderer,
+                        spriteRenderer.Sprite,
+                        oldData,
+                        spriteRenderer.Sprite,
+                        newData,
+                        $"Load Normal Map: {Path.GetFileName(relativePath)}"
+                    ),
+                    spriteRenderer.Entity,
+                    $"Load Normal Map: {Path.GetFileName(relativePath)}"
+                );
+
+                if (!string.IsNullOrEmpty(errorMsg) || normalMapSprite == null)
+                {
+                    _errorMessage = errorMsg ?? "Failed to load normal map.";
+                    Debug.Error(_errorMessage);
+                }
+                else
+                {
+                    _errorMessage = "";
+                    Debug.Log($"Normal map loaded: {relativePath}");
+                }
+            }
+        }
+
+        private void LoadAsepriteFileFromPicker(SpriteRenderer spriteRenderer, string relativePath, int frameNumber, string layerName, ImageLoadMode mode)
+        {
+            var data = spriteRenderer.Data as SpriteRenderer.SpriteRendererComponentData;
+            if (data == null)
+                throw new Exception("SpriteRendererData is null");
+
+            if (mode == ImageLoadMode.MainImage)
+            {
+                try
+                {
+                    var contentManager = spriteRenderer.Entity?.Scene?.Content ?? Core.Content;
+                    if (contentManager != null)
+                    {
+                        var oldSprite = spriteRenderer.Sprite;
+                        var oldData = spriteRenderer.Data != null ?
+                            new SpriteRenderer.SpriteRendererComponentData(spriteRenderer) :
+                            new SpriteRenderer.SpriteRendererComponentData();
+
+                        spriteRenderer.LoadAsepriteFile(relativePath, layerName, frameNumber);
+
+                        var newSprite = spriteRenderer.Sprite;
+                        var newData = new SpriteRenderer.SpriteRendererComponentData(spriteRenderer);
+
+                        EditorChangeTracker.PushUndo(
+                            new SpriteLoadUndoAction(
+                                spriteRenderer,
+                                oldSprite,
+                                oldData,
+                                newSprite,
+                                newData,
+                                $"Load Aseprite: {Path.GetFileName(relativePath)} (frame {frameNumber}, layer: {layerName ?? "all"})"
+                            ),
+                            spriteRenderer.Entity,
+                            $"Load Aseprite: {Path.GetFileName(relativePath)}"
+                        );
+
+                        Debug.Log($"Loaded Aseprite from editor: {relativePath} (frame {frameNumber}, layer: {layerName ?? "all"})");
+                        _errorMessage = "";
+                    }
+                    else
+                    {
+                        _errorMessage = "Content manager not available";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _errorMessage = $"Failed to load Aseprite: {ex.Message}";
+                    Debug.Error($"Error loading Aseprite from editor: {ex.Message}");
+                }
+            }
+            else
+            {
+                // SetNormalMap for Aseprite normal maps, with error and undo support
+                var contentManager = spriteRenderer.Entity?.Scene?.Content ?? Core.Content;
+                Sprite normalMapSprite = null;
+                string errorMsg = null;
+                try
+                {
+                    var aseFile = contentManager.LoadAsepriteFile(relativePath);
+                    if (aseFile != null)
+                    {
+                        if (!string.IsNullOrEmpty(layerName))
+                        {
+                            normalMapSprite = AnimationUtils.LoadAsepriteFrameFromLayer(spriteRenderer.Entity, relativePath, frameNumber, layerName);
+                        }
+                        else
+                        {
+                            normalMapSprite = aseFile.Frames.Count > frameNumber ? aseFile.Frames[frameNumber].ToSprite() : null;
+                        }
+                        if (normalMapSprite == null)
+                            errorMsg = "Failed to load Aseprite normal map frame/layer.";
+                    }
+                    else
+                    {
+                        errorMsg = "Failed to load Aseprite normal map file.";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errorMsg = $"Error loading Aseprite normal map: {ex.Message}";
+                }
+
+                var oldNormalMap = spriteRenderer.NormalMap;
+                var oldData = spriteRenderer.Data != null
+                    ? new SpriteRenderer.SpriteRendererComponentData(spriteRenderer)
+                    : new SpriteRenderer.SpriteRendererComponentData();
+
+                spriteRenderer.SetNormalMap(normalMapSprite);
+
+                var newData = new SpriteRenderer.SpriteRendererComponentData(spriteRenderer);
+
+                EditorChangeTracker.PushUndo(
+                    new SpriteLoadUndoAction(
+                        spriteRenderer,
+                        spriteRenderer.Sprite,
+                        oldData,
+                        spriteRenderer.Sprite,
+                        newData,
+                        $"Load Normal Map (Aseprite): {Path.GetFileName(relativePath)} (frame {frameNumber}, layer: {layerName ?? "all"})"
+                    ),
+                    spriteRenderer.Entity,
+                    $"Load Normal Map (Aseprite): {Path.GetFileName(relativePath)}"
+                );
+
+                if (!string.IsNullOrEmpty(errorMsg) || normalMapSprite == null)
+                {
+                    _errorMessage = errorMsg ?? "Failed to load normal map.";
+                    Debug.Error(_errorMessage);
+                }
+                else
+                {
+                    _errorMessage = "";
+                    Debug.Log($"Normal map (Aseprite) loaded: {relativePath} (frame {frameNumber}, layer: {layerName ?? "all"})");
+                }
+            }
+        }
+
+        private void LoadTmxFileFromPicker(SpriteRenderer spriteRenderer, String relativePath, String imageLayerName, ImageLoadMode mode)
+        {
+            var data = spriteRenderer.Data as SpriteRenderer.SpriteRendererComponentData;
+            if (data == null)
+                throw new Exception("SpriteRendererData is null");
+
+            if (mode == ImageLoadMode.MainImage)
+            {
+                try
+                {
+                    var contentManager = spriteRenderer.Entity?.Scene?.Content ?? Core.Content;
+                    if (contentManager != null)
+                    {
+                        var oldSprite = spriteRenderer.Sprite;
+                        var oldData = spriteRenderer.Data != null ?
+                            new SpriteRenderer.SpriteRendererComponentData(spriteRenderer) :
+                            new SpriteRenderer.SpriteRendererComponentData();
+
+                        spriteRenderer.LoadTmxFile(relativePath, imageLayerName);
+
+                        var newSprite = spriteRenderer.Sprite;
+                        var newData = new SpriteRenderer.SpriteRendererComponentData(spriteRenderer);
+
+                        EditorChangeTracker.PushUndo(
+                            new SpriteLoadUndoAction(
+                                spriteRenderer,
+                                oldSprite,
+                                oldData,
+                                newSprite,
+                                newData,
+                                $"Load TMX: {Path.GetFileName(relativePath)} (layer: {imageLayerName ?? "first"})"
+                            ),
+                            spriteRenderer.Entity,
+                            $"Load TMX: {Path.GetFileName(relativePath)}"
+                        );
+
+                        Debug.Log($"Loaded TMX from editor: {relativePath} (layer: {imageLayerName ?? "first"})");
+                        _errorMessage = "";
+                    }
+                    else
+                    {
+                        _errorMessage = "Content manager not available";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _errorMessage = $"Failed to load TMX: {ex.Message}";
+                    Debug.Error($"Error loading TMX from editor: {ex.Message}");
+                }
+            }
+            else
+            {
+                // SetNormalMap for TMX normal maps, with error and undo support
+                var contentManager = spriteRenderer.Entity?.Scene?.Content ?? Core.Content;
+                Sprite normalMapSprite = null;
+                string errorMsg = null;
+                try
+                {
+                    var tiledMap = contentManager.LoadTiledMap(relativePath);
+                    if (tiledMap.ImageLayers.Count > 0)
+                    {
+                        if (!string.IsNullOrEmpty(imageLayerName))
+                        {
+                            var imageLayer = tiledMap.ImageLayers.FirstOrDefault(l => l.Name == imageLayerName);
+                            if (imageLayer != null && imageLayer.Image.Texture != null)
+                                normalMapSprite = new Sprite(imageLayer.Image.Texture);
+                            else
+                                errorMsg = "Failed to find specified image layer for normal map.";
+                        }
+                        else if (tiledMap.ImageLayers[0].Image.Texture != null)
+                        {
+                            normalMapSprite = new Sprite(tiledMap.ImageLayers[0].Image.Texture);
+                        }
+                        else
+                        {
+                            errorMsg = "No valid image layer found for normal map.";
+                        }
+                    }
+                    else
+                    {
+                        errorMsg = "No image layers found in TMX file for normal map.";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errorMsg = $"Error loading TMX normal map: {ex.Message}";
+                }
+
+                var oldNormalMap = spriteRenderer.NormalMap;
+                var oldData = spriteRenderer.Data != null
+                    ? new SpriteRenderer.SpriteRendererComponentData(spriteRenderer)
+                    : new SpriteRenderer.SpriteRendererComponentData();
+
+                spriteRenderer.SetNormalMap(normalMapSprite);
+
+                var newNormalMap = spriteRenderer.NormalMap;
+                var newData = new SpriteRenderer.SpriteRendererComponentData(spriteRenderer);
+
+                EditorChangeTracker.PushUndo(
+                    new SpriteLoadUndoAction(
+                        spriteRenderer,
+                        spriteRenderer.Sprite,
+                        oldData,
+                        spriteRenderer.Sprite,
+                        newData,
+                        $"Load Normal Map (TMX): {Path.GetFileName(relativePath)} (layer: {imageLayerName ?? "first"})"
+                    ),
+                    spriteRenderer.Entity,
+                    $"Load Normal Map (TMX): {Path.GetFileName(relativePath)}"
+                );
+
+                if (!string.IsNullOrEmpty(errorMsg) || normalMapSprite == null)
+                {
+                    _errorMessage = errorMsg ?? "Failed to load normal map.";
+                    Debug.Error(_errorMessage);
+                }
+                else
+                {
+                    _errorMessage = "";
+                    Debug.Log($"Normal map (TMX) loaded: {relativePath} (layer: {imageLayerName ?? "first"})");
+                }
+            }
+        }
+    }
 }

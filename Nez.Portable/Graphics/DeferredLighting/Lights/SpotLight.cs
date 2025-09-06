@@ -6,8 +6,52 @@ namespace Nez.DeferredLighting
 {
 	public class SpotLight : PointLight
 	{
+		public class SpotLightComponentData : ComponentData
+		{
+			public float Radius;
+			public float Intensity;
+			public float ConeAngle;
+
+			public byte ColorR = 255;
+			public byte ColorG = 255;
+			public byte ColorB = 255;
+			public byte ColorA = 255;
+		}
+
+		private SpotLightComponentData _data = new SpotLightComponentData();
+
+		public override ComponentData Data
+		{
+			get
+			{
+				_data.Enabled = Enabled;
+				_data.Radius = Radius;
+				_data.Intensity = Intensity;
+				_data.ConeAngle = ConeAngle;
+
+				_data.ColorR = Color.R;
+				_data.ColorG = Color.G;
+				_data.ColorB = Color.B;
+				_data.ColorA = Color.A;
+
+				return _data;
+			}
+			set
+			{
+				if (value is SpotLightComponentData d)
+				{
+					Enabled = d.Enabled;
+					SetRadius(d.Radius);          // ensure bounds update
+					Intensity = d.Intensity;
+					ConeAngle = d.ConeAngle;
+					Color = new Color(d.ColorR, d.ColorG, d.ColorB, d.ColorA);
+					_data = d;
+				}
+			}
+		}
+
 		/// <summary>
-		/// wrapper for entity.transform.rotation to ease in setting up direction of spots to point at specific locations
+		/// wrapper for entity.transform.rotation to ease pointing at specific locations
 		/// </summary>
 		public Vector2 Direction => new Vector2(Mathf.Cos(Entity.Transform.Rotation), Mathf.Sin(Entity.Transform.Rotation));
 

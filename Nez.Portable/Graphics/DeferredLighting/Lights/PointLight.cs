@@ -9,13 +9,55 @@ namespace Nez.DeferredLighting
 	/// </summary>
 	public class PointLight : DeferredLight
 	{
+		#region ComponentData
+		public class PointLightComponentData : ComponentData
+		{
+			public float Radius;
+			public float Intensity;
+
+			public byte ColorR = 255;
+			public byte ColorG = 255;
+			public byte ColorB = 255;
+			public byte ColorA = 255;
+		}
+
+		private PointLightComponentData _data = new PointLightComponentData();
+
+		public override ComponentData Data
+		{
+			get
+			{
+				_data.Enabled = Enabled;
+				_data.Radius = Radius;
+				_data.Intensity = Intensity;
+
+				_data.ColorR = Color.R;
+				_data.ColorG = Color.G;
+				_data.ColorB = Color.B;
+				_data.ColorA = Color.A;
+
+				return _data;
+			}
+			set
+			{
+				if (value is PointLightComponentData d)
+				{
+					Enabled = d.Enabled;
+					SetRadius(d.Radius);       
+					Intensity = d.Intensity;
+					Color = new Color(d.ColorR, d.ColorG, d.ColorB, d.ColorA);
+					_data = d;
+				}
+			}
+		}
+		#endregion
+
 		public override RectangleF Bounds
 		{
 			get
 			{
 				if (_areBoundsDirty)
 				{
-					// the size of the light only uses the x scale value
 					var size = Radius * Entity.Transform.Scale.X * 2;
 					_bounds.CalculateBounds(Entity.Transform.Position, _localOffset, _radius * Entity.Transform.Scale,
 						Vector2.One, 0, size, size);
@@ -32,7 +74,7 @@ namespace Nez.DeferredLighting
 		public float ZPosition = 150f;
 
 		/// <summary>
-		/// how far does this light reaches
+		/// how far does this light reach
 		/// </summary>
 		public float Radius => _radius;
 
@@ -41,9 +83,7 @@ namespace Nez.DeferredLighting
 		/// </summary>
 		public float Intensity = 3f;
 
-
 		protected float _radius;
-
 
 		public PointLight()
 		{
@@ -54,6 +94,7 @@ namespace Nez.DeferredLighting
 		public PointLight(Color color) : this()
 		{
 			Color = color;
+			Enabled = Data.Enabled;
 		}
 
 

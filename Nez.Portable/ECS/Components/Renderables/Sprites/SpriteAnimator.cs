@@ -1,10 +1,12 @@
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Nez.Materials;
 using Nez.Textures;
 using Nez.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.Xna.Framework;
+using Nez.DeferredLighting;
 
 namespace Nez.Sprites;
 
@@ -452,8 +454,11 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 	{
 		base.OnAddedToEntity();
 
-		if(LoadLastAnimation())
+		if (LoadLastAnimation())
+		{
 			Play(LoadedTag);
+			Material.SamplerState = SamplerState.PointClamp;
+		}
 	}
 
 	public virtual void NextFrame()
