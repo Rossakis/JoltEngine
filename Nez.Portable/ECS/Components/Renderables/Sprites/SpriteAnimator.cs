@@ -365,7 +365,6 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 		if(Core.IsEditMode && AnimationState == State.Running)
 			Pause();
 #endif
-
 		if (AnimationState != State.Running || CurrentAnimation == null)
 			return;
 
@@ -457,7 +456,6 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 		if (LoadLastAnimation())
 		{
 			Play(LoadedTag);
-			Material.SamplerState = SamplerState.PointClamp;
 		}
 	}
 

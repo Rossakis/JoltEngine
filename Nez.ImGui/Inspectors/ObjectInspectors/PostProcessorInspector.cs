@@ -42,7 +42,7 @@ namespace Nez.ImGuiTools.ObjectInspectors
 
 			for (var i = 0; i < _inspectors.Count; i++)
 			{
-				var effectInspector = _inspectors[i] as Nez.ImGuiTools.TypeInspectors.EffectInspector;
+				var effectInspector = _inspectors[i] as TypeInspectors.EffectInspector;
 				if (effectInspector != null)
 					effectInspector.AllowsEffectRemoval = false;
 			}

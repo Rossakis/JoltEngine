@@ -81,10 +81,11 @@ namespace Nez.DeferredLighting
 		PolygonMesh _polygonMesh;
 		PolygonMesh _quadPolygonMesh;
 
-		public DeferredLightingRenderer(int renderOrder, int lightLayer, params int[] renderLayers) : base(renderOrder)
+		public DeferredLightingRenderer(int renderOrder, int lightLayer, SamplerState sampleState, params int[] renderLayers) : base(renderOrder)
 		{
 			// make sure we have a workable Material for our lighting system
 			Material = new DeferredSpriteMaterial(NullNormalMapTexture);
+			Material.SamplerState = sampleState;
 
 			_lightLayer = lightLayer;
 			Array.Sort(renderLayers);

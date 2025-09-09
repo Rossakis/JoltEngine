@@ -1,5 +1,6 @@
-﻿using System;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using System;
 
 
 namespace Nez
@@ -74,7 +75,7 @@ namespace Nez
 		/// <summary>
 		/// used by Renderers to specify how this sprite should be rendered
 		/// </summary>
-		public virtual Material Material { get; set; }
+		public virtual Material Material { get; protected set; }
 
 		/// <summary>
 		/// offset from the parent entity. Useful for adding multiple Renderables to an Entity that need specific positioning.
@@ -185,11 +186,16 @@ namespace Nez
 
 		#region Fluent setters
 
-		public RenderableComponent SetMaterial(Material material)
+		public virtual RenderableComponent SetMaterial(Material material, SamplerState state = null)
 		{
 			Material = material;
+
+			if(Material != null && state == null) 
+				Material.SamplerState = SamplerState.PointClamp;
+
 			if (Entity != null && Entity.Scene != null)
 				Entity.Scene.RenderableComponents.SetRenderLayerNeedsComponentSort(RenderLayer);
+
 			return this;
 		}
 

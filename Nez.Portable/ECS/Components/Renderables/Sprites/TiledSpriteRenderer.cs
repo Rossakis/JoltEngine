@@ -111,10 +111,10 @@ namespace Nez
 		public TiledSpriteRenderer(Sprite sprite) : base(sprite)
 		{
 			_sourceRect = sprite.SourceRect;
-			Material = new Material
+			SetMaterial(new Material
 			{
 				SamplerState = Core.DefaultWrappedSamplerState
-			};
+			});
 		}
 
 		public TiledSpriteRenderer(Texture2D texture) : this(new Sprite(texture))

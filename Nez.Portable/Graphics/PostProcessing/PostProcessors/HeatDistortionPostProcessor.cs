@@ -64,7 +64,7 @@ namespace Nez
 			_distortionFactorParam.SetValue(_distortionFactor);
 			_riseFactorParam.SetValue(_riseFactor);
 
-			DistortionTexture = scene.Content.Load<Texture2D>("nez/textures/heatDistortionNoise");
+			DistortionTexture = scene.Content.LoadTexture("Textures/heatDistortionNoise");
 		}
 
 		public override void Unload()

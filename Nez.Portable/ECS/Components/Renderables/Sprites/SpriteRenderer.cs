@@ -367,7 +367,6 @@ namespace Nez.Sprites
 		protected Sprite _sprite;
 
 
-
 		public SpriteRenderer()
 		{
 		}
@@ -439,7 +438,7 @@ namespace Nez.Sprites
 			NormalMap = normalMap;
 
 			// If using a deferred material, update it with the new normal map
-			if (Material is DeferredSpriteMaterial deferredMaterial)
+			if (Material != null && Material is DeferredSpriteMaterial deferredMaterial)
 			{
 				if(normalMap == null)
 					deferredMaterial.Effect.SetNormalMap(Entity.Scene.GetRenderer<DeferredLightingRenderer>().NullNormalMapTexture);
@@ -454,14 +453,14 @@ namespace Nez.Sprites
 		/// </summary>
 		/// <param name="normalMap">The normal map sprite to use.</param>
 		/// <returns>This SpriteRenderer for chaining.</returns>
-		public void SetNormalMap(Texture2D normalMap)
+		public void SetNormalMap(Texture2D normalMapTexture)
 		{
-			NormalMap = new Sprite(normalMap);
+			NormalMap = new Sprite(normalMapTexture);
 
 			// If using a deferred material, update it with the new normal map
-			if (Material is DeferredSpriteMaterial deferredMaterial && normalMap != null)
+			if (Material != null && Material is DeferredSpriteMaterial deferredMaterial && normalMapTexture != null)
 			{
-				deferredMaterial.Effect.SetNormalMap(normalMap);
+				deferredMaterial.Effect.SetNormalMap(normalMapTexture);
 			}
 		}
 
@@ -524,6 +523,7 @@ namespace Nez.Sprites
 				LoadImageFromData();
 			}
 
+			// Set up deferred material 
 			if (Entity.Scene.GetRenderer<DeferredLightingRenderer>() != null)
 			{
 				if (!string.IsNullOrEmpty(_data?.NormalMapFilePath)) //Has normal map
@@ -533,8 +533,6 @@ namespace Nez.Sprites
 				}
 				else // doesn't have
 					SetMaterial(new DeferredSpriteMaterial(Entity.Scene.GetRenderer<DeferredLightingRenderer>().NullNormalMapTexture));
-
-				Material.SamplerState = SamplerState.PointClamp;
 			}
 		}
 
@@ -844,10 +842,10 @@ namespace Nez.Sprites
 			// Deep clone Material to prevent shared references
 			if (Material != null)
 			{
-				clone.Material = Material.Clone(); 
+				clone.SetMaterial(Material.Clone()); 
 			}
 			else
-				clone.Material = null; 
+				clone.SetMaterial(null); 
 
 
 			// Copy SpriteRenderer-specific properties
@@ -942,8 +940,7 @@ namespace Nez.Sprites
 			// Remove normal map if path is empty
 			if (string.IsNullOrEmpty(_data.NormalMapFilePath))
 			{
-				// Optionally reset to default material
-				Material = null;
+				SetMaterial(null);
 				return null;
 			}
 

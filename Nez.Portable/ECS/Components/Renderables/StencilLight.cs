@@ -92,7 +92,7 @@ namespace Nez
 			_lightEffect = Entity.Scene.Content.LoadNezEffect<StencilLightEffect>();
 			_lightEffect.Radius = _radius * MathHelper.Max(Entity.Transform.Scale.X, Entity.Transform.Scale.Y);
 
-			Material = Material.StencilRead(0);
+			SetMaterial(Material.StencilRead(0));
 			Material.Effect = _lightEffect;
 			Material.BlendState = new BlendState
 			{

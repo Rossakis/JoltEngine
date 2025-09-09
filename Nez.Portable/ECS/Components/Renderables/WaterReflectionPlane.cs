@@ -1,5 +1,6 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Nez.UI;
 using Nez.Utils;
 
 
@@ -20,7 +21,11 @@ namespace Nez
 		public override Material Material
 		{
 			get => _waterReflectionMaterial;
-			set => _waterReflectionMaterial = value as WaterReflectionMaterial;
+		}
+
+		public virtual void SetMaterial(WaterReflectionMaterial material)
+		{
+			_waterReflectionMaterial = material;
 		}
 
 		float _width;

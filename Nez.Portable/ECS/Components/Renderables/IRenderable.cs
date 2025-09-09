@@ -36,7 +36,7 @@ namespace Nez
 		/// used by Renderers to specify how this sprite should be rendered. If non-null, it is automatically disposed of when the Component
 		/// is removed from the Entity.
 		/// </summary>
-		Material Material { get; set; }
+		Material Material { get; }
 
 		/// <summary>
 		/// the visibility of this Renderable. Changes in state end up calling the onBecameVisible/onBecameInvisible methods.

@@ -23,6 +23,7 @@ public class RendererInspector
 			AllowsMaterialRemoval = false
 		};
 		_materialInspector.SetTarget(renderer, renderer.GetType().GetField("Material"));
+		_materialInspector.Initialize(); 
 	}
 
 	public void Draw()

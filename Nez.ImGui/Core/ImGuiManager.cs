@@ -201,21 +201,22 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		if (ShowSeperateGameWindow)
 			DrawGameWindow();
 
-		// If MainEntityInspector is active, show tab bar above inspector window
+		// --- Inspector/Core Tab Bar and MainEntityInspector ---
 		if (MainEntityInspector != null && MainEntityInspector.IsOpen)
 		{
-			var windowPosX = Screen.Width - MainEntityInspector.MainInspectorWidth;
-			var windowHeight = Screen.Height - MainEntityInspector.MainInspectorPosY;
-			var windowSize = new Num.Vector2(MainEntityInspector.MainInspectorWidth, windowHeight);
-			var windowPos = new Num.Vector2(windowPosX, MainEntityInspector.MainInspectorPosY - MainEntityInspector.MainInspectorOffsetY);
+			// Calculate position and size for the tab bar and inspector
+			var inspectorWidth = MainEntityInspector.MainInspectorWidth;
+			var inspectorPosX = Screen.Width - inspectorWidth;
+			var inspectorPosY = MainEntityInspector.MainInspectorPosY - MainEntityInspector.MainInspectorOffsetY;
+			var inspectorHeight = Screen.Height - MainEntityInspector.MainInspectorPosY + MainEntityInspector.MainInspectorOffsetY;
+			var inspectorSize = new Num.Vector2(inspectorWidth, inspectorHeight);
+			var inspectorPos = new Num.Vector2(inspectorPosX, inspectorPosY);
 
-			// Draw tab selection bar above the inspector window
-			ImGui.SetNextWindowPos(windowPos, ImGuiCond.Always);
-			ImGui.SetNextWindowSize(windowSize, ImGuiCond.Always);
-
+			// Draw the tab bar window (only the tabs, no content)
+			ImGui.SetNextWindowPos(inspectorPos, ImGuiCond.Always);
+			ImGui.SetNextWindowSize(inspectorSize, ImGuiCond.Always);
 			ImGui.Begin("InspectorTabBar", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoSavedSettings);
 
-			// Tab bar
 			if (ImGui.BeginTabBar("InspectorTabs", ImGuiTabBarFlags.NoCloseWithMiddleMouseButton))
 			{
 				if (ImGui.BeginTabItem("Entity Inspector"))
@@ -230,17 +231,15 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 				}
 				ImGui.EndTabBar();
 			}
-			// ImGui.End();
+			ImGui.End();
 
-			// Draw the selected inspector window at the same position/size
-			ImGui.SetNextWindowPos(windowPos, ImGuiCond.Always);
-			ImGui.SetNextWindowSize(windowSize, ImGuiCond.Always);
+			// Draw the selected inspector window at the same position/size, with no move/resize
+			ImGui.SetNextWindowPos(inspectorPos, ImGuiCond.Always);
+			ImGui.SetNextWindowSize(inspectorSize, ImGuiCond.Always);
+			var inspectorFlags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings;
 
-			// Add NoMove to prevent dragging
-			var inspectorFlags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoMove;
 			if (_selectedInspectorTab == InspectorTab.EntityInspector)
 			{
-				// Pass the flags to MainEntityInspector.Draw
 				MainEntityInspector.Draw(inspectorFlags);
 			}
 			else if (_selectedInspectorTab == InspectorTab.Core && ShowCoreWindow)
