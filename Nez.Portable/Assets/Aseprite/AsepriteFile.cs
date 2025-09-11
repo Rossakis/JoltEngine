@@ -320,11 +320,17 @@ public sealed class AsepriteFile
 	/// <returns>
 	/// A <see cref="Texture2D"/> instance with the flattened contents of the frame
 	/// </returns>
-	public Texture2D GetTextureFromFrameNumber(int frameNumber)
+	public Texture2D GetTextureFromFrameNumber(int frameNumber, bool applySubtraction = true)
 	{
+		AsepriteFrame frame;
+
 		// frameNumber is base-one in the aseprite app,
 		// but Frames array is base-zero, so we subtract 1
-		var frame = Frames[frameNumber - 1];
+		if (applySubtraction)
+			frame = Frames[frameNumber - 1];
+		else
+			frame = Frames[frameNumber];
+
 		var pixels = frame.FlattenFrame(true, true);
 		var texture = new Texture2D(Core.GraphicsDevice, frame.Width, frame.Height);
 		texture.SetData<Color>(pixels);

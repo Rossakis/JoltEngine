@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using ImGuiNET;
 using Nez.ImGuiTools.UndoActions;
 using Num = System.Numerics;
@@ -18,8 +20,11 @@ public class TransformInspector
 
     private bool _isEditingLocalScale;
     private Microsoft.Xna.Framework.Vector2 _localScaleEditStartValue;
+    private bool _showSetParentPopup = false;
+    private string _parentSearch = "";
+    private int _parentListSelectedIndex = -1;
 
-    public TransformInspector(Transform transform)
+	public TransformInspector(Transform transform)
     {
         _transform = transform;
     }
@@ -41,6 +46,66 @@ public class TransformInspector
 
                 if (ImGui.Button("Detach From Parent"))
                     _transform.Parent = null;
+            }
+
+            if (ImGui.Button("Set Parent"))
+            {
+                _showSetParentPopup = true;
+                _parentSearch = "";
+                _parentListSelectedIndex = -1;
+                ImGui.OpenPopup("SetParentPopup");
+            }
+
+            if (_showSetParentPopup)
+            {
+                ImGui.SetNextWindowSize(new Num.Vector2(350, 400), ImGuiCond.Appearing);
+                if (ImGui.BeginPopupModal("SetParentPopup", ref _showSetParentPopup, ImGuiWindowFlags.AlwaysAutoResize))
+                {
+                    ImGui.Text("Select Parent Entity");
+                    ImGui.Separator();
+
+                    // Search box
+                    ImGui.InputText("Search", ref _parentSearch, 64);
+
+                    // Get all entities except the current one
+                    var allEntities = _transform.Entity.Scene.Entities
+                        .Where(e => e != _transform.Entity)
+                        .ToList();
+
+                    // Filter by search
+                    var filtered = string.IsNullOrWhiteSpace(_parentSearch)
+                        ? allEntities
+                        : allEntities.Where(e => e.Name != null && e.Name.Contains(_parentSearch, StringComparison.OrdinalIgnoreCase)).ToList();
+
+                    // List selectable entities
+                    ImGui.BeginChild("ParentList", new Num.Vector2(320, 300), true);
+                    for (int i = 0; i < filtered.Count; i++)
+                    {
+                        bool selected = i == _parentListSelectedIndex;
+                        if (ImGui.Selectable(filtered[i].Name, selected))
+                        {
+                            _parentListSelectedIndex = i;
+                        }
+                    }
+                    ImGui.EndChild();
+
+                    // Confirm/Cancel buttons
+                    if (ImGui.Button("Set") && _parentListSelectedIndex >= 0 && _parentListSelectedIndex < filtered.Count)
+                    {
+                        var selectedParent = filtered[_parentListSelectedIndex];
+                        _transform.SetParent(selectedParent.Transform);
+                        _showSetParentPopup = false;
+                        ImGui.CloseCurrentPopup();
+                    }
+                    ImGui.SameLine();
+                    if (ImGui.Button("Cancel"))
+                    {
+                        _showSetParentPopup = false;
+                        ImGui.CloseCurrentPopup();
+                    }
+
+                    ImGui.EndPopup();
+                }
             }
 
             NezImGui.SmallVerticalSpace();

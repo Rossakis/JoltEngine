@@ -153,6 +153,11 @@ public class Entity : IComparable<Entity>
 	private string _name;
 	private string _originalPrefabName;
 
+	#region Event Subscription
+	public event Action AddedToScene;
+	public event Action RemovedFromScene;
+	#endregion
+
 	#region Serialization data structs
 	private readonly Dictionary<Type, List<Delegate>> _componentAddedCallbacks = new();
 	private readonly Dictionary<Type, List<Delegate>> _childAddedCallbacks = new();
@@ -644,6 +649,7 @@ public class Entity : IComparable<Entity>
 
 	public virtual void OnAddedToScene()
 	{
+		AddedToScene?.Invoke();
 	}
 
 	/// <summary>
@@ -654,6 +660,8 @@ public class Entity : IComparable<Entity>
 		// if we were destroyed, remove our components. If we were just detached we need to keep our components on the Entity.
 		if (_isDestroyed)
 			Components.RemoveAllComponents();
+
+		RemovedFromScene?.Invoke();
 	}
 
 	/// <summary>
@@ -897,7 +905,7 @@ public class Entity : IComparable<Entity>
 	#endregion
 
 	#region Child Event callbacks
-	// Add this method to Entity
+
 	/// <summary>
 	/// Registers a callback that will be invoked whenever a child entity of type <typeparamref name="T"/> is added to this entity.
 	/// </summary>
@@ -910,9 +918,25 @@ public class Entity : IComparable<Entity>
 			_childAddedCallbacks[type] = list;
 		}
 		list.Add(onAdded);
+
+		// Immediately call for existing children of type T
+		foreach (var child in Transform.Children)
+		{
+			if (child.Entity is T tChild)
+				onAdded(tChild);
+		}
 	}
 
-	// Add this method to Entity
+	/// <summary>
+	/// Registers a callback that will be called once for the first child entity of type T added to this entity,
+	/// then the callback is automatically removed.
+	/// </summary>
+	public void OnChildAddedOnce<T>(Action<T> onAdded) where T : Entity
+	{
+		var oneShot = new OneShotDelegate<T>(onAdded);
+		OnChildAdded<T>(oneShot.Invoke);
+	}
+
 	internal void TriggerChildAddedCallbacks(Entity child)
 	{
 		var type = child.GetType();

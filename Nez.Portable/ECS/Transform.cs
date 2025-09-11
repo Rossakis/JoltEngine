@@ -264,7 +264,7 @@ public class Transform
 	private float _localRotation;
 
 	private List<Transform> _children = new();
-
+	public List<Transform> Children => _children;
 	#endregion
 
 

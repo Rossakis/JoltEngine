@@ -268,7 +268,7 @@ public class ComponentList : IEnumerable<Component>
 	{
 		UpdateLists();
 
-		if (!Core.IsEditMode)
+		if (!Core.IsEditMode && !Core.IsGamePaused)
 		{
 			for (var i = 0; i < _updatableComponents.Length; i++)
 			{
@@ -279,13 +279,13 @@ public class ComponentList : IEnumerable<Component>
 
 			}
 		}
-		else
+		else if (Core.IsEditMode && !Core.IsGamePaused)
 		{
 			// If in Edit Mode, update only components that are renderable (for correct rendering)
 			for (var i = 0; i < _updatableComponents.Length; i++)
-				if (_updatableComponents.Buffer[i].Enabled && 
-				    (_updatableComponents.Buffer[i] as Component).Enabled &&
-				    _updatableComponents.Buffer[i] is RenderableComponent)
+				if (_updatableComponents.Buffer[i].Enabled &&
+					(_updatableComponents.Buffer[i] as Component).Enabled &&
+					_updatableComponents.Buffer[i] is RenderableComponent)
 					_updatableComponents.Buffer[i].Update();
 		}
 	}

@@ -49,6 +49,8 @@ public class Core : Game
 	/// </summary>
 	public static bool DebugRenderEnabled = false;
 
+	public static bool IsGamePaused = false;
+
 	/// <summary>
 	/// If true, the scene will automatically reset after going from PlayMode back to EditMode (resetting all values that weren't saved beforehand, for consistency) .
 	/// </summary>
@@ -425,6 +427,7 @@ public class Core : Game
 	}
 
 
+
 	#region Global Managers
 
 	/// <summary>
@@ -464,7 +467,6 @@ public class Core : Game
 	}
 
 	#endregion
-
 
 	#region Systems access
 
@@ -525,6 +527,7 @@ public class Core : Game
 
 	#endregion
 
+	#region Edit Mode
 	public static event Action OnChangedToEditMode;
 	public static event Action OnChangedToPlayMode;
 	public static event Action OnResetScene;
@@ -567,4 +570,8 @@ public class Core : Game
 	{
 		OnResetScene?.Invoke();
 	}
+
+
+	#endregion
+
 }

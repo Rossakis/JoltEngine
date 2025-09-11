@@ -882,6 +882,12 @@ namespace Nez.ImGuiTools.TypeInspectors
 
                 spriteRenderer.SetNormalMap(normalMapSprite);
 
+                if (spriteRenderer.Data is SpriteRenderer.SpriteRendererComponentData)
+                {
+                    data.NormalMapFilePath = relativePath;
+                    data.NormalMapFileType = SpriteRenderer.SpriteRendererComponentData.ImageFileType.Aseprite;
+                }
+
                 var newData = new SpriteRenderer.SpriteRendererComponentData(spriteRenderer);
 
                 EditorChangeTracker.PushUndo(

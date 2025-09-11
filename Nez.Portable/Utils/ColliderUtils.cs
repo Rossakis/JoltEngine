@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Nez;
 using Nez.PhysicsShapes;
+using System;
 using RectangleF = Nez.RectangleF;
 
 public class ColliderUtils
@@ -44,5 +45,63 @@ public class ColliderUtils
 	{
 		return new Vector2(collider.AbsolutePosition.X + collider.Bounds.Width / 2f,
 			collider.AbsolutePosition.Y + collider.Bounds.Height / 2f);
+	}
+
+	/// <summary>
+	/// Returns either the top-right or top-left corner of the collider in world coordinates (assuming it's a BoxCollider).
+	/// </summary>
+	/// <param name="entity"></param>
+	/// <param name="isRightCorner"></param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
+	/// <exception cref="InvalidOperationException"></exception>
+	public static Vector2 GetBoxColliderTopCornerPos(Entity entity, bool isRightCorner)
+	{
+		if (entity == null)
+			throw new ArgumentNullException(nameof(entity));
+
+		var collider = entity.GetComponent<Collider>();
+		if (collider == null)
+			throw new InvalidOperationException("Entity does not have a Collider component.");
+
+		if(collider is not BoxCollider)
+			throw new InvalidOperationException("Collider is not a BoxCollider!");
+
+		var bounds = collider.Bounds;
+		return isRightCorner
+			? new Vector2(bounds.X + bounds.Width, bounds.Y)
+			: new Vector2(bounds.X, bounds.Y);
+	}
+
+	public static Vector2 GetColliderCrossSectionPos(Collider a, Collider b)
+	{
+		if (a == null || b == null)
+			throw new ArgumentNullException("Colliders cannot be null.");
+
+		var boundsA = a.Bounds;
+		var boundsB = b.Bounds;
+
+		// Calculate intersection rectangle
+		float left = Math.Max(boundsA.Left, boundsB.Left);
+		float right = Math.Min(boundsA.Right, boundsB.Right);
+		float top = Math.Max(boundsA.Top, boundsB.Top);
+		float bottom = Math.Min(boundsA.Bottom, boundsB.Bottom);
+
+		if (left < right && top < bottom)
+		{
+			// There is an intersection: return the center of the intersection rectangle
+			float centerX = (left + right) / 2f;
+			float centerY = (top + bottom) / 2f;
+			return new Vector2(centerX, centerY);
+		}
+		else
+		{
+			// No intersection: return the closest points between the two bounds
+			// Clamp the center of A to B's bounds
+			var centerA = new Vector2(boundsA.Center.X, boundsA.Center.Y);
+			float clampedX = Math.Clamp(centerA.X, boundsB.Left, boundsB.Right);
+			float clampedY = Math.Clamp(centerA.Y, boundsB.Top, boundsB.Bottom);
+			return new Vector2(clampedX, clampedY);
+		}
 	}
 }

@@ -5,18 +5,6 @@ using Microsoft.Xna.Framework;
 
 namespace Nez.Data
 {
-    // [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-    // public class PrefabData
-    // {
-    //     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
-    //     public List<PrefabData> Entities;
-    //
-    //     public PrefabData()
-    //     {
-    //         Entities = new List<PrefabData>();
-    //     }
-    // }
-
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public struct PrefabData
     {
@@ -30,8 +18,9 @@ namespace Nez.Data
         public int UpdateOrder;
         public int Tag;
         public bool DebugRenderEnabled;
+        public List<SceneData.SceneEntityData> ChildEntities = new();
 
-        public PrefabData()
+		public PrefabData()
         {
             InstanceType = Entity.InstanceType.Prefab;
             Name = "";

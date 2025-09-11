@@ -354,8 +354,11 @@ public class EntityPane
 	///
 	private void EntityDuplicationAndDeletion()
     {
-	    // Handle Copy/Paste/Duplicate Shortcuts
-	    bool gameCtrlDown = Input.IsKeyDown(Keys.LeftControl) || Input.IsKeyDown(Keys.RightControl);
+	    if (ImGui.IsAnyItemActive() || ImGui.IsAnyItemFocused())
+		    return;
+
+		// Handle Copy/Paste/Duplicate Shortcuts
+		bool gameCtrlDown = Input.IsKeyDown(Keys.LeftControl) || Input.IsKeyDown(Keys.RightControl);
 	    bool imguiCtrlDown = ImGui.GetIO().KeyCtrl;
 
 	    bool ShouldBlockDuplication(Entity entity)
