@@ -950,7 +950,6 @@ public class Entity : IComparable<Entity>
 				{
 					del.DynamicInvoke(child);
 
-					// Remove if this is a one-shot delegate (optional, if you want to support OnChildAddedOnce)
 					if (del.Target is IOneShotDelegate)
 						delegatesToRemove.Add((kvp.Key, del));
 				}

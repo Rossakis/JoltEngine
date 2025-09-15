@@ -49,7 +49,7 @@ namespace Nez.DeferredLighting
 		/// single pixel texture of a neutral normal map. This will effectively make the object have only diffuse lighting if applied as the normal map.
 		/// </summary>
 		/// <value>The null normal map texture.</value>
-		public Texture2D NullNormalMapTexture
+		public static Texture2D NullNormalMapTexture
 		{
 			get
 			{
@@ -68,7 +68,7 @@ namespace Nez.DeferredLighting
 		int _lightLayer;
 		Color _ambientColor;
 		Color _clearColor;
-		Texture2D _nullNormalMapTexture;
+		static Texture2D _nullNormalMapTexture;
 
 		public RenderTexture DiffuseRT;
 		public RenderTexture NormalRT;

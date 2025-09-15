@@ -441,7 +441,7 @@ namespace Nez.Sprites
 			if (Material != null && Material is DeferredSpriteMaterial deferredMaterial)
 			{
 				if(normalMap == null)
-					deferredMaterial.Effect.SetNormalMap(Entity.Scene.GetRenderer<DeferredLightingRenderer>().NullNormalMapTexture);
+					deferredMaterial.Effect.SetNormalMap(DeferredLightingRenderer.NullNormalMapTexture);
 				else
 					deferredMaterial.Effect.SetNormalMap(NormalMap.Texture2D);
 			}
@@ -455,12 +455,21 @@ namespace Nez.Sprites
 		/// <returns>This SpriteRenderer for chaining.</returns>
 		public void SetNormalMap(Texture2D normalMapTexture)
 		{
+			if (normalMapTexture == null)
+			{
+				System.Console.WriteLine($"{normalMapTexture} texture is null.");
+				return;
+			}
+
 			NormalMap = new Sprite(normalMapTexture);
 
 			// If using a deferred material, update it with the new normal map
 			if (Material != null && Material is DeferredSpriteMaterial deferredMaterial && normalMapTexture != null)
 			{
-				deferredMaterial.Effect.SetNormalMap(normalMapTexture);
+				if (NormalMap == null)
+					deferredMaterial.Effect.SetNormalMap(DeferredLightingRenderer.NullNormalMapTexture);
+				else
+					deferredMaterial.Effect.SetNormalMap(NormalMap.Texture2D);
 			}
 		}
 
@@ -468,8 +477,8 @@ namespace Nez.Sprites
 
 
 		/// <summary>
-		/// Draws the Renderable with an outline. Note that this should be called on disabled Renderables since they shouldnt take part in default
-		/// rendering if they need an ouline.
+		/// Draws the Renderable with an outline. Note that this should be called on disabled Renderables since they shouldn't take part in default
+		/// rendering if they need an outline.
 		/// </summary>
 		public void DrawOutline(Batcher batcher, Camera camera, int offset = 1) =>
 			DrawOutline(batcher, camera, Color.Black, offset);
@@ -531,8 +540,8 @@ namespace Nez.Sprites
 					SetNormalMap(LoadNormalMap(_data.NormalMapFilePath, _data.NormalMapFileType));
 					SetMaterial(new DeferredSpriteMaterial(NormalMap));
 				}
-				else // doesn't have
-					SetMaterial(new DeferredSpriteMaterial(Entity.Scene.GetRenderer<DeferredLightingRenderer>().NullNormalMapTexture));
+				// else // doesn't have
+				// 	SetMaterial(new DeferredSpriteMaterial(Entity.Scene.GetRenderer<DeferredLightingRenderer>().NullNormalMapTexture));
 			}
 		}
 
@@ -619,12 +628,11 @@ namespace Nez.Sprites
 			if (!string.IsNullOrEmpty(_data.NormalMapFilePath))
 			{
 				contentManager = Entity?.Scene?.Content ?? Core.Content;
-				Texture2D normalMapTexture = null;
 
 				switch (_data.NormalMapFileType)
 				{
 					case SpriteRendererComponentData.ImageFileType.Png:
-						normalMapTexture = contentManager.LoadTexture(_data.NormalMapFilePath);
+						SetNormalMap(contentManager.LoadTexture(_data.NormalMapFilePath));
 						break;
 					case SpriteRendererComponentData.ImageFileType.Aseprite:
 						// For Aseprite, you may want to load a specific layer or frame as the normal map
@@ -633,27 +641,21 @@ namespace Nez.Sprites
 						{
 							var aseData = _data.AsepriteData.Value;
 							// Use the first frame/layer as normal map by default
-							normalMapTexture = aseFile.GetTextureFromFrameNumber(aseData.FrameNumber + 1); //TODO: fix frame number handling
+							SetNormalMap(aseFile.GetTextureFromFrameNumber(aseData.FrameNumber + 1)); //TODO: fix frame number handling
 						}
 						break;
 					case SpriteRendererComponentData.ImageFileType.Tiled:
 						var tiledMap = contentManager.LoadTiledMap(_data.NormalMapFilePath);
 						if (tiledMap.ImageLayers.Count > 0)
-							normalMapTexture = tiledMap.ImageLayers[0].Image.Texture;
+							SetNormalMap(tiledMap.ImageLayers[0].Image.Texture);
 						break;
 					case SpriteRendererComponentData.ImageFileType.None:
 					default:
 						// Try to infer from extension
 						var ext = Path.GetExtension(_data.NormalMapFilePath).ToLower();
 						if (ext == ".png")
-							normalMapTexture = contentManager.LoadTexture(_data.NormalMapFilePath);
+							SetNormalMap(contentManager.LoadTexture(_data.NormalMapFilePath));
 						break;
-				}
-
-				if (normalMapTexture != null)
-				{
-					// Assign a DeferredSpriteMaterial with the normal map
-					SetMaterial(new DeferredSpriteMaterial(normalMapTexture));
 				}
 			}
 		}

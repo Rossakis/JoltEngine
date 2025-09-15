@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Nez.Editor;
 using Nez.Utils;
 using Num = System.Numerics;
 
@@ -783,12 +784,12 @@ namespace Nez.ImGuiTools.TypeInspectors
                 if (!string.IsNullOrEmpty(errorMsg) || normalMapSprite == null)
                 {
                     _errorMessage = errorMsg ?? "Failed to load normal map.";
-                    Debug.Error(_errorMessage);
+                    NotificationSystem.ShowTimedNotification(_errorMessage);
                 }
                 else
                 {
                     _errorMessage = "";
-                    Debug.Log($"Normal map loaded: {relativePath}");
+                    NotificationSystem.ShowTimedNotification($"Normal map loaded: {relativePath}");
                 }
             }
         }
@@ -880,15 +881,15 @@ namespace Nez.ImGuiTools.TypeInspectors
                     ? new SpriteRenderer.SpriteRendererComponentData(spriteRenderer)
                     : new SpriteRenderer.SpriteRendererComponentData();
 
-                spriteRenderer.SetNormalMap(normalMapSprite);
-
                 if (spriteRenderer.Data is SpriteRenderer.SpriteRendererComponentData)
                 {
                     data.NormalMapFilePath = relativePath;
                     data.NormalMapFileType = SpriteRenderer.SpriteRendererComponentData.ImageFileType.Aseprite;
                 }
 
-                var newData = new SpriteRenderer.SpriteRendererComponentData(spriteRenderer);
+                spriteRenderer.SetNormalMap(normalMapSprite);
+
+				var newData = new SpriteRenderer.SpriteRendererComponentData(spriteRenderer);
 
                 EditorChangeTracker.PushUndo(
                     new SpriteLoadUndoAction(
@@ -1004,7 +1005,6 @@ namespace Nez.ImGuiTools.TypeInspectors
                     errorMsg = $"Error loading TMX normal map: {ex.Message}";
                 }
 
-                var oldNormalMap = spriteRenderer.NormalMap;
                 var oldData = spriteRenderer.Data != null
                     ? new SpriteRenderer.SpriteRendererComponentData(spriteRenderer)
                     : new SpriteRenderer.SpriteRendererComponentData();

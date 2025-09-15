@@ -27,8 +27,10 @@ namespace Nez.ImGuiTools.SceneGraphPanes
 				for (var i = 0; i < Core.Scene._renderers.Length; i++)
 				{
 					var renderer = Core.Scene._renderers.Buffer[i];
-					if (_renderers.Where(inspector => inspector.Renderer == renderer).Count() == 0)
+					if (!_renderers.Any(inspector => inspector.Renderer == renderer))
+					{
 						_renderers.Add(new RendererInspector(renderer));
+					}
 				}
 			}
 		}
