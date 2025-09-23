@@ -142,10 +142,6 @@ namespace Nez.ImGuiTools.TypeInspectors
 		/// <param name="memberInfo">Member info.</param>
 		public static AbstractTypeInspector GetInspectorForType(Type valueType, object target, MemberInfo memberInfo)
 		{
-			// //custom
-			// if (valueType == typeof(SpriteRenderer) || valueType.IsSubclassOf(typeof(SpriteRenderer)))
-			// 	return new SpriteRendererFileInspector();
-
 			// built-in types
 			if (SimpleTypeInspector.KSupportedTypes.Contains(valueType))
 				return new TI.SimpleTypeInspector();
@@ -180,7 +176,7 @@ namespace Nez.ImGuiTools.TypeInspectors
 
 			// Nez types
 			if (valueType == materialType || valueType.IsSubclassOf(materialType))
-				return new MaterialInspector();
+				return GetMaterialInspector(target, memberInfo);
 			if (valueType == effectType || valueType.IsSubclassOf(effectType))
 				return GetEffectInspector(target, memberInfo);
 			

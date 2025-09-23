@@ -45,15 +45,6 @@ namespace Nez.ImGuiTools.Inspectors.CustomInspectors
 			if (ImGui.Button("Manage Animation Events", new Num.Vector2(-1, 0)))
 			{
 				imGuiManager.OpenAnimationEventInspector(animator);
-				// if (imGuiManager.AnimationEventInspectorInstance == null)
-				// {
-				//     imGuiManager.ShowAnimationEventInspector = true;
-				// }
-				// else
-				// {
-				//     imGuiManager.AnimationEventInspectorInstance.SetAnimator(animator);
-				//     imGuiManager.AnimationEventInspectorInstance.SetWindowFocus();
-				// }
 			}
 
             if (animator == null)

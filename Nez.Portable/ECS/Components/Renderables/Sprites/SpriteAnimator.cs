@@ -16,6 +16,7 @@ public class AnimationEvent
     public string Name;
     public Action Callback;
     public string AnimationName;
+    public string EventType;
 
     public AnimationEvent() { }
 
@@ -25,6 +26,7 @@ public class AnimationEvent
         Name = name;
         Callback = callback;
         AnimationName = animationName;
+        EventType = "DefaultEvent";
     }
 }
 
@@ -41,6 +43,7 @@ public class LongAnimationEvent : AnimationEvent
 		Name = name;
 		Callback = callback;
 		AnimationName = animationName;
+		EventType = "LongEvent";
 	}
 }
 
@@ -56,7 +59,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 	{
 		public string CurrentAnimationName = "";
 		public bool IsPlaying = false;
-		public float PlaybackRate = 1.0f;
+		public float Speed = 1.0f;
 		public SpriteAnimator.LoopMode CurrentLoopMode = SpriteAnimator.LoopMode.Loop;
 		public int CurrentFrame = 0;
 		public float ElapsedTime = 0f;
@@ -96,7 +99,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 			// Initialize with default values
 			CurrentAnimationName = "";
 			IsPlaying = false;
-			PlaybackRate = 1.0f;
+			Speed = 1.0f;
 			CurrentLoopMode = SpriteAnimator.LoopMode.Loop;
 			CurrentFrame = 0;
 			ElapsedTime = 0f;
@@ -122,7 +125,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 			// Capture current animation state
 			CurrentAnimationName = animator.CurrentAnimationName ?? "";
 			IsPlaying = animator.IsRunning;
-			PlaybackRate = animator.Speed;
+			Speed = animator.Speed;
 			CurrentLoopMode = animator.CurrentLoopMode;
 			CurrentFrame = animator.CurrentFrame;
 			ElapsedTime = animator.CurrentElapsedTime;
@@ -173,7 +176,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 			// Update current animation state
 			_animatorData.CurrentAnimationName = CurrentAnimationName ?? "";
 			_animatorData.IsPlaying = IsRunning;
-			_animatorData.PlaybackRate = Speed;
+			_animatorData.Speed = Speed;
 			_animatorData.CurrentLoopMode = CurrentLoopMode;
 			_animatorData.CurrentFrame = CurrentFrame;
 			_animatorData.ElapsedTime = CurrentElapsedTime;
@@ -217,7 +220,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 				SpriteEffects = animatorData.SpriteEffects;
 
 				// Apply animation properties
-				Speed = animatorData.PlaybackRate;
+				Speed = animatorData.Speed;
 
 				// Apply animation events
 				AnimationEvents = animatorData.AnimationEvents != null
@@ -283,6 +286,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 	/// <summary>
 	/// animation playback speed
 	/// </summary>
+	[Range(-10f, 10f)]
 	public float Speed = 1;
 
 	/// <summary>
