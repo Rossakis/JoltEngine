@@ -20,12 +20,8 @@ public class MainEntityInspector
 {
 	public Entity Entity { get; private set; }
 	public float Width { get; set; } = 500f; // Persist this separately
-	public float MainInspectorWidth => _mainInspectorWidth;
-	private static float _mainInspectorWidth = 500f;
-	private float _minInspectorWidth = 1f;
-	private float _maxInspectorWidth = Screen.MonitorWidth;
+	
 	public bool IsOpen { get; set; } = true; // Separate open/close flag
-	private readonly string _windowId = "MAIN_INSPECTOR_WINDOW";
 	private TransformInspector _transformInspector;
 	private List<IComponentInspector> _componentInspectors = new();
 
@@ -146,7 +142,7 @@ public class MainEntityInspector
 		}
 	}
 
-	public void Draw(ImGuiWindowFlags windowFlags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoMove)
+	public void Draw(ImGuiWindowFlags windowFlags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize)
 	{
 		if (!IsOpen)
 			return;
@@ -156,31 +152,25 @@ public class MainEntityInspector
 
 		_selectedEntities = _imguiManager.SceneGraphWindow.EntityPane.SelectedEntities.ToList();
 
-		var windowPosX = Screen.Width - _mainInspectorWidth;
+		var windowPosX = Screen.Width - _imguiManager.InspectorTabWidth + _imguiManager.InspectorWidthOffset;
 		var windowPosY = _imguiManager.MainWindowPositionY + 20f * _imguiManager.FontSizeMultiplier;
-		var windowWidth = _mainInspectorWidth;
+		var windowWidth = _imguiManager.InspectorTabWidth - _imguiManager.InspectorWidthOffset;
 		var windowHeight = Screen.Height - windowPosY;
 
-		ImGui.SetNextWindowPos(new Num.Vector2(windowPosX, windowPosY), ImGuiCond.FirstUseEver);
-		ImGui.SetNextWindowSize(new Num.Vector2(windowWidth, windowHeight), ImGuiCond.FirstUseEver);
+		ImGui.SetNextWindowPos(new Num.Vector2(windowPosX, windowPosY), ImGuiCond.Always);
+		ImGui.SetNextWindowSize(new Num.Vector2(windowWidth, windowHeight), ImGuiCond.Always);
 
 		var open = IsOpen;
 
 		if (ImGui.Begin("##MainEntityInspector", ref open, windowFlags))
 		{
-			// Always update width, regardless of entity selection
-			var currentWidth = ImGui.GetWindowSize().X;
-			if (Math.Abs(currentWidth - _mainInspectorWidth) > 0.01f)
-				_mainInspectorWidth = Math.Clamp(currentWidth, _minInspectorWidth, _maxInspectorWidth);
-
-			// 1) Show "Multiple Entities Selected" if more than one entity is selected
+			// If more than one entity is selected
 			if (_selectedEntities.Count > 1)
 			{
 				ImGui.SetWindowFontScale(1.5f);
 				ImGui.Text("Multiple Entities Selected");
 				ImGui.SetWindowFontScale(1.0f);
 
-				// Show list of selected entity names in small font
 				ImGui.PushFont(ImGui.GetIO().FontDefault); // Use default font (smallest)
 				ImGui.PushStyleColor(ImGuiCol.Text, new Num.Vector4(0.8f, 0.8f, 0.8f, 1.0f));
 				for (int i = 0; i < _selectedEntities.Count; i++)
@@ -192,7 +182,7 @@ public class MainEntityInspector
 
 				NezImGui.BigVerticalSpace();
 
-				// 2) Show common components
+				// Show common Components
 				foreach (var inspector in _componentInspectors)
 				{
 					inspector.Draw();
@@ -201,7 +191,6 @@ public class MainEntityInspector
 			}
 			else if (_selectedEntities.Count == 1 && Entity != null)
 			{
-				// Original single-entity logic
 				var entityName = Entity.Name;
 				ImGui.SetWindowFontScale(1.5f);
 				ImGui.Text(entityName);
@@ -214,7 +203,6 @@ public class MainEntityInspector
 				}
 				else
 				{
-					// Draw main entity UI
 					var type = Entity.Type.ToString();
 					ImGui.InputText("InstanceType", ref type, 30);
 
@@ -305,7 +293,6 @@ public class MainEntityInspector
 					{
 						int updateInterval = (int)Entity.UpdateInterval;
 
-						// Draw the slider first
 						bool changed = ImGui.SliderInt("Update Interval", ref updateInterval, 1, 100);
 
 						// Start of edit session: store the initial value
@@ -409,13 +396,11 @@ public class MainEntityInspector
 						ImGui.OpenPopup("prefab-creator");
 					}
 
-					// Add "Apply to Prefab Copies" button for prefab entities
 					if (Entity.Type == Entity.InstanceType.Prefab && !string.IsNullOrEmpty(Entity.OriginalPrefabName))
 					{
 						NezImGui.MediumVerticalSpace();
 						if (NezImGui.CenteredButton("Apply to Prefab Copies", 0.8f))
 						{
-							// Find prefab copies and show confirmation
 							ShowApplyToPrefabCopiesConfirmation();
 						}
 					}

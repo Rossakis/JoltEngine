@@ -1,144 +1,161 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Nez
 {
-	// TODO: add Conditionals for all log levels
-	public static partial class Debug
-	{
-		enum LogType
-		{
-			Error,
-			Warn,
-			Log,
-			Info,
-			Trace
-		}
+    public static partial class Debug
+    {
+        public enum LogType
+        {
+            Error,
+            Warn,
+            Log,
+            Info,
+            Trace
+        }
 
+        public struct LogEntry
+        {
+            public LogType Type;
+            public string Message;
+            public DateTime Timestamp;
 
-		#region Logging
+            public LogEntry(LogType type, string message, DateTime timestamp)
+            {
+                Type = type;
+                Message = message;
+                Timestamp = timestamp;
+            }
+        }
 
-		[DebuggerHidden]
-		static void Log(LogType type, string format, params object[] args)
-		{
-			switch (type)
-			{
-				case LogType.Error:
-					System.Diagnostics.Debug.WriteLine(type.ToString() + ": " + format, args);
-					break;
-				case LogType.Warn:
-					System.Diagnostics.Debug.WriteLine(type.ToString() + ": " + format, args);
-					break;
-				case LogType.Log:
-					System.Diagnostics.Debug.WriteLine(type.ToString() + ": " + format, args);
-					break;
-				case LogType.Info:
-					System.Diagnostics.Debug.WriteLine(type.ToString() + ": " + format, args);
-					break;
-				case LogType.Trace:
-					System.Diagnostics.Debug.WriteLine(type.ToString() + ": " + format, args);
-					break;
-				default:
-					throw new ArgumentOutOfRangeException();
-			}
-		}
+        private static readonly List<LogEntry> _logEntries = new();
+        private static readonly object _logLock = new();
 
-		[DebuggerHidden]
-		public static void Error(string format, params object[] args)
-		{
-			Log(LogType.Error, format, args);
-		}
+        public static IReadOnlyList<LogEntry> GetLogEntries()
+        {
+            lock (_logLock)
+                return _logEntries.AsReadOnly();
+        }
 
-		[DebuggerHidden]
-		public static void ErrorIf(bool condition, string format, params object[] args)
-		{
-			if (condition)
-				Log(LogType.Error, format, args);
-		}
+        public static void ClearLogEntries()
+        {
+            lock (_logLock)
+                _logEntries.Clear();
+        }
 
-		[DebuggerHidden]
-		public static void Warn(string format, params object[] args)
-		{
-			Log(LogType.Warn, format, args);
-		}
+        #region Logging
 
-		[DebuggerHidden]
-		public static void WarnIf(bool condition, string format, params object[] args)
-		{
-			if (condition)
-				Log(LogType.Warn, format, args);
-		}
+        [DebuggerHidden]
+        public static void Log(LogType type, string format, params object[] args)
+        {
+            string msg = args != null && args.Length > 0 ? string.Format(format, args) : format;
 
-		[Conditional("DEBUG")]
-		[DebuggerHidden]
-		public static void Log(object obj)
-		{
-			Log(LogType.Log, "{0}", obj);
-		}
+            lock (_logLock)
+            {
+                _logEntries.Add(new LogEntry(type, msg, DateTime.Now));
+                if (_logEntries.Count > 500)
+                    _logEntries.RemoveAt(0);
+            }
 
-		[Conditional("DEBUG")]
-		[DebuggerHidden]
-		public static void Log(string format, params object[] args)
-		{
-			Log(LogType.Log, format, args);
-		}
+            System.Diagnostics.Debug.WriteLine($"{type}: {msg}");
+        }
 
-		[Conditional("DEBUG")]
-		[DebuggerHidden]
-		public static void LogIf(bool condition, string format, params object[] args)
-		{
-			if (condition)
-				Log(LogType.Log, format, args);
-		}
+        [DebuggerHidden]
+        public static void Error(string format, params object[] args)
+        {
+            Log(LogType.Error, format, args);
+        }
 
-		[Conditional("DEBUG")]
-		[DebuggerHidden]
-		public static void Info(string format, params object[] args)
-		{
-			Log(LogType.Info, format, args);
-		}
+        [DebuggerHidden]
+        public static void ErrorIf(bool condition, string format, params object[] args)
+        {
+            if (condition)
+                Log(LogType.Error, format, args);
+        }
 
-		[Conditional("DEBUG")]
-		[DebuggerHidden]
-		public static void Trace(string format, params object[] args)
-		{
-			Log(LogType.Trace, format, args);
-		}
+        [DebuggerHidden]
+        public static void Warn(string format, params object[] args)
+        {
+            Log(LogType.Warn, format, args);
+        }
 
-		#endregion
+        [DebuggerHidden]
+        public static void WarnIf(bool condition, string format, params object[] args)
+        {
+            if (condition)
+                Log(LogType.Warn, format, args);
+        }
 
+        [Conditional("DEBUG")]
+        [DebuggerHidden]
+        public static void Log(object obj)
+        {
+            Log(LogType.Log, "{0}", obj);
+        }
 
-		[Conditional("DEBUG")]
-		public static void BreakIf(bool condition)
-		{
-			if (condition)
-				Debugger.Break();
-		}
+        [Conditional("DEBUG")]
+        [DebuggerHidden]
+        public static void Log(string format, params object[] args)
+        {
+            Log(LogType.Log, format, args);
+        }
 
-		[Conditional("DEBUG")]
-		public static void Break_()
-		{
-			Debugger.Break();
-		}
+        [Conditional("DEBUG")]
+        [DebuggerHidden]
+        public static void LogIf(bool condition, string format, params object[] args)
+        {
+            if (condition)
+                Log(LogType.Log, format, args);
+        }
 
-		/// <summary>
-		/// times how long an Action takes to run and returns the TimeSpan
-		/// </summary>
-		/// <returns>The action.</returns>
-		/// <param name="action">Action.</param>
-		public static TimeSpan TimeAction(Action action, uint numberOfIterations = 1)
-		{
-			var stopwatch = new Stopwatch();
-			stopwatch.Start();
+        [Conditional("DEBUG")]
+        [DebuggerHidden]
+        public static void Info(string format, params object[] args)
+        {
+            Log(LogType.Info, format, args);
+        }
 
-			for (var i = 0; i < numberOfIterations; i++)
-				action();
-			stopwatch.Stop();
+        [Conditional("DEBUG")]
+        [DebuggerHidden]
+        public static void Trace(string format, params object[] args)
+        {
+            Log(LogType.Trace, format, args);
+        }
 
-			if (numberOfIterations > 1)
-				return TimeSpan.FromTicks(stopwatch.Elapsed.Ticks / numberOfIterations);
+        #endregion
 
-			return stopwatch.Elapsed;
-		}
-	}
+        [Conditional("DEBUG")]
+        public static void BreakIf(bool condition)
+        {
+            if (condition)
+                Debugger.Break();
+        }
+
+        [Conditional("DEBUG")]
+        public static void Break_()
+        {
+            Debugger.Break();
+        }
+
+        /// <summary>
+        /// times how long an Action takes to run and returns the TimeSpan
+        /// </summary>
+        /// <returns>The action.</returns>
+        /// <param name="action">Action.</param>
+        public static TimeSpan TimeAction(Action action, uint numberOfIterations = 1)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            for (var i = 0; i < numberOfIterations; i++)
+                action();
+            stopwatch.Stop();
+
+            if (numberOfIterations > 1)
+                return TimeSpan.FromTicks(stopwatch.Elapsed.Ticks / numberOfIterations);
+
+            return stopwatch.Elapsed;
+        }
+    }
 }

@@ -13,6 +13,7 @@ namespace Nez.ImGuiTools
 		float[] _frameRateArray = new float[100];
 		int _frameRateArrayIndex = 0;
 		private ImGuiManager _imguiManager;
+
 		public CoreWindow()
 		{
 			_textureFilters = Enum.GetNames(typeof(TextureFilter));
@@ -26,17 +27,16 @@ namespace Nez.ImGuiTools
 			if (_imguiManager == null)
 				_imguiManager = Core.GetGlobalManager<ImGuiManager>();
 
-			float inspectorWidth = _imguiManager.MainEntityInspector?.MainInspectorWidth ?? 500f;
-			float inspectorPosY = _imguiManager.MainWindowPositionY + 20f * _imguiManager.FontSizeMultiplier;
-
-			float windowPosX = Screen.Width - inspectorWidth;
-			float windowHeight = Screen.Height - inspectorPosY;
+			var windowPosX = Screen.Width - _imguiManager.InspectorTabWidth + _imguiManager.InspectorWidthOffset;
+			var windowPosY = _imguiManager.MainWindowPositionY + 20f * _imguiManager.FontSizeMultiplier;
+			var windowWidth = _imguiManager.InspectorTabWidth - _imguiManager.InspectorWidthOffset;
+			var windowHeight = Screen.Height - windowPosY;
 
 			// Use a unique window name and prevent docking
-			ImGui.SetNextWindowPos(new Num.Vector2(windowPosX, inspectorPosY), ImGuiCond.Always);
-			ImGui.SetNextWindowSize(new Num.Vector2(inspectorWidth, windowHeight), ImGuiCond.Always);
+			ImGui.SetNextWindowPos(new Num.Vector2(windowPosX, windowPosY), ImGuiCond.Always);
+			ImGui.SetNextWindowSize(new Num.Vector2(windowWidth, windowHeight), ImGuiCond.Always);
 
-			ImGui.Begin("##NezCoreWindow", ref isOpen, ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoTitleBar);
+			ImGui.Begin("##NezCoreWindow", ref isOpen, ImGuiWindowFlags.NoDocking | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize);
 
 			DrawSettings();
 			ImGui.End();

@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Nez.ImGuiTools.Inspectors;
 using Nez.ImGuiTools.Utils;
 using Num = System.Numerics;
 
@@ -43,6 +44,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	private System.Reflection.MethodInfo[] _themes;
 
 	private CoreWindow _coreWindow = new();
+	private DebugWindow _debugWindow = new();
 	public SceneGraphWindow SceneGraphWindow { get; private set; }
 	public MainEntityInspector MainEntityInspector { get; private set; }
 
@@ -77,13 +79,24 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	public float GameWindowWidth { get; private set; }
 	public float GameWindowHeight { get; private set; }
 
+	#region Inspector Tab
+	public float InspectorTabWidth => _inspectorTabWidth;
+	private float _inspectorTabWidth = 500f;
+	private float _minInspectorWidth = 1f;
+	private float _maxInspectorWidth = Screen.MonitorWidth;
+	public float InspectorWidthOffset = 4f; // offset the inner windows (core, entity inspector) to allow for edge selecting 
+	
 	private enum InspectorTab
 	{
 		EntityInspector,
-		Core
+		Core,
+		Debug
 	}
 
 	private InspectorTab _selectedInspectorTab = InspectorTab.EntityInspector;
+
+	#endregion
+
 
 	// Camera Params
 	public static float EditModeCameraSpeed = 250f;
@@ -209,17 +222,14 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	}
 
 	/// <summary>
-	/// this is where we issue any and all ImGui commands to be drawn
+	/// This is where we issue any and all ImGui commands to be drawn
 	/// </summary>
 	private void LayoutGui()
 	{
 		ImGui.GetIO().ConfigWindowsResizeFromEdges = true;
 
-		float mainWindowHeight = Screen.Height - MainWindowPositionY;
-
 		if (ShowMenuBar)
 			DrawMainMenuBar();
-
 
 		DrawEditorToolsBar();
 
@@ -227,75 +237,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			DrawGameWindow();
 
 		SceneGraphWindow.Show(ref ShowSceneGraphWindow);
-
-		if (MainEntityInspector != null && MainEntityInspector.IsOpen)
-		{
-			var inspectorWidth = MainEntityInspector.MainInspectorWidth;
-			var inspectorPosX = Screen.Width - inspectorWidth;
-			var inspectorPosY = MainWindowPositionY;
-			var inspectorHeight = mainWindowHeight;
-			var inspectorSize = new Num.Vector2(inspectorWidth, inspectorHeight);
-			var inspectorPos = new Num.Vector2(inspectorPosX, inspectorPosY);
-
-			// Draw the tab bar window (only the tabs, no content)
-			ImGui.SetNextWindowPos(inspectorPos, ImGuiCond.Always);
-			ImGui.SetNextWindowSize(inspectorSize, ImGuiCond.Always);
-			ImGui.Begin("InspectorTabBar",
-				ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove |
-				ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoSavedSettings);
-
-			if (ImGui.BeginTabBar("InspectorTabs", ImGuiTabBarFlags.NoCloseWithMiddleMouseButton))
-			{
-				if (ImGui.BeginTabItem("Entity Inspector"))
-				{
-					_selectedInspectorTab = InspectorTab.EntityInspector;
-					ImGui.EndTabItem();
-				}
-
-				if (ShowCoreWindow && ImGui.BeginTabItem("Core"))
-				{
-					_selectedInspectorTab = InspectorTab.Core;
-					ImGui.EndTabItem();
-				}
-
-				ImGui.EndTabBar();
-			}
-
-			ImGui.End();
-
-			// Draw the selected inspector window at the same position/size, with no move/resize
-			ImGui.SetNextWindowPos(inspectorPos, ImGuiCond.Always);
-			ImGui.SetNextWindowSize(inspectorSize, ImGuiCond.Always);
-			var inspectorFlags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoMove |
-			                     ImGuiWindowFlags.NoSavedSettings;
-
-			if (_selectedInspectorTab == InspectorTab.EntityInspector)
-			{
-				MainEntityInspector.Draw(inspectorFlags);
-			}
-			else if (_selectedInspectorTab == InspectorTab.Core && ShowCoreWindow)
-			{
-				_coreWindow.Show(ref ShowCoreWindow);
-			}
-		}
-		else
-		{
-			// If MainEntityInspector is not active, show CoreWindow as a standalone window
-			if (ShowCoreWindow)
-			{
-				var inspectorWidth = 420f; // fallback width
-				var inspectorPosX = Screen.Width - inspectorWidth;
-				var inspectorPosY = MainWindowPositionY;
-				var inspectorHeight = mainWindowHeight;
-				var inspectorSize = new Num.Vector2(inspectorWidth, inspectorHeight);
-				var inspectorPos = new Num.Vector2(inspectorPosX, inspectorPosY);
-
-				ImGui.SetNextWindowPos(inspectorPos, ImGuiCond.Always);
-				ImGui.SetNextWindowSize(inspectorSize, ImGuiCond.Always);
-				_coreWindow.Show(ref ShowCoreWindow);
-			}
-		}
-
+		DrawInspectorWindows();
 		DrawEntityInspectors();
 
 		for (var i = _drawCommands.Count - 1; i >= 0; i--)
@@ -374,6 +316,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		}
 	}
 
+	#region Drawing Methods
 	/// <summary>
 	/// draws the main menu bar
 	/// </summary>
@@ -412,42 +355,6 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 				ImGui.EndMenu();
 			}
 
-			if (ImGui.BeginMenu("Game View"))
-			{
-				var rtSize = Core.Scene.SceneRenderTargetSize;
-
-				if (ImGui.BeginMenu("Resize"))
-				{
-					if (ImGui.MenuItem("0.25x"))
-						_gameViewForcedSize = new Num.Vector2(rtSize.X / 4f, rtSize.Y / 4f);
-					if (ImGui.MenuItem("0.5x"))
-						_gameViewForcedSize = new Num.Vector2(rtSize.X / 2f, rtSize.Y / 2f);
-					if (ImGui.MenuItem("0.75x"))
-						_gameViewForcedSize = new Num.Vector2(rtSize.X / 1.33f, rtSize.Y / 1.33f);
-					if (ImGui.MenuItem("1x"))
-						_gameViewForcedSize = new Num.Vector2(rtSize.X, rtSize.Y);
-					if (ImGui.MenuItem("1.5x"))
-						_gameViewForcedSize = new Num.Vector2(rtSize.X * 1.5f, rtSize.Y * 1.5f);
-					if (ImGui.MenuItem("2x"))
-						_gameViewForcedSize = new Num.Vector2(rtSize.X * 2, rtSize.Y * 2);
-					if (ImGui.MenuItem("3x"))
-						_gameViewForcedSize = new Num.Vector2(rtSize.X * 3, rtSize.Y * 3);
-					ImGui.EndMenu();
-				}
-
-				if (ImGui.BeginMenu("Reposition"))
-				{
-					foreach (var pos in Enum.GetNames(typeof(WindowPosition)))
-						if (ImGui.MenuItem(pos))
-							_gameViewForcedPos = (WindowPosition)Enum.Parse(typeof(WindowPosition), pos);
-
-					ImGui.EndMenu();
-				}
-
-
-				ImGui.EndMenu();
-			}
-
 			if (ImGui.BeginMenu("Window"))
 			{
 				ImGui.MenuItem("ImGui Demo Window", null, ref ShowDemoWindow);
@@ -471,6 +378,168 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		}
 	}
 
+	private void DrawEditorToolsBar()
+	{
+		ImGui.SetNextWindowPos(new Num.Vector2(0, _mainMenuBarHeight), ImGuiCond.Always);
+		ImGui.SetNextWindowSize(new Num.Vector2(Screen.Width, _editorToolsBarHeight * FontSizeMultiplier), ImGuiCond.Always);
+
+		ImGui.Begin("EditorToolsBar",
+			ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove |
+			ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoSavedSettings);
+
+		float buttonWidth = 80f * FontSizeMultiplier;
+		float spacing = 12f * FontSizeMultiplier;
+		float totalWidth = buttonWidth * 3 + spacing * 2;
+		float windowWidth = ImGui.GetWindowWidth();
+		float iconSize = 24f * FontSizeMultiplier;
+
+		float windowHeight = ImGui.GetWindowHeight();
+		float iconRowY = (windowHeight - iconSize) * 0.5f;
+		ImGui.SetCursorPos(new Num.Vector2((windowWidth - totalWidth) * 0.5f, iconRowY));
+
+		// Normal Button
+		System.Numerics.Vector4 normalButtonColor;
+		if (_cursorSelectionManager.SelectionMode == CursorSelectionMode.Normal)
+			normalButtonColor = new System.Numerics.Vector4(0.2f, 0.5f, 1f, 1f);
+		else
+			normalButtonColor = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
+
+		ImGui.PushStyleColor(ImGuiCol.Button, normalButtonColor);
+		bool normalHovered = ImGui.ImageButton("Normal", _imageLoader.NormalIconID, new Num.Vector2(iconSize, iconSize));
+		if (normalHovered)
+			_cursorSelectionManager.SelectionMode = CursorSelectionMode.Normal;
+		ImGui.PopStyleColor();
+
+		if (ImGui.IsItemHovered())
+		{
+			ImGui.SetTooltip("Normal (1)");
+		}
+		ImGui.SameLine(0, spacing);
+
+		// Resize Button 
+		System.Numerics.Vector4 resizeButtonColor;
+		if (_cursorSelectionManager.SelectionMode == CursorSelectionMode.Resize)
+			resizeButtonColor = new System.Numerics.Vector4(0.2f, 0.5f, 1f, 1f);
+		else
+			resizeButtonColor = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
+
+		ImGui.PushStyleColor(ImGuiCol.Button, resizeButtonColor);
+		bool resizeHovered = ImGui.ImageButton("Resize", _imageLoader.ResizeIconID, new Num.Vector2(iconSize, iconSize));
+		if (resizeHovered)
+			_cursorSelectionManager.SelectionMode = CursorSelectionMode.Resize;
+		ImGui.PopStyleColor();
+
+		if (ImGui.IsItemHovered())
+		{
+			ImGui.SetTooltip("Resize (2)");
+		}
+		ImGui.SameLine(0, spacing);
+
+		// Rotate Button
+		System.Numerics.Vector4 rotateButtonColor;
+		if (_cursorSelectionManager.SelectionMode == CursorSelectionMode.Rotate)
+			rotateButtonColor = new System.Numerics.Vector4(0.2f, 0.5f, 1f, 1f);
+		else
+			rotateButtonColor = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
+
+		ImGui.PushStyleColor(ImGuiCol.Button, rotateButtonColor);
+		bool rotateHovered = ImGui.ImageButton("Rotate", _imageLoader.RotateIconID, new Num.Vector2(iconSize, iconSize));
+		if (rotateHovered)
+			_cursorSelectionManager.SelectionMode = CursorSelectionMode.Rotate;
+		ImGui.PopStyleColor();
+
+		if (ImGui.IsItemHovered())
+		{
+			ImGui.SetTooltip("Rotate (3)");
+		}
+
+		ImGui.End();
+	}
+
+	/// <summary>
+	/// Inspector tabs for Entity Inspector and Core Window
+	/// </summary>
+	private void DrawInspectorWindows()
+	{
+		var inspectorPosX = Screen.Width - _inspectorTabWidth;
+		var inspectorPosY = MainWindowPositionY;
+		var inspectorSize = new Num.Vector2(_inspectorTabWidth, Screen.Height - MainWindowPositionY);
+		var inspectorPos = new Num.Vector2(inspectorPosX, inspectorPosY);
+
+		ImGui.SetNextWindowPos(inspectorPos, ImGuiCond.FirstUseEver);
+		ImGui.SetNextWindowSize(inspectorSize, ImGuiCond.FirstUseEver);
+		ImGui.Begin("##InspectorArea",
+			ImGuiWindowFlags.NoTitleBar |
+			ImGuiWindowFlags.NoMove |
+			ImGuiWindowFlags.NoBringToFrontOnFocus |
+			ImGuiWindowFlags.NoScrollbar);
+
+		var currentWidth = ImGui.GetWindowSize().X;
+		if (Math.Abs(currentWidth - _inspectorTabWidth) > 0.01f)
+			_inspectorTabWidth = Math.Clamp(currentWidth, _minInspectorWidth, _maxInspectorWidth);
+
+		float tabSpacing = 8f * FontSizeMultiplier;
+		Num.Vector4 selectedColor = new Num.Vector4(0.2f, 0.5f, 1f, 1f); // blue
+		Num.Vector4 defaultColor = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
+
+		// Entity Inspector Tab
+		if (_selectedInspectorTab == InspectorTab.EntityInspector)
+			ImGui.PushStyleColor(ImGuiCol.Button, selectedColor);
+		else
+			ImGui.PushStyleColor(ImGuiCol.Button, defaultColor);
+
+		if (ImGui.Button("Inspector"))
+			_selectedInspectorTab = InspectorTab.EntityInspector;
+		if (ImGui.IsItemHovered())
+			ImGui.SetTooltip("Show Entity Inspector");
+
+		ImGui.PopStyleColor();
+		ImGui.SameLine(0, tabSpacing);
+
+		if (ShowCoreWindow)
+		{
+			if (_selectedInspectorTab == InspectorTab.Core)
+				ImGui.PushStyleColor(ImGuiCol.Button, selectedColor);
+			else
+				ImGui.PushStyleColor(ImGuiCol.Button, defaultColor);
+
+			if (ImGui.Button("Core"))
+				_selectedInspectorTab = InspectorTab.Core;
+			if (ImGui.IsItemHovered())
+				ImGui.SetTooltip("Show Core Window");
+
+			ImGui.PopStyleColor();
+			ImGui.SameLine(0, tabSpacing);
+		}
+
+		if (_selectedInspectorTab == InspectorTab.Debug)
+			ImGui.PushStyleColor(ImGuiCol.Button, selectedColor);
+		else
+			ImGui.PushStyleColor(ImGuiCol.Button, defaultColor);
+
+		if (ImGui.Button("Debug"))
+			_selectedInspectorTab = InspectorTab.Debug;
+		if (ImGui.IsItemHovered())
+			ImGui.SetTooltip("Show Debug messages");
+
+		ImGui.PopStyleColor();
+		ImGui.Separator();
+		ImGui.End();
+
+		if (_selectedInspectorTab == InspectorTab.EntityInspector && MainEntityInspector != null && MainEntityInspector.IsOpen)
+		{
+			MainEntityInspector.Draw();
+		}
+		else if(_selectedInspectorTab == InspectorTab.Core && ShowCoreWindow)
+		{
+			_coreWindow.Show(ref ShowCoreWindow);
+		}
+		else if (_selectedInspectorTab == InspectorTab.Debug)
+		{
+			_debugWindow.Draw();
+		}
+	}
+
 	/// <summary>
 	/// draws all the EntityInspectors
 	/// </summary>
@@ -479,6 +548,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		for (var i = _entityInspectors.Count - 1; i >= 0; i--)
 			_entityInspectors[i].Draw();
 	}
+	#endregion
 
 
 	private void UpdateCamera()
@@ -710,8 +780,8 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	{
 		_entityInspectors.RemoveAt(_entityInspectors.IndexOf(entityInspector));
 
-		if (entitynspectorInitialSpawnOffset - entitynspectorSpawnOffsetIncremental >=
-		    0) // Reset the previous spawn offset 
+		// Reset the previous spawn offset 
+		if (entitynspectorInitialSpawnOffset - entitynspectorSpawnOffsetIncremental >= 0) 
 			entitynspectorInitialSpawnOffset -= entitynspectorSpawnOffsetIncremental;
 	}
 
@@ -873,83 +943,5 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	{
 		_highlightedEntities.Clear();
 		_lastSelectedEntities = null;
-	}
-
-	private void DrawEditorToolsBar()
-	{
-		ImGui.SetNextWindowPos(new Num.Vector2(0, _mainMenuBarHeight), ImGuiCond.Always);
-		ImGui.SetNextWindowSize(new Num.Vector2(Screen.Width, _editorToolsBarHeight * FontSizeMultiplier), ImGuiCond.Always);
-
-		ImGui.Begin("EditorToolsBar",
-			ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove |
-			ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoSavedSettings);
-
-		float buttonWidth = 80f * FontSizeMultiplier;
-		float spacing = 12f * FontSizeMultiplier;
-		float totalWidth = buttonWidth * 3 + spacing * 2;
-		float windowWidth = ImGui.GetWindowWidth();
-		float iconSize = 24f * FontSizeMultiplier;
-
-		float windowHeight = ImGui.GetWindowHeight();
-		float iconRowY = (windowHeight - iconSize) * 0.5f;
-		ImGui.SetCursorPos(new Num.Vector2((windowWidth - totalWidth) * 0.5f, iconRowY));
-
-		// Normal Button
-		System.Numerics.Vector4 normalButtonColor;
-		if (_cursorSelectionManager.SelectionMode == CursorSelectionMode.Normal)
-			normalButtonColor = new System.Numerics.Vector4(0.2f, 0.5f, 1f, 1f);
-		else
-			normalButtonColor = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
-
-		ImGui.PushStyleColor(ImGuiCol.Button, normalButtonColor);
-		bool normalHovered = ImGui.ImageButton("Normal", _imageLoader.NormalIconID, new Num.Vector2(iconSize, iconSize));
-		if (normalHovered)
-			_cursorSelectionManager.SelectionMode = CursorSelectionMode.Normal;
-		ImGui.PopStyleColor();
-
-		if (ImGui.IsItemHovered())
-		{
-			ImGui.SetTooltip("Normal (1)");
-		}
-		ImGui.SameLine(0, spacing);
-
-		// Resize Button 
-		System.Numerics.Vector4 resizeButtonColor;
-		if (_cursorSelectionManager.SelectionMode == CursorSelectionMode.Resize)
-			resizeButtonColor = new System.Numerics.Vector4(0.2f, 0.5f, 1f, 1f);
-		else
-			resizeButtonColor = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
-
-		ImGui.PushStyleColor(ImGuiCol.Button, resizeButtonColor);
-	 bool resizeHovered = ImGui.ImageButton("Resize", _imageLoader.ResizeIconID, new Num.Vector2(iconSize, iconSize));
-		if (resizeHovered)
-			_cursorSelectionManager.SelectionMode = CursorSelectionMode.Resize;
-		ImGui.PopStyleColor();
-
-		if (ImGui.IsItemHovered())
-		{
-			ImGui.SetTooltip("Resize (2)");
-		}
-		ImGui.SameLine(0, spacing);
-
-		// Rotate Button
-		System.Numerics.Vector4 rotateButtonColor;
-		if (_cursorSelectionManager.SelectionMode == CursorSelectionMode.Rotate)
-			rotateButtonColor = new System.Numerics.Vector4(0.2f, 0.5f, 1f, 1f);
-		else
-			rotateButtonColor = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
-
-		ImGui.PushStyleColor(ImGuiCol.Button, rotateButtonColor);
-		bool rotateHovered = ImGui.ImageButton("Rotate", _imageLoader.RotateIconID, new Num.Vector2(iconSize, iconSize));
-		if (rotateHovered)
-			_cursorSelectionManager.SelectionMode = CursorSelectionMode.Rotate;
-		ImGui.PopStyleColor();
-
-		if (ImGui.IsItemHovered())
-		{
-			ImGui.SetTooltip("Rotate (3)");
-		}
-
-		ImGui.End();
 	}
 }

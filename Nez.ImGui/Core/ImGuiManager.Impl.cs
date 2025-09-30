@@ -127,7 +127,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 		// Adjust game window size based on available panels around it
 		float left = SceneGraphWindow.IsOpen ? SceneGraphWindow.SceneGraphWidth : 0f;
-		float right = MainEntityInspector != null ? Screen.Width - MainEntityInspector.MainInspectorWidth : Screen.Width;
+		float right = MainEntityInspector != null ? Screen.Width - _inspectorTabWidth : Screen.Width;
 		float availableWidth = right - left;
 		float posX = left;
 		float posY = Math.Max(SceneGraphWindow.SceneGraphPosY, MainWindowPositionY);

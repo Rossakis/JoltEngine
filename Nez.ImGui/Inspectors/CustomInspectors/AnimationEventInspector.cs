@@ -58,7 +58,7 @@ namespace Nez.ImGuiTools.Inspectors.CustomInspectors
                 _imGuiManager = Core.GetGlobalManager<ImGuiManager>();
 
             float left = _imGuiManager.SceneGraphWindow.SceneGraphWidth;
-            float right = Screen.Width - (_imGuiManager.MainEntityInspector?.MainInspectorWidth ?? 0);
+            float right = Screen.Width - _imGuiManager.InspectorTabWidth;
             float width = right - left;
             float top = _imGuiManager.SceneGraphWindow.SceneGraphPosY + _imGuiManager.GameWindowHeight;
             float height = Screen.Height - top;
