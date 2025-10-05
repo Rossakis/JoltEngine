@@ -101,8 +101,7 @@ namespace Nez.DeferredLighting
 			_quadPolygonMesh = PolygonMesh.CreateRectangle();
 
 			// set some sensible defaults
-			SetAmbientColor(new Color(0.2f, 0.2f, 0.2f))
-				.SetClearColor(Color.Black);
+			SetAmbientColor(new Color(0.2f, 0.2f, 0.2f)).SetClearColor(Color.Black);
 		}
 
 		/// <summary>
@@ -189,9 +188,6 @@ namespace Nez.DeferredLighting
 
 		protected override void DebugRender(Scene scene, Camera cam)
 		{
-			//TODO:
-			Debug.Log(RenderLayers.Length);
-
 			for (var i = 0; i < RenderLayers.Length; i++)
 			{
 				var renderables = scene.RenderableComponents.ComponentsWithRenderLayer(RenderLayers[i]);
