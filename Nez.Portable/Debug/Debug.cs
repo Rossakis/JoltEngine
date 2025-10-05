@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Nez
 {
@@ -20,17 +21,25 @@ namespace Nez
             public LogType Type;
             public string Message;
             public DateTime Timestamp;
+            public string CallerClass;
+            public int CallerLine;
 
-            public LogEntry(LogType type, string message, DateTime timestamp)
+            public LogEntry(LogType type, string message, DateTime timestamp, string callerClass, int callerLine)
             {
                 Type = type;
                 Message = message;
                 Timestamp = timestamp;
+                CallerClass = callerClass;
+                CallerLine = callerLine;
             }
         }
 
         private static readonly List<LogEntry> _logEntries = new();
         private static readonly object _logLock = new();
+
+        // Track repeated messages
+        private static readonly Dictionary<(LogType, string, string, int), int> _messageCounts = new();
+        private const int MaxRepeatedMessages = 100;
 
         public static IReadOnlyList<LogEntry> GetLogEntries()
         {
@@ -41,24 +50,51 @@ namespace Nez
         public static void ClearLogEntries()
         {
             lock (_logLock)
+            {
                 _logEntries.Clear();
+                _messageCounts.Clear();
+            }
         }
 
         #region Logging
 
         [DebuggerHidden]
-        public static void Log(LogType type, string format, params object[] args)
+        public static void Log(
+            LogType type,
+            string format,
+            object[] args = null,
+            [CallerFilePath] string callerFile = "",
+            [CallerLineNumber] int callerLine = 0)
         {
             string msg = args != null && args.Length > 0 ? string.Format(format, args) : format;
+            string callerClass = System.IO.Path.GetFileNameWithoutExtension(callerFile);
+            var key = (type, msg, callerClass, callerLine);
 
             lock (_logLock)
             {
-                _logEntries.Add(new LogEntry(type, msg, DateTime.Now));
+                if (_messageCounts.TryGetValue(key, out int count))
+                {
+                    if (count < MaxRepeatedMessages)
+                    {
+                        _logEntries.Add(new LogEntry(type, msg, DateTime.Now, callerClass, callerLine));
+                        _messageCounts[key] = count + 1;
+                    }
+                    else if (count == MaxRepeatedMessages)
+                    {
+                        string summary = $"\"{msg}\" was logged more than {MaxRepeatedMessages} times.";
+                        _logEntries.Add(new LogEntry(LogType.Warn, summary, DateTime.Now, callerClass, callerLine));
+                        _messageCounts[key] = count + 1;
+                    }
+                }
+                else
+                {
+                    _logEntries.Add(new LogEntry(type, msg, DateTime.Now, callerClass, callerLine));
+                    _messageCounts[key] = 1;
+                }
+
                 if (_logEntries.Count > 500)
                     _logEntries.RemoveAt(0);
             }
-
-            System.Diagnostics.Debug.WriteLine($"{type}: {msg}");
         }
 
         [DebuggerHidden]
@@ -89,9 +125,11 @@ namespace Nez
 
         [Conditional("DEBUG")]
         [DebuggerHidden]
-        public static void Log(object obj)
+        public static void Log(object obj,
+            [CallerFilePath] string callerFile = "",
+            [CallerLineNumber] int callerLine = 0)
         {
-            Log(LogType.Log, "{0}", obj);
+            Log(LogType.Log, "{0}", new object[] { obj }, callerFile, callerLine);
         }
 
         [Conditional("DEBUG")]

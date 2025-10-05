@@ -101,28 +101,6 @@ namespace Nez.DeferredLighting
 			Direction = lightDirection;
 		}
 
-
-		public DirLight SetDirection(Vector3 direction)
-		{
-			Direction = direction;
-			return this;
-		}
-
-
-		public DirLight SetSpecularIntensity(float specularIntensity)
-		{
-			SpecularIntensity = specularIntensity;
-			return this;
-		}
-
-
-		public DirLight SetSpecularPower(float specularPower)
-		{
-			SpecularPower = specularPower;
-			return this;
-		}
-
-
 		/// <summary>
 		/// we dont want to render our bounds so we just render a direction
 		/// </summary>

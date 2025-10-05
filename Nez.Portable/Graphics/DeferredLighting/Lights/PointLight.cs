@@ -14,11 +14,23 @@ namespace Nez.DeferredLighting
 		{
 			public float Radius;
 			public float Intensity;
+			public float ZPosition;
 
 			public byte ColorR = 255;
 			public byte ColorG = 255;
 			public byte ColorB = 255;
 			public byte ColorA = 255;
+			public Color Color
+			{
+				get => new Color(ColorR, ColorG, ColorB, ColorA);
+				set
+				{
+					ColorR = value.R;
+					ColorG = value.G;
+					ColorB = value.B;
+					ColorA = value.A;
+				}
+			}
 		}
 
 		private PointLightComponentData _data = new PointLightComponentData();
@@ -30,12 +42,8 @@ namespace Nez.DeferredLighting
 				_data.Enabled = Enabled;
 				_data.Radius = Radius;
 				_data.Intensity = Intensity;
-
-				_data.ColorR = Color.R;
-				_data.ColorG = Color.G;
-				_data.ColorB = Color.B;
-				_data.ColorA = Color.A;
-
+				_data.Color = Color;
+				_data.ZPosition = ZPosition;
 				return _data;
 			}
 			set
@@ -45,7 +53,8 @@ namespace Nez.DeferredLighting
 					Enabled = d.Enabled;
 					SetRadius(d.Radius);       
 					Intensity = d.Intensity;
-					Color = new Color(d.ColorR, d.ColorG, d.ColorB, d.ColorA);
+					Color = d.Color;
+					ZPosition = d.ZPosition;
 					_data = d;
 				}
 			}
@@ -89,7 +98,6 @@ namespace Nez.DeferredLighting
 		{
 			SetRadius(400f);
 		}
-
 
 		public PointLight(Color color) : this()
 		{

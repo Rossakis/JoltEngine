@@ -51,7 +51,25 @@ namespace Nez.ImGuiTools.Persistence
 		/// <summary>
 		/// Save a setting value (e.g. ImGuiSettingsSaver.SaveSetting(_groupLogs, "GroupLogs"))
 		/// </summary>
-		public static void SaveSetting<T>(T value, string key)
+		public static void SaveSetting<T>(string key, T value)
+		{
+			_settings[key] = value;
+			SaveSettingsToFile();
+		}
+
+		public static void SaveSetting(string key, bool value)
+		{
+			_settings[key] = value;
+			SaveSettingsToFile();
+		}
+
+		public static void SaveSetting(string key, int value)
+		{
+			_settings[key] = value.ToString();
+			SaveSettingsToFile();
+		}
+
+		public static void SaveSetting(string key, float value)
 		{
 			_settings[key] = value;
 			SaveSettingsToFile();
@@ -60,21 +78,51 @@ namespace Nez.ImGuiTools.Persistence
 		/// <summary>
 		/// Load a setting value (e.g. _groupLogs = ImGuiSettingsSaver.LoadSetting(_groupLogs, "GroupLogs"))
 		/// </summary>
-		public static T LoadSetting<T>(T defaultValue, string key)
+		public static bool LoadSetting(string key, bool defaultValue)
 		{
 			if (_settings != null && _settings.TryGetValue(key, out var val))
 			{
 				try
 				{
-					// Handle type conversion for bool, int, float, etc.
-					if (val is T typedVal)
-						return typedVal;
-					if (typeof(T) == typeof(bool) && val is bool b) return (T)(object)b;
-					if (typeof(T) == typeof(bool) && val is string s) return (T)(object)bool.Parse(s);
-					if (typeof(T) == typeof(int) && val is int i) return (T)(object)i;
-					if (typeof(T) == typeof(float) && val is float f) return (T)(object)f;
-					if (typeof(T) == typeof(float) && val is double d) return (T)(object)(float)d;
-					if (typeof(T) == typeof(string)) return (T)Convert.ChangeType(val, typeof(T));
+					// Handle type conversion for bool
+					if (val is bool b) return b;
+					if (val is string s) return bool.Parse(s);
+				}
+				catch
+				{
+					return defaultValue;
+				}
+			}
+			return defaultValue;
+		}
+
+		public static int LoadSetting(string key, int defaultValue)
+		{
+			if (_settings != null && _settings.TryGetValue(key, out var val))
+			{
+				try
+				{
+					// Handle type conversion for int
+					if (val is int i) return i;
+					if (val is string s) return int.Parse(s);
+				}
+				catch
+				{
+					return defaultValue;
+				}
+			}
+			return defaultValue;
+		}
+
+		public static float LoadSetting(string key, float defaultValue)
+		{
+			if (_settings != null && _settings.TryGetValue(key, out var val))
+			{
+				try
+				{
+					// Handle type conversion for float
+					if (val is float f) return f;
+					if (val is string s) return float.Parse(s);
 				}
 				catch
 				{

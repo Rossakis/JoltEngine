@@ -70,7 +70,6 @@ namespace Nez.DeferredLighting
 		Color _ambientColor;
 		Color _clearColor;
 		static Texture2D _nullNormalMapTexture;
-		private Camera _cam;
 
 		public RenderTexture DiffuseRT;
 		public RenderTexture NormalRT;
@@ -103,7 +102,7 @@ namespace Nez.DeferredLighting
 
 			// set some sensible defaults
 			SetAmbientColor(new Color(0.2f, 0.2f, 0.2f))
-				.SetClearColor(Color.CornflowerBlue);
+				.SetClearColor(Color.Black);
 		}
 
 		/// <summary>
@@ -190,6 +189,7 @@ namespace Nez.DeferredLighting
 
 		protected override void DebugRender(Scene scene, Camera cam)
 		{
+			//TODO:
 			Debug.Log(RenderLayers.Length);
 
 			for (var i = 0; i < RenderLayers.Length; i++)
@@ -210,6 +210,8 @@ namespace Nez.DeferredLighting
 				if (renderable.Enabled && renderable.IsVisibleFromCamera(cam))
 					renderable.DebugRender(Graphics.Instance.Batcher);
 			}
+
+			base.DebugRender(scene, cam);
 		}
 
 		void RenderLights(Scene scene)
