@@ -104,12 +104,16 @@ namespace Nez.DeferredLighting
 			SetRadius(400f);
 		}
 
-		public PointLight(Color color) : this()
+		public PointLight(Color color, float radius = 400) 
 		{
 			Color = color;
-			Enabled = Data.Enabled;
+			SetRadius(radius);
 		}
 
+		public PointLight(float radius) 
+		{
+			SetRadius(radius);
+		}
 
 		/// <summary>
 		/// how far does this light reach
@@ -120,9 +124,9 @@ namespace Nez.DeferredLighting
 		{
 			_radius = radius;
 			_areBoundsDirty = true;
+
 			return this;
 		}
-
 
 		/// <summary>
 		/// renders the bounds only if there is no collider. Always renders a square on the origin.
@@ -131,6 +135,6 @@ namespace Nez.DeferredLighting
 		public override void DebugRender(Batcher batcher)
 		{
 			batcher.DrawCircle(Entity.Transform.Position + _localOffset, Radius * Entity.Transform.Scale.X, Color.DarkOrchid, 2);
-		}
+		} 
 	}
 }

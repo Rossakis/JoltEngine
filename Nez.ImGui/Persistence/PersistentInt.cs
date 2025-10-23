@@ -25,7 +25,5 @@ namespace Nez.ImGuiTools.Persistence
 				}
 			}
 		}
-
-		public static implicit operator int(PersistentInt setting) => setting._value;
 	}
 }

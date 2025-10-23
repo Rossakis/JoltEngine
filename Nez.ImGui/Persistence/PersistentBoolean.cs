@@ -29,8 +29,5 @@ namespace Nez.ImGuiTools.Utils
 				}
 			}
 		}
-
-		// Implicit conversion for convenience
-		public static implicit operator bool(PersistentBool setting) => setting._value;
 	}
 }
