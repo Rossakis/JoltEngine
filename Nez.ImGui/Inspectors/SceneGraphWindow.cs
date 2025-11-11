@@ -56,11 +56,21 @@ public class SceneGraphWindow
 	// Prefab deletion
 	private bool _showDeletePrefabConfirmation = false;
 	private string _prefabToDelete = "";
+	
+	//Aseprite
+	public AsepriteFilePicker AsepriteFilePicker;
+	public static event Action<string> OnAsepriteImageSelected;
 
 	public void OnSceneChanged()
 	{
 		_postProcessorsPane.OnSceneChanged();
 		_renderersPane.OnSceneChanged();
+		
+		AsepriteFilePicker = new AsepriteFilePicker(
+			this,
+			"aseprite-image-loader",
+			System.IO.Path.Combine(Environment.CurrentDirectory, "Content")
+		);
 	}
 
 	/// <summary>
@@ -182,6 +192,11 @@ public class SceneGraphWindow
 				_showTmxFilePicker = false;
 			}
 
+			if (AsepriteFilePicker.IsOpen)
+			{
+				ImGui.OpenPopup(AsepriteFilePicker.PopupId);
+			}
+
 			// Show Copied Component
 			NezImGui.MediumVerticalSpace();
 			if (CopiedComponent != null)
@@ -196,6 +211,7 @@ public class SceneGraphWindow
 
 			DrawTmxFilePickerPopup();
 			DrawEntitySelectorPopup();
+			AsepriteFilePicker.Draw();
 
 			ImGui.End();
 			ImGui.PopStyleVar();
@@ -405,29 +421,6 @@ public class SceneGraphWindow
 	}
 
 	#region Menu toolbar buttons
-	/// <summary>
-	/// Draws the Aseprite file picker popup similar to TMX file picker
-	/// </summary>
-	private void DrawAsepriteFilePickerPopup()
-	{
-		bool isOpen = true;
-		if (_asepriteFilePicker != null && _asepriteFilePicker.IsOpen)
-		{
-			var selection = _asepriteFilePicker.Draw();
-
-			if (selection != null)
-			{
-				// Handle the loaded Aseprite data
-				HandleAsepriteSelection(selection);
-				_asepriteFilePicker.Close();
-			}
-			else if (!_asepriteFilePicker.IsOpen)
-			{
-				// User closed the picker without selecting
-				_asepriteFilePicker.Close();
-			}
-		}
-	}
 
 	private void DrawTmxFilePickerPopup()
 	{

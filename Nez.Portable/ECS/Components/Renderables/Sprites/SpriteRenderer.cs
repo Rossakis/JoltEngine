@@ -742,11 +742,11 @@ namespace Nez.Sprites
 					Sprite sprite;
 					if (!string.IsNullOrEmpty(layerName))
 					{
-						sprite = AnimationUtils.LoadAsepriteFrameFromLayer(Entity, filepath, frameNumber, layerName);
+						sprite = AnimationUtils.LoadAsepriteFrameFromLayer(filepath, frameNumber, layerName);
 					}
 					else
 					{
-						sprite = AnimationUtils.LoadAsepriteFrame(Entity, filepath, frameNumber);
+						sprite = AnimationUtils.LoadAsepriteFrame(filepath, frameNumber);
 					}
 
 					if (sprite != null)

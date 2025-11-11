@@ -42,6 +42,7 @@ namespace Nez.ImGuiTools.Utils
         private int _frameInputEnd = 0;
         private string _layerSearchFilter = "";
 
+        public string PopupId => _popupId;
         public bool IsOpen => _isOpen;
 
         /// <summary>
@@ -63,7 +64,6 @@ namespace Nez.ImGuiTools.Utils
         public void Open()
         {
             _isOpen = true;
-            ImGui.OpenPopup(_popupId);
         }
 
         /// <summary>
@@ -74,119 +74,87 @@ namespace Nez.ImGuiTools.Utils
             AsepriteSelection result = null;
             bool isOpen = _isOpen;
 
-            if (ImGui.BeginPopupModal("tmx-file-picker", ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
-            {
-	            var picker = FilePicker.GetFilePicker(this, Path.Combine(Environment.CurrentDirectory, "Content"), ".tmx");
-	            picker.DontAllowTraverselBeyondRootFolder = true;
-	            if (picker.Draw())
-	            {
-		            var file = picker.SelectedFile;
-		            if (file.EndsWith(".tmx"))
-		            {
-			            string fullPath = file;
-			            string contentRoot = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "Content"));
-
-			            if (fullPath.StartsWith(contentRoot, StringComparison.OrdinalIgnoreCase))
+			if (ImGui.BeginPopupModal(_popupId, ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
+			{
+			    var picker = FilePicker.GetFilePicker(_owner, _startingPath, ".aseprite");
+			    picker.DontAllowTraverselBeyondRootFolder = true;
+			
+			    ImGui.Text("Aseprite File Selection:");
+			    ImGui.Separator();
+			
+			    // File picker section
+			    if (picker.Draw())
+			    {
+			        // Load metadata when a new file is selected
+			        if (!string.IsNullOrEmpty(picker.SelectedFile) && 
+			            picker.SelectedFile != _lastLoadedFile && 
+			            picker.SelectedFile.EndsWith(".aseprite"))
+			        {
+			            LoadAsepriteMetadata(picker.SelectedFile);
+			            _lastLoadedFile = picker.SelectedFile;
+			        }
+			        
+			        ImGui.EndChild();
+			    }
+			
+			    ImGui.Spacing();
+			
+			    // Layer and frame selection section (only show if file is loaded)
+			    if (_availableLayers.Count > 0)
+			    {
+			        if (ImGui.BeginChild("selection-section", new Num.Vector2(800, 300), true))
+			        {
+			            DrawLayerSelection();
+			            ImGui.Separator();
+			            DrawFrameSelection();
+			            ImGui.EndChild();
+			        }
+			    }
+			    else if (!string.IsNullOrEmpty(picker.SelectedFile))
+			    {
+			        ImGui.TextColored(new Num.Vector4(1.0f, 0.6f, 0.0f, 1.0f), "Loading Aseprite metadata...");
+			    }
+			
+			    ImGui.Separator();
+			
+			    // Action buttons
+			    bool shouldLoad = DrawActionButtons(picker);
+			
+			    if (shouldLoad)
+			    {
+			        string contentRoot = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "Content"));
+			        if (picker.SelectedFile.StartsWith(contentRoot, StringComparison.OrdinalIgnoreCase))
+			        {
+			            string relativePath = Path.GetRelativePath(Environment.CurrentDirectory, picker.SelectedFile).Replace('\\', '/');
+			            
+			            result = new AsepriteSelection
 			            {
-				            string relativePath = "Content" + fullPath.Substring(contentRoot.Length).Replace('\\', '/');
-				            //OnTmxFileSelected?.Invoke(relativePath);
-
-				            ImGui.CloseCurrentPopup();
-			            }
-			            else
-			            {
-				            ImGui.Text("Selected file is not inside Content folder!");
-			            }
-		            }
-		            else
-		            {
-			            ImGui.Text("Selected file is not a valid TMX file.");
-		            }
-		            FilePicker.RemoveFilePicker(this);
-	            }
-	            ImGui.EndPopup();
-            }
-			// if (ImGui.BeginPopupModal(_popupId, ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
-			// {
-			//     var picker = FilePicker.GetFilePicker(_owner, _startingPath, ".aseprite");
-			//     picker.DontAllowTraverselBeyondRootFolder = true;
-			//
-			//     ImGui.Text("Aseprite File Selection:");
-			//     ImGui.Separator();
-			//
-			//     // File picker section
-			//     if (picker.Draw())
-			//     {
-			//         // Load metadata when a new file is selected
-			//         if (!string.IsNullOrEmpty(picker.SelectedFile) && 
-			//             picker.SelectedFile != _lastLoadedFile && 
-			//             picker.SelectedFile.EndsWith(".aseprite"))
-			//         {
-			//             LoadAsepriteMetadata(picker.SelectedFile);
-			//             _lastLoadedFile = picker.SelectedFile;
-			//         }
-			//         
-			//         ImGui.EndChild();
-			//     }
-			//
-			//     ImGui.Spacing();
-			//
-			//     // Layer and frame selection section (only show if file is loaded)
-			//     if (_availableLayers.Count > 0)
-			//     {
-			//         if (ImGui.BeginChild("selection-section", new Num.Vector2(800, 300), true))
-			//         {
-			//             DrawLayerSelection();
-			//             ImGui.Separator();
-			//             DrawFrameSelection();
-			//             ImGui.EndChild();
-			//         }
-			//     }
-			//     else if (!string.IsNullOrEmpty(picker.SelectedFile))
-			//     {
-			//         ImGui.TextColored(new Num.Vector4(1.0f, 0.6f, 0.0f, 1.0f), "Loading Aseprite metadata...");
-			//     }
-			//
-			//     ImGui.Separator();
-			//
-			//     // Action buttons
-			//     bool shouldLoad = DrawActionButtons(picker);
-			//
-			//     if (shouldLoad)
-			//     {
-			//         string contentRoot = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "Content"));
-			//         if (picker.SelectedFile.StartsWith(contentRoot, StringComparison.OrdinalIgnoreCase))
-			//         {
-			//             string relativePath = Path.GetRelativePath(Environment.CurrentDirectory, picker.SelectedFile).Replace('\\', '/');
-			//             
-			//             result = new AsepriteSelection
-			//             {
-			//                 FilePath = relativePath,
-			//                 LayerNames = _selectedLayers.Count > 0 ? new List<string>(_selectedLayers) : null,
-			//                 FrameNumbers = _selectedFrames.Count > 0 ? new List<int>(_selectedFrames) : new List<int> { 0 },
-			//                 Sprites = GenerateSprites(relativePath)
-			//             };
-			//
-			//             ImGui.CloseCurrentPopup();
-			//             FilePicker.RemoveFilePicker(picker);
-			//             _isOpen = false;
-			//             Reset();
-			//         }
-			//         else
-			//         {
-			//             NotificationSystem.ShowTimedNotification("File must be in Content folder!");
-			//         }
-			//     }
-			//
-			//     ImGui.EndPopup();
-			// }
-			//
-			// if (!isOpen)
-			// {
-			//     FilePicker.RemoveFilePicker(_owner);
-			//     _isOpen = false;
-			//     Reset();
-			// }
+			                FilePath = relativePath,
+			                LayerNames = _selectedLayers.Count > 0 ? new List<string>(_selectedLayers) : null,
+			                FrameNumbers = _selectedFrames.Count > 0 ? new List<int>(_selectedFrames) : new List<int> { 0 },
+			                Sprites = GenerateSprites(relativePath)
+			            };
+			
+			            ImGui.CloseCurrentPopup();
+			            FilePicker.RemoveFilePicker(picker);
+			            _isOpen = false;
+			            Reset();
+			        }
+			        else
+			        {
+			            NotificationSystem.ShowTimedNotification("File must be in Content folder!");
+			        }
+			    }
+			
+			    ImGui.EndPopup();
+			}
+			
+			if (!isOpen)
+			{
+			    FilePicker.RemoveFilePicker(_owner);
+			    _isOpen = false;
+			    Reset();
+			}
 
 			return result;
         }
@@ -201,7 +169,6 @@ namespace Nez.ImGuiTools.Utils
                 _availableLayers.Clear();
                 _totalFrames = aseFile.Frames.Count;
                 
-                // Extract layer names from the Aseprite file
                 if (aseFile.Layers != null)
                 {
                     foreach (var layer in aseFile.Layers)
@@ -213,7 +180,6 @@ namespace Nez.ImGuiTools.Utils
                     }
                 }
                 
-                // Reset selections
                 _selectedLayers.Clear();
                 _selectedFrames.Clear();
                 _frameInputStart = 0;
@@ -281,7 +247,6 @@ namespace Nez.ImGuiTools.Utils
             
             ImGui.Spacing();
             
-            // Frame range selection
             ImGui.Text("Frame Range:");
             ImGui.DragInt("Start Frame", ref _frameInputStart, 1, 0, _totalFrames - 1);
             ImGui.DragInt("End Frame", ref _frameInputEnd, 1, 0, _totalFrames - 1);
@@ -319,8 +284,7 @@ namespace Nez.ImGuiTools.Utils
 
             ImGui.Spacing();
             
-            // Display selected frames
-            if (_selectedFrames.Count > 0)
+            if (_selectedFrames.Count > 0) // Display selected frames
             {
                 ImGui.TextColored(new Num.Vector4(0.7f, 1.0f, 0.7f, 1.0f), 
                     $"Selected frames ({_selectedFrames.Count}): {string.Join(", ", _selectedFrames)}");
@@ -337,10 +301,6 @@ namespace Nez.ImGuiTools.Utils
             
             try
             {
-                // Create a temporary entity for AnimationUtils (it expects an entity parameter)
-                // Note: You may need to adjust this based on your actual usage context
-                var tempEntity = new Entity("temp");
-                
                 var frames = _selectedFrames.Count > 0 ? _selectedFrames : new List<int> { 0 };
                 
                 foreach (var frameIndex in frames)
@@ -349,11 +309,9 @@ namespace Nez.ImGuiTools.Utils
                     
                     if (_selectedLayers.Count > 0)
                     {
-                        // Use AnimationUtils to load frame with specific layer
+                        // Load frame with specific layer
                         // If multiple layers are selected, load the first one
-                        // You may want to modify this behavior based on your needs
                         sprite = AnimationUtils.LoadAsepriteFrameFromLayer(
-                            tempEntity, 
                             relativePath, 
                             frameIndex, 
                             _selectedLayers[0]
@@ -361,9 +319,8 @@ namespace Nez.ImGuiTools.Utils
                     }
                     else
                     {
-                        // Use AnimationUtils to load frame with all visible layers
+                        // Load frame with all visible layers
                         sprite = AnimationUtils.LoadAsepriteFrame(
-                            tempEntity, 
                             relativePath, 
                             frameIndex
                         );
@@ -380,6 +337,8 @@ namespace Nez.ImGuiTools.Utils
                 NotificationSystem.ShowTimedNotification($"Error generating sprites: {ex.Message}");
             }
             
+            //TODO: make sure each layers produces a separate Sprite
+            Debug.Log($"{sprites.Count}");
             return sprites;
         }
 

@@ -83,10 +83,10 @@ public class AnimationUtils
 	/// <param name="includeBackgroundLayer">Whether to include the background layer when flattening the frame</param>
 	/// <param name="layerNames">Optional array of specific layer names to include. If null, all layers (subject to other filters) will be included</param>
 	/// <returns>A Sprite containing the flattened frame data as a Texture2D</returns>
-	public static Sprite LoadAsepriteFrame(Entity entity, string asepriteFilePath, int frameNumber, bool onlyVisibleLayers = true, bool includeBackgroundLayer = false, params string[] layerNames)
+	public static Sprite LoadAsepriteFrame(string asepriteFilePath, int frameNumber, bool onlyVisibleLayers = true, bool includeBackgroundLayer = false, params string[] layerNames)
     {
         // Handle case where entity might not be in a scene yet
-        var contentManager = entity?.Scene?.Content ?? Core.Content;
+        var contentManager = Core.Scene?.Content ?? Core.Content;
         if (contentManager == null)
         {
             throw new InvalidOperationException($"Cannot load Aseprite file '{asepriteFilePath}' - no content manager available. Entity must be added to a scene first.");
@@ -132,10 +132,10 @@ public class AnimationUtils
     /// <param name="onlyVisibleLayers">Whether to only include visible layers when flattening the frame</param>
     /// <param name="includeBackgroundLayer">Whether to include the background layer when flattening the frame</param>
     /// <returns>A Sprite containing the flattened frame data as a Texture2D</returns>
-    public static Sprite LoadAsepriteFrameFromLayer(Entity entity, string asepriteFilePath, int frameNumber, string layerName, bool onlyVisibleLayers = true, bool includeBackgroundLayer = false)
+    public static Sprite LoadAsepriteFrameFromLayer(string asepriteFilePath, int frameNumber, string layerName, bool onlyVisibleLayers = true, bool includeBackgroundLayer = false)
     {
         // Handle case where entity might not be in a scene yet
-        var contentManager = entity?.Scene?.Content ?? Core.Content;
+        var contentManager = Core.Scene?.Content ?? Core.Content;
         if (contentManager == null)
         {
             throw new InvalidOperationException($"Cannot load Aseprite file '{asepriteFilePath}' - no content manager available. Entity must be added to a scene first.");

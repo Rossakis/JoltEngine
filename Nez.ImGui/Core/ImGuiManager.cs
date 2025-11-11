@@ -69,7 +69,6 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 	private AnimationEventInspector _animationEventInspector;
 	private SpriteAtlasEditorWindow _spriteAtlasEditorWindow;
-	private AsepriteFilePicker _asepriteFilePicker;
 	private List<EntityInspector> _entityInspectors = new();
 	private List<Action> _drawCommands = new();
 	private ImGuiRenderer _renderer;
@@ -231,13 +230,6 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 		Core.OnResetScene += RequestResetScene;
 		Core.OnSwitchEditMode += OnEditModeSwitched;
-
-		// Create and open the Aseprite file picker
-		_asepriteFilePicker = new AsepriteFilePicker(
-			this,
-			"aseprite-image-loader",
-			System.IO.Path.Combine(Environment.CurrentDirectory, "Content")
-		);
 	}
 
 	/// <summary>
@@ -360,7 +352,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 				if (ImGui.MenuItem("Load Aseprite Images"))
 				{
-					_asepriteFilePicker.Open();
+					SceneGraphWindow.AsepriteFilePicker.Open();
 				}
 
 				ImGui.Separator();
