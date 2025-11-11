@@ -19,6 +19,7 @@ namespace Nez
 			public bool ShouldColliderScaleAndRotateWithTransform;
 			public bool IsVisibleEvenDisabled;
 			public bool DebugEnabled = true;
+			public Vector2 LocalOffset;
 
 			// BoxCollider
 			public RectangleF Rectangle; // Local rectangle (x, y, width, height)
@@ -42,6 +43,7 @@ namespace Nez
 				_data.ShouldColliderScaleAndRotateWithTransform = ShouldColliderScaleAndRotateWithTransform;
 				_data.IsVisibleEvenDisabled = IsVisibleEvenDisabled;
 				_data.DebugEnabled = DebugRenderEnabled;
+				_data.LocalOffset = LocalOffset;
 
 				if (this is BoxCollider box)
 				{
@@ -76,6 +78,7 @@ namespace Nez
 					ShouldColliderScaleAndRotateWithTransform = colliderData.ShouldColliderScaleAndRotateWithTransform;
 					IsVisibleEvenDisabled = colliderData.IsVisibleEvenDisabled;
 					DebugRenderEnabled = colliderData.DebugEnabled;
+					LocalOffset = colliderData.LocalOffset;
 
 					if (this is BoxCollider box)
 					{
@@ -102,7 +105,6 @@ namespace Nez
 		}
 
 		private ColliderComponentData _data = new ColliderComponentData();
-
 		/// <summary>
 		/// the underlying Shape of the Collider
 		/// </summary>

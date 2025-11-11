@@ -352,10 +352,10 @@ namespace Nez.ImGuiTools.Inspectors.CustomInspectors
                     animator.LoadedLayers = selectedLayers;
                     animator.LoadedTag = animationTagName;
 
-                    // Load the new Aseprite animation using AnimationUtils
+                    // Load the new Aseprite animation using AsepriteUtils
                     if (selectedLayers.Count > 0)
                     {
-                        AnimationUtils.LoadAsepriteAnimationWithLayers(
+                        AsepriteUtils.LoadAsepriteAnimationWithLayers(
                             animator.Entity,
                             relativePath,
                             animationTagName,
@@ -365,7 +365,7 @@ namespace Nez.ImGuiTools.Inspectors.CustomInspectors
                     }
                     else
                     {
-                        AnimationUtils.LoadAsepriteAnimationWithLayers(
+                        AsepriteUtils.LoadAsepriteAnimationWithLayers(
                             animator.Entity,
                             relativePath,
                             animationTagName,

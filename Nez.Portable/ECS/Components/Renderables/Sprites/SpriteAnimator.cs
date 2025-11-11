@@ -436,11 +436,11 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 
 			if (LoadedLayers != null && LoadedLayers.Count > 0)
 			{
-				AnimationUtils.LoadAsepriteAnimationWithLayers(this, TextureFilePath, LoadedTag, null, LoadedLayers.ToArray());
+				AsepriteUtils.LoadAsepriteAnimationWithLayers(this, TextureFilePath, LoadedTag, null, LoadedLayers.ToArray());
 			}
 			else
 			{
-				AnimationUtils.LoadAsepriteAnimation(this, TextureFilePath, LoadedTag);
+				AsepriteUtils.LoadAsepriteAnimation(this, TextureFilePath, LoadedTag);
 			}
 
 			return true;
@@ -705,7 +705,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 	}
 
 	/// <summary>
-	/// Loads an animation from an Aseprite file using AnimationUtils. Only ".ase" or ".aseprite" files are accepted.
+	/// Loads an animation from an Aseprite file using AsepriteUtils. Only ".ase" or ".aseprite" files are accepted.
 	/// </summary>
 	/// <param name="animationTagName">The tag name of the animation in the Aseprite file.</param>
 	/// <param name="callableAnimationName">The name to use for the animation in the animator (optional).</param>
@@ -720,7 +720,7 @@ public class SpriteAnimator : SpriteRenderer, IUpdatable
 		if (ext != ".ase" && ext != ".aseprite")
 			throw new ArgumentException("Only .ase or .aseprite files are supported for SpriteAnimator animation loading.");
 
-		AnimationUtils.LoadAsepriteAnimation(Entity, TextureFilePath, animationTagName, callableAnimationName, layerName);
+		AsepriteUtils.LoadAsepriteAnimation(Entity, TextureFilePath, animationTagName, callableAnimationName, layerName);
 	}
 
 	public void SubscribeToEvent(string animationName, string eventName, Action callback)

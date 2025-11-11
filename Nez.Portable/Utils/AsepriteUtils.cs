@@ -4,10 +4,11 @@ using Microsoft.Xna.Framework.Graphics;
 using Nez;
 using Nez.Sprites;
 using Nez.Textures;
+using Nez.Tiled;
 
 namespace Nez.Utils;
 
-public class AnimationUtils
+public class AsepriteUtils
 {
     /// <summary>
     /// Example for naming animations: If aseprite animation has tag "Idle", but you want it to be called by a different name in the animator (e.g. "Character-Idle")
@@ -159,5 +160,31 @@ public class AnimationUtils
         texture.Name = $"{asepriteFilePath}_frame_{frameNumber}_layer_{layerName}";
         
         return new Sprite(texture);
+    }
+
+    /// <summary>
+    /// Calculates the appropriate render layer based on the Aseprite layer's position in the layer hierarchy.
+    /// The further back a layer was in Aseprite, the closer it will be to RenderOrder.BehindAll.
+    /// </summary>
+    /// <param name="layerIndex">The index of the layer in the Aseprite file (0 = bottom layer)</param>
+    /// <param name="totalLayers">Total number of layers in the Aseprite file</param>
+    /// <returns>The calculated render layer value</returns>
+    public static int CalculateRenderLayerFromAsepriteIndex(int layerIndex, int totalLayers, int minRenderLayer, int maxRenderLayer)
+    {
+	    int layerSpan = maxRenderLayer - minRenderLayer;
+
+	    if (totalLayers <= 1)
+	    {
+		    // If there's only one layer, put it in the middle of the range
+		    return minRenderLayer + (layerSpan / 2);
+	    }
+
+	    // Map the Aseprite layer index to our render layer range
+	    // layerIndex 0 (bottom/background) -> minSpriteLayer
+	    // layerIndex (totalLayers-1) (top/foreground) -> maxSpriteLayer
+	    float normalizedPosition = (float)layerIndex / (totalLayers - 1);
+	    int renderLayer = minRenderLayer + (int)(normalizedPosition * layerSpan);
+
+	    return renderLayer;
     }
 }

@@ -727,19 +727,20 @@ public class EntityInspector
 	/// </summary>
 	private async void ApplyToOriginalPrefabWithUndo()
 	{
-		if (Entity != null && Entity.Type == Entity.InstanceType.Prefab && !string.IsNullOrEmpty(Entity.OriginalPrefabName))
+		if (Entity != null && Entity.Type == Entity.InstanceType.Prefab &&
+		    !string.IsNullOrEmpty(Entity.OriginalPrefabName))
 		{
-			// Optionally: backup old prefab data for undo here if you want to support undo for file changes
-
 			bool saveSuccessful = await Core.GetGlobalManager<ImGuiManager>().InvokePrefabCreated(Entity, true);
 
 			if (saveSuccessful)
 			{
-				NotificationSystem.ShowTimedNotification($"Applied changes to original prefab: {Entity.OriginalPrefabName}");
+				NotificationSystem.ShowTimedNotification(
+					$"Applied changes to original prefab: {Entity.OriginalPrefabName}");
 			}
 			else
 			{
-				NotificationSystem.ShowTimedNotification($"Failed to apply changes to prefab: {Entity.OriginalPrefabName}");
+				NotificationSystem.ShowTimedNotification(
+					$"Failed to apply changes to prefab: {Entity.OriginalPrefabName}");
 			}
 		}
 	}

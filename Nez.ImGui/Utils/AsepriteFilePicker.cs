@@ -1,12 +1,13 @@
 using ImGuiNET;
+using Nez.Aseprite;
 using Nez.Editor;
+using Nez.Textures;
+using Nez.UI;
+using Nez.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Nez.Aseprite;
-using Nez.Textures;
-using Nez.Utils;
 using Num = System.Numerics;
 
 namespace Nez.ImGuiTools.Utils
@@ -27,22 +28,24 @@ namespace Nez.ImGuiTools.Utils
         private readonly object _owner;
         private readonly string _popupId;
         private readonly string _startingPath;
+        private readonly bool _isAnimation;
+
         
-        private List<int> _selectedFrames = new List<int>();
-        private List<string> _selectedLayers = new List<string>();
-        private bool _isOpen = false;
-        
-        // Available layers and frames from the currently selected file
+        //  Layers and frames from the currently selected file
         private List<string> _availableLayers = new List<string>();
         private int _totalFrames = 0;
         private string _lastLoadedFile = null;
+        private List<int> _selectedFrames = new List<int>();
+        private List<string> _selectedLayers = new List<string>();
+        private bool _isOpen = false;
 
-        // UI state
-        private int _frameInputStart = 0;
+		// UI state
+		private int _frameInputStart = 0;
         private int _frameInputEnd = 0;
         private string _layerSearchFilter = "";
+        private PersistentBool _isLayerMergeOn;
 
-        public string PopupId => _popupId;
+		public string PopupId => _popupId;
         public bool IsOpen => _isOpen;
 
         /// <summary>
@@ -51,11 +54,13 @@ namespace Nez.ImGuiTools.Utils
         /// <param name="owner">The owner object (used for FilePicker registration)</param>
         /// <param name="popupId">Unique ID for the popup window</param>
         /// <param name="startingPath">Starting directory path (defaults to Content folder)</param>
-        public AsepriteFilePicker(object owner, string popupId, string startingPath = null)
+        public AsepriteFilePicker(object owner, string popupId, string startingPath = null, bool isAnimation = false)
         {
             _owner = owner ?? throw new ArgumentNullException(nameof(owner));
             _popupId = popupId ?? throw new ArgumentNullException(nameof(popupId));
             _startingPath = startingPath ?? Path.Combine(Environment.CurrentDirectory, "Content");
+			_isLayerMergeOn = new($"{PopupId}_", false);
+			_isAnimation = isAnimation;
         }
 
         /// <summary>
@@ -74,7 +79,7 @@ namespace Nez.ImGuiTools.Utils
             AsepriteSelection result = null;
             bool isOpen = _isOpen;
 
-			if (ImGui.BeginPopupModal(_popupId, ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
+			if (ImGui.BeginPopupModal(_popupId, ref isOpen))
 			{
 			    var picker = FilePicker.GetFilePicker(_owner, _startingPath, ".aseprite");
 			    picker.DontAllowTraverselBeyondRootFolder = true;
@@ -98,26 +103,33 @@ namespace Nez.ImGuiTools.Utils
 			    }
 			
 			    ImGui.Spacing();
-			
-			    // Layer and frame selection section (only show if file is loaded)
-			    if (_availableLayers.Count > 0)
+
+				bool layerMergeOn = _isLayerMergeOn.Value;
+			    if (ImGui.Checkbox("Merge Layers?", ref layerMergeOn))
+				    _isLayerMergeOn.Value = layerMergeOn;
+
+			    if(ImGui.IsItemHovered())
+			    {
+				    ImGui.SetTooltip("If FALSE, then for each selected layer, a SpriteEntity will be created.\n " +
+				                     "If TRUE, all visible layers will be merged into a single SpriteEntity.");
+				}
+
+				if (_availableLayers.Count > 0)
 			    {
 			        if (ImGui.BeginChild("selection-section", new Num.Vector2(800, 300), true))
 			        {
 			            DrawLayerSelection();
 			            ImGui.Separator();
-			            DrawFrameSelection();
+
+			            if (_isAnimation)
+				            DrawFrameSelection();
+
 			            ImGui.EndChild();
-			        }
-			    }
-			    else if (!string.IsNullOrEmpty(picker.SelectedFile))
-			    {
-			        ImGui.TextColored(new Num.Vector4(1.0f, 0.6f, 0.0f, 1.0f), "Loading Aseprite metadata...");
-			    }
-			
+					}
+				}
+			    
 			    ImGui.Separator();
 			
-			    // Action buttons
 			    bool shouldLoad = DrawActionButtons(picker);
 			
 			    if (shouldLoad)
@@ -301,44 +313,71 @@ namespace Nez.ImGuiTools.Utils
             
             try
             {
-                var frames = _selectedFrames.Count > 0 ? _selectedFrames : new List<int> { 0 };
+	            if (_isAnimation)
+	            {
+		            var frames = _selectedFrames.Count > 0 ? _selectedFrames : new List<int> { 0 };
+
+		            foreach (var frameIndex in frames)
+		            {
+			            Sprite sprite = null;
+
+			            if (_selectedLayers.Count > 0)
+			            {
+				            // Load frame with specific layer
+				            // If multiple layers are selected, load the first one
+				            sprite = AsepriteUtils.LoadAsepriteFrameFromLayer(
+					            relativePath,
+					            frameIndex,
+					            _selectedLayers[0]
+				            );
+			            }
+			            else
+			            {
+				            // Load frame with all visible layers
+				            sprite = AsepriteUtils.LoadAsepriteFrame(
+					            relativePath,
+					            frameIndex
+				            );
+			            }
+
+			            if (sprite != null)
+			            {
+				            sprites.Add(sprite);
+			            }
+		            }
+				}
+	            else
+	            {
+		            Sprite sprite = null;
+
+		            if (_selectedLayers.Count > 0)
+		            {
+			            sprite = AsepriteUtils.LoadAsepriteFrameFromLayer(
+				            relativePath,
+				            0,
+				            _selectedLayers[0]
+			            );
+		            }
+		            else
+		            {
+			            sprite = AsepriteUtils.LoadAsepriteFrame(
+				            relativePath,
+				            0
+			            );
+		            }
+
+		            if (sprite != null)
+		            {
+			            sprites.Add(sprite);
+		            }
+				}
                 
-                foreach (var frameIndex in frames)
-                {
-                    Sprite sprite = null;
-                    
-                    if (_selectedLayers.Count > 0)
-                    {
-                        // Load frame with specific layer
-                        // If multiple layers are selected, load the first one
-                        sprite = AnimationUtils.LoadAsepriteFrameFromLayer(
-                            relativePath, 
-                            frameIndex, 
-                            _selectedLayers[0]
-                        );
-                    }
-                    else
-                    {
-                        // Load frame with all visible layers
-                        sprite = AnimationUtils.LoadAsepriteFrame(
-                            relativePath, 
-                            frameIndex
-                        );
-                    }
-                    
-                    if (sprite != null)
-                    {
-                        sprites.Add(sprite);
-                    }
-                }
             }
             catch (Exception ex)
             {
                 NotificationSystem.ShowTimedNotification($"Error generating sprites: {ex.Message}");
             }
             
-            //TODO: make sure each layers produces a separate Sprite
-            Debug.Log($"{sprites.Count}");
             return sprites;
         }
 
@@ -369,7 +408,7 @@ namespace Nez.ImGuiTools.Utils
             if (ImGui.Button("Load", new Num.Vector2(buttonWidth, 0)) && canConfirm)
             {
                 shouldLoad = true;
-            }
+			}
 
             if (!canConfirm)
             {

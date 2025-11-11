@@ -59,7 +59,7 @@ public class SceneGraphWindow
 	
 	//Aseprite
 	public AsepriteFilePicker AsepriteFilePicker;
-	public static event Action<string> OnAsepriteImageSelected;
+	public static event Action<AsepriteFilePicker.AsepriteSelection> OnAsepriteImageSelected;
 
 	public void OnSceneChanged()
 	{
@@ -69,7 +69,8 @@ public class SceneGraphWindow
 		AsepriteFilePicker = new AsepriteFilePicker(
 			this,
 			"aseprite-image-loader",
-			System.IO.Path.Combine(Environment.CurrentDirectory, "Content")
+			System.IO.Path.Combine(Environment.CurrentDirectory, "Content"), 
+			false
 		);
 	}
 
@@ -211,7 +212,12 @@ public class SceneGraphWindow
 
 			DrawTmxFilePickerPopup();
 			DrawEntitySelectorPopup();
-			AsepriteFilePicker.Draw();
+
+			AsepriteFilePicker.AsepriteSelection asepriteSelection = AsepriteFilePicker.Draw();
+			if (asepriteSelection != null)
+			{
+				OnAsepriteImageSelected?.Invoke(asepriteSelection);
+			}
 
 			ImGui.End();
 			ImGui.PopStyleVar();

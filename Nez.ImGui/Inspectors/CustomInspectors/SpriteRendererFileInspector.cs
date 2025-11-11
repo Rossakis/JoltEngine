@@ -857,7 +857,7 @@ namespace Nez.ImGuiTools.TypeInspectors
                     {
                         if (!string.IsNullOrEmpty(layerName))
                         {
-                            normalMapSprite = AnimationUtils.LoadAsepriteFrameFromLayer(relativePath, frameNumber, layerName);
+                            normalMapSprite = AsepriteUtils.LoadAsepriteFrameFromLayer(relativePath, frameNumber, layerName);
                         }
                         else
                         {

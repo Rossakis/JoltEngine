@@ -570,8 +570,6 @@ public class Core : Game
 	{
 		OnResetScene?.Invoke();
 	}
-
-
 	#endregion
 
 }

@@ -738,15 +738,15 @@ namespace Nez.Sprites
 						frameNumber = 0;
 					}
 
-					// Use AnimationUtils to load the specific frame with layer filtering
+					// Use AsepriteUtils to load the specific frame with layer filtering
 					Sprite sprite;
 					if (!string.IsNullOrEmpty(layerName))
 					{
-						sprite = AnimationUtils.LoadAsepriteFrameFromLayer(filepath, frameNumber, layerName);
+						sprite = AsepriteUtils.LoadAsepriteFrameFromLayer(filepath, frameNumber, layerName);
 					}
 					else
 					{
-						sprite = AnimationUtils.LoadAsepriteFrame(filepath, frameNumber);
+						sprite = AsepriteUtils.LoadAsepriteFrame(filepath, frameNumber);
 					}
 
 					if (sprite != null)
