@@ -5,6 +5,7 @@ using ImGuiNET;
 using Nez.Aseprite;
 using Nez.ImGuiTools.TypeInspectors;
 using Nez.ImGuiTools.UndoActions;
+using Nez.ImGuiTools.Utils;
 using Nez.Sprites;
 using Nez.Textures;
 using Nez.Utils;

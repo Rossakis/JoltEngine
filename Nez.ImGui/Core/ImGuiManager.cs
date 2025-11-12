@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using Nez.ImGuiTools.Inspectors;
 using Nez.ImGuiTools.Utils;
 using Num = System.Numerics;
+using Nez.ImGuiTools.FilePickers;
 
 
 namespace Nez.ImGuiTools;
@@ -347,7 +348,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 				if (ImGui.MenuItem("Load Tiled Map"))
 				{
-					SceneGraphWindow.ShowTmxFilePicker = true;
+					SceneGraphWindow.TmxFilePicker.Open();
 				}
 
 				if (ImGui.MenuItem("Load Aseprite Images"))

@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Nez.Editor;
+using Nez.ImGuiTools.Utils;
 using Nez.Utils;
 using Num = System.Numerics;
 

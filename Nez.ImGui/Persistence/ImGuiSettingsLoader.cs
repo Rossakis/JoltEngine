@@ -75,6 +75,12 @@ namespace Nez.ImGuiTools.Persistence
 			SaveSettingsToFile();
 		}
 
+		public static void SaveSetting(string key, string value)
+		{
+			_settings[key] = value;
+			SaveSettingsToFile();
+		}
+
 		/// <summary>
 		/// Load a setting value (e.g. _groupLogs = ImGuiSettingsSaver.LoadSetting(_groupLogs, "GroupLogs"))
 		/// </summary>
@@ -123,6 +129,24 @@ namespace Nez.ImGuiTools.Persistence
 					// Handle type conversion for float
 					if (val is float f) return f;
 					if (val is string s) return float.Parse(s);
+				}
+				catch
+				{
+					return defaultValue;
+				}
+			}
+			return defaultValue;
+		}
+
+		public static string LoadSetting(string key, string defaultValue)
+		{
+			if (_settings != null && _settings.TryGetValue(key, out var val))
+			{
+				try
+				{
+					// Handle type conversion for string
+					if (val is string s) return s;
+					return val?.ToString() ?? defaultValue;
 				}
 				catch
 				{
