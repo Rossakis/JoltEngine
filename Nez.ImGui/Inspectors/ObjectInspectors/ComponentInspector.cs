@@ -50,7 +50,6 @@ namespace Nez.ImGuiTools.ObjectInspectors
 			}
 			else
 			{
-				// Normal component inspector setup
 				_inspectors = TypeInspectorUtils.GetInspectableProperties(component);
 			}
 
