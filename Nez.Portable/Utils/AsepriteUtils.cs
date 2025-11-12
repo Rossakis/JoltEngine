@@ -4,10 +4,11 @@ using Microsoft.Xna.Framework.Graphics;
 using Nez;
 using Nez.Sprites;
 using Nez.Textures;
+using Nez.Tiled;
 
 namespace Nez.Utils;
 
-public class AnimationUtils
+public class AsepriteUtils
 {
     /// <summary>
     /// Example for naming animations: If aseprite animation has tag "Idle", but you want it to be called by a different name in the animator (e.g. "Character-Idle")
@@ -83,10 +84,10 @@ public class AnimationUtils
 	/// <param name="includeBackgroundLayer">Whether to include the background layer when flattening the frame</param>
 	/// <param name="layerNames">Optional array of specific layer names to include. If null, all layers (subject to other filters) will be included</param>
 	/// <returns>A Sprite containing the flattened frame data as a Texture2D</returns>
-	public static Sprite LoadAsepriteFrame(Entity entity, string asepriteFilePath, int frameNumber, bool onlyVisibleLayers = true, bool includeBackgroundLayer = false, params string[] layerNames)
+	public static Sprite LoadAsepriteFrame(string asepriteFilePath, int frameNumber, bool onlyVisibleLayers = true, bool includeBackgroundLayer = false, params string[] layerNames)
     {
         // Handle case where entity might not be in a scene yet
-        var contentManager = entity?.Scene?.Content ?? Core.Content;
+        var contentManager = Core.Scene?.Content ?? Core.Content;
         if (contentManager == null)
         {
             throw new InvalidOperationException($"Cannot load Aseprite file '{asepriteFilePath}' - no content manager available. Entity must be added to a scene first.");
@@ -132,10 +133,10 @@ public class AnimationUtils
     /// <param name="onlyVisibleLayers">Whether to only include visible layers when flattening the frame</param>
     /// <param name="includeBackgroundLayer">Whether to include the background layer when flattening the frame</param>
     /// <returns>A Sprite containing the flattened frame data as a Texture2D</returns>
-    public static Sprite LoadAsepriteFrameFromLayer(Entity entity, string asepriteFilePath, int frameNumber, string layerName, bool onlyVisibleLayers = true, bool includeBackgroundLayer = false)
+    public static Sprite LoadAsepriteFrameFromLayer(string asepriteFilePath, int frameNumber, string layerName, bool onlyVisibleLayers = true, bool includeBackgroundLayer = false)
     {
         // Handle case where entity might not be in a scene yet
-        var contentManager = entity?.Scene?.Content ?? Core.Content;
+        var contentManager = Core.Scene?.Content ?? Core.Content;
         if (contentManager == null)
         {
             throw new InvalidOperationException($"Cannot load Aseprite file '{asepriteFilePath}' - no content manager available. Entity must be added to a scene first.");
@@ -159,5 +160,31 @@ public class AnimationUtils
         texture.Name = $"{asepriteFilePath}_frame_{frameNumber}_layer_{layerName}";
         
         return new Sprite(texture);
+    }
+
+    /// <summary>
+    /// Calculates the appropriate render layer based on the Aseprite layer's position in the layer hierarchy.
+    /// The further back a layer was in Aseprite, the closer it will be to RenderOrder.BehindAll.
+    /// </summary>
+    /// <param name="layerIndex">The index of the layer in the Aseprite file (0 = bottom layer)</param>
+    /// <param name="totalLayers">Total number of layers in the Aseprite file</param>
+    /// <returns>The calculated render layer value</returns>
+    public static int CalculateRenderLayerFromAsepriteIndex(int layerIndex, int totalLayers, int minRenderLayer, int maxRenderLayer)
+    {
+	    int layerSpan = maxRenderLayer - minRenderLayer;
+
+	    if (totalLayers <= 1)
+	    {
+		    // If there's only one layer, put it in the middle of the range
+		    return minRenderLayer + (layerSpan / 2);
+	    }
+
+	    // Map the Aseprite layer index to our render layer range
+	    // layerIndex 0 (bottom/background) -> minSpriteLayer
+	    // layerIndex (totalLayers-1) (top/foreground) -> maxSpriteLayer
+	    float normalizedPosition = (float)layerIndex / (totalLayers - 1);
+	    int renderLayer = minRenderLayer + (int)(normalizedPosition * layerSpan);
+
+	    return renderLayer;
     }
 }

@@ -810,7 +810,7 @@ public class EntityPane
                         }
                         catch (Exception ex)
                         {
-                            System.Console.WriteLine($"Failed post-creation data copy for {sourceComponent.GetType().Name}: {ex.Message}");
+                            Debug.Log(Debug.LogType.Warn, $"Failed post-creation data copy for {sourceComponent.GetType().Name}: {ex.Message}");
                         }
                     }
                 }

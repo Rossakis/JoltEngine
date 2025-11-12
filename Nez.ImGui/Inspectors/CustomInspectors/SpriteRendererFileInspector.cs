@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Nez.Editor;
+using Nez.ImGuiTools.Utils;
 using Nez.Utils;
 using Num = System.Numerics;
 
@@ -857,7 +858,7 @@ namespace Nez.ImGuiTools.TypeInspectors
                     {
                         if (!string.IsNullOrEmpty(layerName))
                         {
-                            normalMapSprite = AnimationUtils.LoadAsepriteFrameFromLayer(spriteRenderer.Entity, relativePath, frameNumber, layerName);
+                            normalMapSprite = AsepriteUtils.LoadAsepriteFrameFromLayer(relativePath, frameNumber, layerName);
                         }
                         else
                         {

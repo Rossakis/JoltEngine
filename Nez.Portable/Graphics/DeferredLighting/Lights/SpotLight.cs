@@ -11,11 +11,23 @@ namespace Nez.DeferredLighting
 			public float Radius;
 			public float Intensity;
 			public float ConeAngle;
+			public float ZPosition;
 
 			public byte ColorR = 255;
 			public byte ColorG = 255;
 			public byte ColorB = 255;
 			public byte ColorA = 255;
+			public Color Color
+			{
+				get => new Color(ColorR, ColorG, ColorB, ColorA);
+				set
+				{
+					ColorR = value.R;
+					ColorG = value.G;
+					ColorB = value.B;
+					ColorA = value.A;
+				}
+			}
 		}
 
 		private SpotLightComponentData _data = new SpotLightComponentData();
@@ -28,11 +40,8 @@ namespace Nez.DeferredLighting
 				_data.Radius = Radius;
 				_data.Intensity = Intensity;
 				_data.ConeAngle = ConeAngle;
-
-				_data.ColorR = Color.R;
-				_data.ColorG = Color.G;
-				_data.ColorB = Color.B;
-				_data.ColorA = Color.A;
+				_data.ZPosition = ZPosition;
+				_data.Color = Color;
 
 				return _data;
 			}
@@ -41,10 +50,12 @@ namespace Nez.DeferredLighting
 				if (value is SpotLightComponentData d)
 				{
 					Enabled = d.Enabled;
-					SetRadius(d.Radius);          // ensure bounds update
+					SetRadius(d.Radius);       
 					Intensity = d.Intensity;
 					ConeAngle = d.ConeAngle;
-					Color = new Color(d.ColorR, d.ColorG, d.ColorB, d.ColorA);
+					ZPosition = d.ZPosition;
+					Color = d.Color;
+
 					_data = d;
 				}
 			}

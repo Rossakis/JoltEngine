@@ -565,6 +565,9 @@ namespace Nez.Sprites
 				return;
 			}
 
+			// Store the saved origin BEFORE loading the sprite
+			var savedOrigin = _data.Origin;
+
 			switch (_data.FileType)
 			{
 				case SpriteRendererComponentData.ImageFileType.Png:
@@ -622,6 +625,12 @@ namespace Nez.Sprites
 				default:
 					Debug.Error($"Unknown or unsupported file type for: {_data.TextureFilePath}");
 					break;
+			}
+
+			// This ensures manually set origins are preserved
+			if (savedOrigin != Vector2.Zero || _data.Origin != Vector2.Zero)
+			{
+				SetOrigin(savedOrigin);
 			}
 
 			// After loading the main image, load the normal map if specified
@@ -729,15 +738,15 @@ namespace Nez.Sprites
 						frameNumber = 0;
 					}
 
-					// Use AnimationUtils to load the specific frame with layer filtering
+					// Use AsepriteUtils to load the specific frame with layer filtering
 					Sprite sprite;
 					if (!string.IsNullOrEmpty(layerName))
 					{
-						sprite = AnimationUtils.LoadAsepriteFrameFromLayer(Entity, filepath, frameNumber, layerName);
+						sprite = AsepriteUtils.LoadAsepriteFrameFromLayer(filepath, frameNumber, layerName);
 					}
 					else
 					{
-						sprite = AnimationUtils.LoadAsepriteFrame(Entity, filepath, frameNumber);
+						sprite = AsepriteUtils.LoadAsepriteFrame(filepath, frameNumber);
 					}
 
 					if (sprite != null)

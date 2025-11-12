@@ -14,11 +14,24 @@ namespace Nez.DeferredLighting
 		{
 			public float Radius;
 			public float Intensity;
+			public float ZPosition;
+			public bool DebugEnabled; 
 
 			public byte ColorR = 255;
 			public byte ColorG = 255;
 			public byte ColorB = 255;
 			public byte ColorA = 255;
+			public Color Color
+			{
+				get => new Color(ColorR, ColorG, ColorB, ColorA);
+				set
+				{
+					ColorR = value.R;
+					ColorG = value.G;
+					ColorB = value.B;
+					ColorA = value.A;
+				}
+			}
 		}
 
 		private PointLightComponentData _data = new PointLightComponentData();
@@ -30,11 +43,9 @@ namespace Nez.DeferredLighting
 				_data.Enabled = Enabled;
 				_data.Radius = Radius;
 				_data.Intensity = Intensity;
-
-				_data.ColorR = Color.R;
-				_data.ColorG = Color.G;
-				_data.ColorB = Color.B;
-				_data.ColorA = Color.A;
+				_data.Color = Color;
+				_data.ZPosition = ZPosition;
+				_data.DebugEnabled = DebugRenderEnabled;
 
 				return _data;
 			}
@@ -45,7 +56,10 @@ namespace Nez.DeferredLighting
 					Enabled = d.Enabled;
 					SetRadius(d.Radius);       
 					Intensity = d.Intensity;
-					Color = new Color(d.ColorR, d.ColorG, d.ColorB, d.ColorA);
+					Color = d.Color;
+					ZPosition = d.ZPosition;
+					DebugRenderEnabled = d.DebugEnabled;
+
 					_data = d;
 				}
 			}
@@ -90,20 +104,16 @@ namespace Nez.DeferredLighting
 			SetRadius(400f);
 		}
 
-
-		public PointLight(Color color) : this()
+		public PointLight(Color color, float radius = 400) 
 		{
 			Color = color;
-			Enabled = Data.Enabled;
+			SetRadius(radius);
 		}
 
-
-		public PointLight SetZPosition(float z)
+		public PointLight(float radius) 
 		{
-			ZPosition = z;
-			return this;
+			SetRadius(radius);
 		}
-
 
 		/// <summary>
 		/// how far does this light reach
@@ -114,21 +124,9 @@ namespace Nez.DeferredLighting
 		{
 			_radius = radius;
 			_areBoundsDirty = true;
+
 			return this;
 		}
-
-
-		/// <summary>
-		/// brightness of the light
-		/// </summary>
-		/// <returns>The intensity.</returns>
-		/// <param name="intensity">Intensity.</param>
-		public PointLight SetIntensity(float intensity)
-		{
-			Intensity = intensity;
-			return this;
-		}
-
 
 		/// <summary>
 		/// renders the bounds only if there is no collider. Always renders a square on the origin.
@@ -137,6 +135,6 @@ namespace Nez.DeferredLighting
 		public override void DebugRender(Batcher batcher)
 		{
 			batcher.DrawCircle(Entity.Transform.Position + _localOffset, Radius * Entity.Transform.Scale.X, Color.DarkOrchid, 2);
-		}
+		} 
 	}
 }

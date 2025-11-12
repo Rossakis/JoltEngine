@@ -18,6 +18,7 @@ namespace Nez.DeferredLighting
 			public Vector3 Direction;
 			public float SpecularIntensity;
 			public float SpecularPower;
+			public bool DebugEnabled; 
 
 			public byte ColorR = 255;
 			public byte ColorG = 255;
@@ -48,6 +49,8 @@ namespace Nez.DeferredLighting
 				_data.Direction = Direction;
 				_data.SpecularIntensity = SpecularIntensity;
 				_data.SpecularPower = SpecularPower;
+				_data.DebugEnabled = DebugRenderEnabled;
+
 				return _data;
 			}
 			set
@@ -59,6 +62,8 @@ namespace Nez.DeferredLighting
 					Direction = d.Direction;
 					SpecularIntensity = d.SpecularIntensity;
 					SpecularPower = d.SpecularPower;
+					DebugRenderEnabled = d.DebugEnabled;
+
 					_data = d;
 				}
 			}
@@ -100,28 +105,6 @@ namespace Nez.DeferredLighting
 		{
 			Direction = lightDirection;
 		}
-
-
-		public DirLight SetDirection(Vector3 direction)
-		{
-			Direction = direction;
-			return this;
-		}
-
-
-		public DirLight SetSpecularIntensity(float specularIntensity)
-		{
-			SpecularIntensity = specularIntensity;
-			return this;
-		}
-
-
-		public DirLight SetSpecularPower(float specularPower)
-		{
-			SpecularPower = specularPower;
-			return this;
-		}
-
 
 		/// <summary>
 		/// we dont want to render our bounds so we just render a direction

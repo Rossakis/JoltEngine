@@ -70,7 +70,6 @@ namespace Nez.DeferredLighting
 		Color _ambientColor;
 		Color _clearColor;
 		static Texture2D _nullNormalMapTexture;
-		private Camera _cam;
 
 		public RenderTexture DiffuseRT;
 		public RenderTexture NormalRT;
@@ -102,8 +101,7 @@ namespace Nez.DeferredLighting
 			_quadPolygonMesh = PolygonMesh.CreateRectangle();
 
 			// set some sensible defaults
-			SetAmbientColor(new Color(0.2f, 0.2f, 0.2f))
-				.SetClearColor(Color.CornflowerBlue);
+			SetAmbientColor(new Color(0.2f, 0.2f, 0.2f)).SetClearColor(Color.Black);
 		}
 
 		/// <summary>
@@ -190,26 +188,26 @@ namespace Nez.DeferredLighting
 
 		protected override void DebugRender(Scene scene, Camera cam)
 		{
-			Debug.Log(RenderLayers.Length);
-
-			for (var i = 0; i < RenderLayers.Length; i++)
-			{
-				var renderables = scene.RenderableComponents.ComponentsWithRenderLayer(RenderLayers[i]);
-				for (var j = 0; j < renderables.Length; j++)
-				{
-					var renderable = renderables.Buffer[j];
-					if (renderable.Enabled && renderable.IsVisibleFromCamera(cam))
-						renderable.DebugRender(Graphics.Instance.Batcher);
-				}
-			}
+			// for (var i = 0; i < RenderLayers.Length; i++)
+			// {
+			// 	var renderables = scene.RenderableComponents.ComponentsWithRenderLayer(RenderLayers[i]);
+			// 	for (var j = 0; j < renderables.Length; j++)
+			// 	{
+			// 		var renderable = renderables.Buffer[j];
+			// 		if (renderable.Enabled && renderable.IsVisibleFromCamera(cam))
+			// 			renderable.DebugRender(Graphics.Instance.Batcher);
+			// 	}
+			// }
 
 			var lightRenderables = scene.RenderableComponents.ComponentsWithRenderLayer(_lightLayer);
 			for (var j = 0; j < lightRenderables.Length; j++)
 			{
 				var renderable = lightRenderables.Buffer[j];
-				if (renderable.Enabled && renderable.IsVisibleFromCamera(cam))
+				if (renderable.Enabled && renderable.IsVisibleFromCamera(cam) && renderable.DebugRenderEnabled)
 					renderable.DebugRender(Graphics.Instance.Batcher);
 			}
+			
+			base.DebugRender(scene, cam);
 		}
 
 		void RenderLights(Scene scene)

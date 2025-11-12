@@ -44,6 +44,7 @@ namespace Nez
 		/// <value><c>true</c> if is visible; otherwise, <c>false</c>.</value>
 		bool IsVisible { get; }
 
+		bool DebugRenderEnabled { get; set; }
 
 		/// <summary>
 		/// helper for retrieving a Material subclass already casted

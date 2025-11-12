@@ -1,6 +1,8 @@
 using ImGuiNET;
 using Microsoft.Xna.Framework.Input;
 using Nez.ECS;
+using Nez.Editor;
+using Nez.ImGuiTools.FilePickers;
 using Nez.ImGuiTools.SceneGraphPanes;
 using Nez.ImGuiTools.UndoActions;
 using Nez.Utils;
@@ -9,7 +11,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Nez.Editor;
 using Num = System.Numerics;
 
 namespace Nez.ImGuiTools;
@@ -43,11 +44,6 @@ public class SceneGraphWindow
 	private const float RepeatRate = 0.08f; // seconds between repeats
 	public HashSet<Entity> ExpandedEntities = new();
 
-	// TiledMap (tmx) File Picker
-	private bool _showTmxFilePicker = false;
-	private string _selectedTmxFile = null;
-	public static event Action<string> OnTmxFileSelected;
-
 	// Prefab caching
 	private List<string> _cachedPrefabNames = new();
 	private bool _prefabCacheInitialized = false;
@@ -56,10 +52,31 @@ public class SceneGraphWindow
 	private bool _showDeletePrefabConfirmation = false;
 	private string _prefabToDelete = "";
 
+	// File Pickers
+	public TmxFilePicker TmxFilePicker;
+	public AsepriteFilePicker AsepriteFilePicker;
+	
+	// Events
+	public static event Action<TmxFilePicker.TmxSelection> OnTmxFileSelected;
+	public static event Action<AsepriteFilePicker.AsepriteSelection> OnAsepriteImageSelected;
+
 	public void OnSceneChanged()
 	{
 		_postProcessorsPane.OnSceneChanged();
 		_renderersPane.OnSceneChanged();
+		
+		TmxFilePicker = new TmxFilePicker(
+			this,
+			"tmx-file-picker",
+			System.IO.Path.Combine(Environment.CurrentDirectory, "Content")
+		);
+		
+		AsepriteFilePicker = new AsepriteFilePicker(
+			this,
+			"aseprite-image-loader",
+			System.IO.Path.Combine(Environment.CurrentDirectory, "Content"), 
+			false
+		);
 	}
 
 	/// <summary>
@@ -68,6 +85,9 @@ public class SceneGraphWindow
 	/// </summary>
 	public void RefreshPrefabCache()
 	{
+		if(_prefabCacheInitialized)
+			return;
+
 		_cachedPrefabNames.Clear();
 		
 		var prefabsDirectory = "Content/Data/Prefabs";
@@ -106,16 +126,11 @@ public class SceneGraphWindow
 		if (_imGuiManager == null)
 			_imGuiManager = Core.GetGlobalManager<ImGuiManager>();
 
-		// var topMargin = 20f * ImGui.GetIO().FontGlobalScale;
-		var rightMargin = 10f;
-		var leftMargin = 0f;
 		var windowHeight = Screen.Height - SceneGraphPosY;
 		SceneGraphPosY = _imGuiManager.MainWindowPositionY;
 
-		// Calculate left edge so right edge is always at Screen.Width - rightMargin
-
-		ImGui.PushStyleVar(ImGuiStyleVar.GrabMinSize, 0.0f); // makes grip almost invisible
-		ImGui.PushStyleColor(ImGuiCol.ResizeGrip, new Num.Vector4(0, 0, 0, 0)); // transparent grip
+		ImGui.PushStyleVar(ImGuiStyleVar.GrabMinSize, 0.0f);
+		ImGui.PushStyleColor(ImGuiCol.ResizeGrip, new Num.Vector4(0, 0, 0, 0));
 
 		ImGui.SetNextWindowPos(new Num.Vector2(0, SceneGraphPosY), ImGuiCond.Always);
 		ImGui.SetNextWindowSize(new Num.Vector2(_sceneGraphWidth, windowHeight), ImGuiCond.FirstUseEver);
@@ -172,16 +187,15 @@ public class SceneGraphWindow
 				ImGui.OpenPopup("entity-selector");
 			}
 
-			NezImGui.MediumVerticalSpace();
-			if (NezImGui.CenteredButton("Load Tiled Map", 0.6f))
+			// Open file pickers when needed
+			if (TmxFilePicker.IsOpen)
 			{
-				_showTmxFilePicker = true;
+				ImGui.OpenPopup(TmxFilePicker.PopupId);
 			}
 
-			if (_showTmxFilePicker)
+			if (AsepriteFilePicker.IsOpen)
 			{
-				ImGui.OpenPopup("tmx-file-picker");
-				_showTmxFilePicker = false;
+				ImGui.OpenPopup(AsepriteFilePicker.PopupId);
 			}
 
 			// Show Copied Component
@@ -196,8 +210,26 @@ public class SceneGraphWindow
 					CopiedComponent = null;
 			}
 
-			DrawTmxFilePickerPopup();
 			DrawEntitySelectorPopup();
+
+			if (TmxFilePicker.IsOpen)
+			{
+				TmxFilePicker.TmxSelection tmxSelection = TmxFilePicker.Draw();
+				if (tmxSelection != null)
+				{
+					OnTmxFileSelected?.Invoke(tmxSelection);
+				}
+			}
+
+			if (AsepriteFilePicker.IsOpen)
+			{
+				AsepriteFilePicker.AsepriteSelection asepriteSelection = AsepriteFilePicker.Draw();
+				if (asepriteSelection != null)
+				{
+					OnAsepriteImageSelected?.Invoke(asepriteSelection);
+				}
+			}
+			
 
 			ImGui.End();
 			ImGui.PopStyleVar();
@@ -205,7 +237,6 @@ public class SceneGraphWindow
 		}
 
 		// Draw delete confirmation popup outside of the main window
-		// This ensures it appears on top of everything
 		if (_showDeletePrefabConfirmation)
 		{
 			DrawDeletePrefabConfirmationPopup();
@@ -228,11 +259,7 @@ public class SceneGraphWindow
 			ImGui.InputText("###EntityFilter", ref _entityFilterName, 25);
 			ImGui.Separator();
 
-			// Initialize prefab cache if not done yet
-			if (!_prefabCacheInitialized)
-			{
-				RefreshPrefabCache();
-			}
+			RefreshPrefabCache();
 
 			// Draw Entity Factory Types
 			ImGui.TextColored(new Num.Vector4(0.8f, 0.8f, 1.0f, 1.0f), "Entity Types:");
@@ -249,7 +276,6 @@ public class SceneGraphWindow
 				}
 			}
 
-			// Draw Prefabs (if any exist)
 			if (_cachedPrefabNames.Count > 0)
 			{
 				ImGui.Separator();
@@ -312,10 +338,9 @@ public class SceneGraphWindow
 		if (_showDeletePrefabConfirmation)
 		{
 			ImGui.OpenPopup("delete-prefab-confirmation");
-			_showDeletePrefabConfirmation = false; // Only open once
+			_showDeletePrefabConfirmation = false;
 		}
 
-		// Center the popup when it first appears
 		var center = new Num.Vector2(Screen.Width * 0.45f, Screen.Height * 0.7f);
 		ImGui.SetNextWindowPos(center, ImGuiCond.Appearing, new Num.Vector2(0.5f, 0.5f));
 
@@ -330,7 +355,6 @@ public class SceneGraphWindow
 
 			NezImGui.MediumVerticalSpace();
 
-			// Center the buttons
 			var buttonWidth = 80f;
 			var spacing = 10f;
 			var totalButtonWidth = (buttonWidth * 2) + spacing;
@@ -359,7 +383,6 @@ public class SceneGraphWindow
 	/// <summary>
 	/// Deletes a prefab file and updates the prefab cache.
 	/// </summary>
-	/// <param name="prefabName">Name of the prefab to delete</param>
 	private void DeletePrefab(string prefabName)
 	{
 		try
@@ -370,14 +393,12 @@ public class SceneGraphWindow
 
 			bool fileDeleted = false;
 
-			// Delete the source file if it exists
 			if (File.Exists(sourceFilePath))
 			{
 				File.Delete(sourceFilePath);
 				fileDeleted = true;
 			}
 
-			// Delete the output file if it exists
 			if (File.Exists(outputFilePath))
 			{
 				File.Delete(outputFilePath);
@@ -386,9 +407,7 @@ public class SceneGraphWindow
 
 			if (fileDeleted)
 			{
-				// Remove from cache
 				_cachedPrefabNames.Remove(prefabName);
-				
 				NotificationSystem.ShowTimedNotification($"Successfully deleted prefab: {prefabName}");
 			}
 			else
@@ -411,48 +430,6 @@ public class SceneGraphWindow
 		_cachedPrefabNames.Remove(prefabName);
 	}
 
-	private void DrawTmxFilePickerPopup()
-	{
-		bool isOpen = true;
-		if (ImGui.BeginPopupModal("tmx-file-picker", ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
-		{
-			var picker = FilePicker.GetFilePicker(this, Path.Combine(Environment.CurrentDirectory, "Content"), ".tmx");
-			picker.DontAllowTraverselBeyondRootFolder = true;
-			if (picker.Draw())
-			{
-				var file = picker.SelectedFile;
-				if (file.EndsWith(".tmx"))
-				{
-					string fullPath = file;
-					string contentRoot = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, "Content"));
-
-					if (fullPath.StartsWith(contentRoot, StringComparison.OrdinalIgnoreCase))
-					{
-						string relativePath = "Content" + fullPath.Substring(contentRoot.Length).Replace('\\', '/');
-						HandleTmxFileSelected(relativePath);
-						ImGui.CloseCurrentPopup();
-					}
-					else
-					{
-						ImGui.Text("Selected file is not inside Content folder!");
-					}
-				}
-				else
-				{
-					ImGui.Text("Selected file is not a valid TMX file.");
-				}
-				FilePicker.RemoveFilePicker(this);
-			}
-			ImGui.EndPopup();
-		}
-	}
-
-	private void HandleTmxFileSelected(string relativePath)
-	{
-		_selectedTmxFile = relativePath;
-		OnTmxFileSelected?.Invoke(relativePath);
-	}
-
 	/// <summary>
 	/// Creates a new entity from a prefab.
 	/// </summary>
@@ -460,7 +437,6 @@ public class SceneGraphWindow
 	{
 		try
 		{
-			// Use the event system to load prefab data from the DataLoader
 			var prefabData = _imGuiManager.InvokePrefabLoadRequested(prefabName);
 
 			if (prefabData.EntityData == null)
@@ -478,18 +454,13 @@ public class SceneGraphWindow
 			if (EntityFactoryRegistry.TryCreate(prefabData.EntityType, out var entity))
 			{
 				EntityFactoryRegistry.InvokeEntityCreated(entity);
-
-				// Set as dynamic instance (instantiated from prefab, but not a prefab itself)
 				entity.Type = Entity.InstanceType.Prefab;
 				entity.Transform.Position = Core.Scene.Camera.Transform.Position;
 
-				// Load the prefab data into the entity using the event system
 				_imGuiManager.InvokeLoadEntityData(entity, prefabData);
-
 				entity.Name = Core.Scene.GetUniqueEntityName(prefabData.Name, entity);
-				entity.OriginalPrefabName = prefabName; // Store the prefab name for later
+				entity.OriginalPrefabName = prefabName;
 
-				// Undo/Redo support for entity creation
 				EditorChangeTracker.PushUndo(
 					new EntityCreateDeleteUndoAction(Core.Scene, entity, wasCreated: true,
 						$"Create Entity from Prefab {entity.Name}"),
@@ -507,7 +478,6 @@ public class SceneGraphWindow
 				NotificationSystem.ShowTimedNotification(
 					$"Failed to create entity from prefab: {prefabName}. Entity type '{prefabData.EntityType}' not registered.");
 			}
-
 		}
 		catch (Exception ex)
 		{
@@ -527,7 +497,6 @@ public class SceneGraphWindow
 			entity.Name = Core.Scene.GetUniqueEntityName(typeName, entity); 
 			entity.Transform.Position = Core.Scene.Camera.Transform.Position;
 
-			// Undo/Redo support for entity creation
 			EditorChangeTracker.PushUndo(
 				new EntityCreateDeleteUndoAction(Core.Scene, entity, wasCreated: true,
 					$"Create Entity {entity.Name}"),
@@ -535,7 +504,6 @@ public class SceneGraphWindow
 				$"Create Entity {entity.Name}"
 			);
 
-			// Optionally select and open inspector
 			var imGuiManager = Core.GetGlobalManager<ImGuiManager>();
 			if (imGuiManager != null)
 			{

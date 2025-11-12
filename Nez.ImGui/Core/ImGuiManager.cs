@@ -12,10 +12,12 @@ using Nez.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mime;
 using System.Threading.Tasks;
 using Nez.ImGuiTools.Inspectors;
 using Nez.ImGuiTools.Utils;
 using Num = System.Numerics;
+using Nez.ImGuiTools.FilePickers;
 
 
 namespace Nez.ImGuiTools;
@@ -337,11 +339,36 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			_mainMenuBarHeight = ImGui.GetWindowHeight();
 			if (ImGui.BeginMenu("File"))
 			{
+				if (ImGui.MenuItem("Save Scene", "Ctrl+S"))
+				{
+					InvokeSaveSceneChanges();
+				}
+
+				ImGui.Separator();
+
+				if (ImGui.MenuItem("Load Tiled Map"))
+				{
+					SceneGraphWindow.TmxFilePicker.Open();
+				}
+
+				if (ImGui.MenuItem("Load Aseprite Images"))
+				{
+					SceneGraphWindow.AsepriteFilePicker.Open();
+				}
+
+				ImGui.Separator();
+
 				if (ImGui.MenuItem("Open Sprite Atlas Editor"))
 					_spriteAtlasEditorWindow = _spriteAtlasEditorWindow ?? new SpriteAtlasEditorWindow();
 
-				if (ImGui.MenuItem("Quit ImGui"))
+				if (ImGui.MenuItem("Close ImGui Editor"))
 					SetEnabled(false);
+
+				if (ImGui.MenuItem("Exit"))
+				{
+					Core.ConfirmAndExit();
+				}
+
 				ImGui.EndMenu();
 			}
 
@@ -385,6 +412,58 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			}
 
 			ImGui.EndMainMenuBar();
+		}
+	}
+
+	/// <summary>
+	/// Handles the sprites selected from the Aseprite file picker.
+	/// Creates entities with SpriteRenderer components for each selected sprite.
+	/// </summary>
+	private void HandleAsepriteSelection(AsepriteFilePicker.AsepriteSelection selection)
+	{
+		if (selection == null || selection.Sprites == null || selection.Sprites.Count == 0)
+		{
+			NotificationSystem.ShowTimedNotification("No sprites were generated from the Aseprite file.");
+			return;
+		}
+
+		try
+		{
+			// Create entities for each sprite
+			for (int i = 0; i < selection.Sprites.Count; i++)
+			{
+				var sprite = selection.Sprites[i];
+				if (sprite == null)
+					continue;
+
+				// Create a new entity
+				var entityName = $"{System.IO.Path.GetFileNameWithoutExtension(selection.FilePath)}_Frame{selection.FrameNumbers[i]}";
+				var entity = new Entity(entityName);
+
+				// Add SpriteRenderer component
+				var spriteRenderer = entity.AddComponent(new SpriteRenderer(sprite));
+
+				// Position entities in a grid layout for easier viewing
+				int entitiesPerRow = 5;
+				int row = i / entitiesPerRow;
+				int col = i % entitiesPerRow;
+				entity.Position = new Vector2(col * 100, row * 100); // Adjust spacing as needed
+
+				// Add to scene
+				Core.Scene.AddEntity(entity);
+			}
+
+			var layerInfo = selection.LayerNames != null && selection.LayerNames.Count > 0
+				? $" (Layers: {string.Join(", ", selection.LayerNames)})"
+				: "";
+
+			NotificationSystem.ShowTimedNotification(
+				$"Successfully loaded {selection.Sprites.Count} sprite(s) from {System.IO.Path.GetFileName(selection.FilePath)}{layerInfo}"
+			);
+		}
+		catch (Exception ex)
+		{
+			NotificationSystem.ShowTimedNotification($"Error creating entities from Aseprite selection: {ex.Message}");
 		}
 	}
 

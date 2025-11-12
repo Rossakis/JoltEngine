@@ -14,12 +14,7 @@ namespace Nez.ImGuiTools.Utils
 		public PersistentBool(string key, bool defaultValue = false)
 		{
 			Key = key;
-			_value = ImGuiSettingsLoader.LoadSetting(defaultValue, key);
-		}
-
-		public bool GetValue()
-		{
-			return _value;
+			_value = ImGuiSettingsLoader.LoadSetting(key, defaultValue);
 		}
 
 		public bool Value
@@ -30,12 +25,9 @@ namespace Nez.ImGuiTools.Utils
 				if (_value != value)
 				{
 					_value = value;
-					ImGuiSettingsLoader.SaveSetting(_value, Key);
+					ImGuiSettingsLoader.SaveSetting(Key, _value);
 				}
 			}
 		}
-
-		// Implicit conversion for convenience
-		public static implicit operator bool(PersistentBool setting) => setting._value;
 	}
 }

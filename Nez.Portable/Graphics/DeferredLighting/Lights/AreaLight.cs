@@ -15,6 +15,7 @@ namespace Nez.DeferredLighting
 			public float Height;
 			public float Intensity;
 			public Vector3 Direction;
+			public bool DebugEnabled;
 
 			public byte ColorR = 255;
 			public byte ColorG = 255;
@@ -46,6 +47,8 @@ namespace Nez.DeferredLighting
 				_data.Height = Height;
 				_data.Intensity = Intensity;
 				_data.Direction = Direction;
+				_data.DebugEnabled = DebugRenderEnabled;
+
 				return _data;
 			}
 			set
@@ -59,6 +62,8 @@ namespace Nez.DeferredLighting
 					Intensity = d.Intensity;
 					Direction = d.Direction;
 					_areBoundsDirty = true;
+					DebugRenderEnabled = d.DebugEnabled;
+
 					_data = d;
 				}
 			}
@@ -112,18 +117,6 @@ namespace Nez.DeferredLighting
 		{
 			_areaHeight = height;
 			_areBoundsDirty = true;
-			return this;
-		}
-
-		public AreaLight SetDirection(Vector3 direction)
-		{
-			Direction = direction;
-			return this;
-		}
-
-		public AreaLight SetIntensity(float intensity)
-		{
-			Intensity = intensity;
 			return this;
 		}
 	}

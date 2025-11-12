@@ -165,9 +165,11 @@ namespace Nez
 
 		public override void DebugRender(Batcher batcher)
 		{
+			if(!DebugRenderEnabled)
+				return;
+
 			var poly = Shape as Polygon;
 			batcher.DrawHollowRect(Bounds, Debug.Colors.ColliderBounds, Debug.Size.LineSizeMultiplier);
-
 
 			if(Enabled)
 				batcher.DrawPolygon(Shape.Position, poly.Points, Debug.Colors.ColliderEdge, true,
@@ -191,64 +193,40 @@ namespace Nez
 		}
 		
 		/// <summary>
-		/// Creates a deep clone of this BoxCollider component.
-		/// </summary>
-		/// <returns>A new BoxCollider instance with all properties deep-copied</returns>
-		public override Component Clone()
-		{
-			// Get current dimensions before cloning
-			float currentWidth = 1f;
-			float currentHeight = 1f;
-			
-			if (Shape is Box currentBox)
-			{
-				currentWidth = currentBox.Width;
-				currentHeight = currentBox.Height;
-			}
-			
-			var clone = new BoxCollider();
-
-			// Copy all base Collider properties
-			clone.IsTrigger = IsTrigger;
-			clone.PhysicsLayer = PhysicsLayer;
-			clone.CollidesWithLayers = CollidesWithLayers;
-			clone.ShouldColliderScaleAndRotateWithTransform = ShouldColliderScaleAndRotateWithTransform;
-			clone.LocalOffset = LocalOffset;
-			clone.Enabled = Enabled;
-			clone.Name = Name;
-			
-			// IMPORTANT: Ensure we always create a Box shape, not a generic Polygon
-			clone.Shape = new Box(currentWidth, currentHeight);
-			
-			// Copy internal state flags
-			clone._colliderRequiresAutoSizing = _colliderRequiresAutoSizing;
-			clone._localOffsetLength = _localOffsetLength;
-			
-			// Reset entity-specific state (the clone isn't attached to any entity yet)
-			clone.Entity = null;
-			clone._isParentEntityAddedToScene = false;
-			clone._isColliderRegistered = false;
-			clone._isPositionDirty = true;
-			clone._isRotationDirty = true;
-			
-			// Copy the component data
-			if (Data != null && Data is ColliderComponentData colliderData)
-			{
-				clone.Data = new ColliderComponentData
-				{
-					Enabled = colliderData.Enabled,
-					IsTrigger = colliderData.IsTrigger,
-					PhysicsLayer = colliderData.PhysicsLayer,
-					CollidesWithLayers = colliderData.CollidesWithLayers,
-					ShouldColliderScaleAndRotateWithTransform = colliderData.ShouldColliderScaleAndRotateWithTransform,
-					Rectangle = colliderData.Rectangle,
-					CircleRadius = colliderData.CircleRadius,
-					CircleOffset = colliderData.CircleOffset,
-					PolygonPoints = colliderData.PolygonPoints?.ToArray() // Deep copy array if it exists
-				};
-			}
-			
-			return clone;
-		}
+/// Creates a deep clone of this BoxCollider component.
+/// </summary>
+/// <returns>A new BoxCollider instance with all properties deep-copied</returns>
+public override Component Clone()
+{
+	// Get current dimensions before cloning
+	float currentWidth = Width;
+	float currentHeight = Height;
+	
+	// Create new BoxCollider with the same dimensions using the proper constructor
+	var clone = new BoxCollider(currentWidth, currentHeight, Name);
+	
+	// Copy all base Collider properties
+	clone.LocalOffset = LocalOffset;
+	clone.ShouldColliderScaleAndRotateWithTransform = ShouldColliderScaleAndRotateWithTransform;
+	clone.IsTrigger = IsTrigger;
+	clone.PhysicsLayer = PhysicsLayer;
+	clone.CollidesWithLayers = CollidesWithLayers;
+	clone.Enabled = Enabled;
+	clone.IsVisibleEvenDisabled = IsVisibleEvenDisabled;
+	clone.DebugRenderEnabled = DebugRenderEnabled;
+	
+	// Copy internal state flags
+	clone._colliderRequiresAutoSizing = _colliderRequiresAutoSizing;
+	clone._localOffsetLength = _localOffsetLength;
+	
+	// Reset entity-specific state (the clone isn't attached to any entity yet)
+	clone.Entity = null;
+	clone._isParentEntityAddedToScene = false;
+	clone._isColliderRegistered = false;
+	clone._isPositionDirty = true;
+	clone._isRotationDirty = true;
+	
+	return clone;
+}
 	}
 }

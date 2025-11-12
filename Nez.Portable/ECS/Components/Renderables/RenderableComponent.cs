@@ -108,8 +108,7 @@ namespace Nez
 			}
 		}
 
-		public bool DebugRenderEnabled = true;
-
+		public bool DebugRenderEnabled { get; set; }
 		protected Vector2 _localOffset;
 		protected float _layerDepth;
 		protected int _renderLayer;
@@ -139,9 +138,6 @@ namespace Nez
 		/// <param name="batcher">Batcher.</param>
 		public override void DebugRender(Batcher batcher)
 		{
-			if (!DebugRenderEnabled)
-				return;
-
 			// if we have no collider draw our bounds
 			if (Entity.GetComponent<Collider>() == null)
 				batcher.DrawHollowRect(Bounds, Debug.Colors.RenderableBounds);
