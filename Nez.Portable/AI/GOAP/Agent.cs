@@ -31,12 +31,11 @@ namespace Nez.AI.GOAP
 			if (nodes != null && nodes.Count > 0)
 			{
 				Debug.Log("---- ActionPlanner plan ----");
-				Debug.Log("plan cost = {0}\n", nodes[nodes.Count - 1].CostSoFar);
-				Debug.Log("{0}\t{1}", "start".PadRight(15), GetWorldState().Describe(_planner));
+				Debug.Log($"plan cost = {nodes[nodes.Count - 1].CostSoFar}\n");
+				Debug.Log($"{"start".PadRight(15)}\t{GetWorldState().Describe(_planner)}");
 				for (var i = 0; i < nodes.Count; i++)
 				{
-					Debug.Log("{0}: {1}\t{2}", i, nodes[i].Action.GetType().Name.PadRight(15),
-						nodes[i].WorldState.Describe(_planner));
+					Debug.Log($"{i}: {nodes[i].Action.GetType().Name.PadRight(15)}\t{nodes[i].WorldState.Describe(_planner)}");
 					Pool<AStarNode>.Free(nodes[i]);
 				}
 			}

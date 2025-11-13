@@ -1,7 +1,11 @@
-﻿using Nez.Tiled;
+﻿using System;
 using Microsoft.Xna.Framework;
-using System.Collections.Generic;
+using Nez.Systems;
+using Nez.Tiled;
 using Nez.Utils.Extensions;
+using System.Collections.Generic;
+using System.IO;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 
 namespace Nez
@@ -31,10 +35,9 @@ namespace Nez
 		public TiledMapRenderer(TmxMap tiledMap, string collisionLayerName = null, bool shouldCreateColliders = true)
 		{
 			TiledMap = tiledMap;
-
 			_shouldCreateColliders = shouldCreateColliders;
 
-			if (collisionLayerName != null)
+			if (collisionLayerName != null && tiledMap != null)
 				CollisionLayer = tiledMap.TileLayers[collisionLayerName];
 		}
 
@@ -42,10 +45,75 @@ namespace Nez
 		{
 		}
 
-		/// <summary>
-		/// sets this component to only render a single layer
-		/// </summary>
-		/// <param name="layerName">Layer name.</param>
+		public TiledMapRenderer(string tiledMapPath) : base()
+		{
+			if (_data == null)
+				_data = new TiledMapRendererComponentData();
+				
+			_data.TiledMapPath = tiledMapPath;
+		}
+
+		private TiledMapRendererComponentData _data = new TiledMapRendererComponentData();
+
+		public class TiledMapRendererComponentData : ComponentData
+		{
+			public string TiledMapPath;
+			public int PhysicsLayer = 1 << 0;
+			public int[] LayerIndicesToRender;
+			public bool AutoUpdateTilesets = true;
+			public string CollisionLayerName;
+			public bool ShouldCreateColliders = true;
+			public float LayerDepth;
+			public int RenderLayer;
+			public Vector2 LocalOffset;
+			public Color Color = Color.White;
+		}
+
+		public override ComponentData Data
+		{
+			get
+			{
+				if (_data == null)
+					_data = new TiledMapRendererComponentData();
+
+				_data.Enabled = Enabled;
+				_data.PhysicsLayer = PhysicsLayer;
+				_data.LayerIndicesToRender = LayerIndicesToRender;
+				_data.AutoUpdateTilesets = AutoUpdateTilesets;
+				_data.CollisionLayerName = CollisionLayer?.Name;
+				_data.ShouldCreateColliders = _shouldCreateColliders;
+				_data.LayerDepth = LayerDepth;
+				_data.RenderLayer = RenderLayer;
+				_data.LocalOffset = LocalOffset;
+				_data.Color = Color;
+				
+				// Preserve TiledMapPath if it exists
+				if (string.IsNullOrEmpty(_data.TiledMapPath) && TiledMap != null)
+				{
+					_data.TiledMapPath = TiledMap.TmxDirectory;
+				}
+				
+				return _data;
+			}
+			set
+			{
+				if (value is TiledMapRendererComponentData data)
+				{
+					_data = data;
+					
+					Enabled = data.Enabled;
+					PhysicsLayer = data.PhysicsLayer;
+					LayerIndicesToRender = data.LayerIndicesToRender;
+					AutoUpdateTilesets = data.AutoUpdateTilesets;
+					_shouldCreateColliders = data.ShouldCreateColliders;
+					LayerDepth = data.LayerDepth;
+					RenderLayer = data.RenderLayer;
+					LocalOffset = data.LocalOffset;
+					Color = data.Color;
+				}
+			}
+		}
+
 		public void SetLayerToRender(string layerName)
 		{
 			LayerIndicesToRender = new int[1];
@@ -122,12 +190,26 @@ namespace Nez
 			}
 		}
 
-		public override void OnAddedToEntity() => AddColliders();
+		public override void OnAddedToEntity()
+		{
+			base.OnAddedToEntity();
+			
+			// Auto-load TiledMap if we have a path but no map loaded
+			if (!string.IsNullOrEmpty(_data?.TiledMapPath) && TiledMap == null)
+			{
+				LoadTiledMapFromData();
+			}
+			
+			AddColliders();
+		}
 
 		public override void OnRemovedFromEntity() => RemoveColliders();
 
 		public virtual void Update()
 		{
+			if(TiledMap == null)
+				return;
+
 			if (AutoUpdateTilesets)
 				TiledMap.Update();
 		}
@@ -170,7 +252,6 @@ namespace Nez
 			if (CollisionLayer == null || !_shouldCreateColliders)
 				return;
 
-			// fetch the collision layer and its rects for collision
 			var collisionRects = CollisionLayer.GetCollisionRectangles();
 
 			// create colliders for the rects we received
@@ -198,5 +279,42 @@ namespace Nez
 		}
 
 		#endregion
+
+		/// <summary>
+		/// Loads the TiledMap based on the stored ComponentData settings
+		/// </summary>
+		public void LoadTiledMapFromData()
+		{
+			if (string.IsNullOrEmpty(_data?.TiledMapPath))
+			{
+				Debug.Log(Debug.LogType.Warn, "TiledMapRenderer has no TiledMapPath to load from.");
+				return;
+			}
+
+			var contentManager = Entity?.Scene?.Content ?? Core.Content;
+			if (contentManager == null)
+			{
+				Debug.Log(Debug.LogType.Warn, $"No content manager available to load TMX file: {_data.TiledMapPath}");
+				return;
+			}
+
+			try
+			{
+				TiledMap = contentManager.LoadTiledMap(_data.TiledMapPath);
+
+				// Set collision layer if specified
+				if (!string.IsNullOrEmpty(_data.CollisionLayerName) && 
+				    TiledMap.TileLayers.Contains(_data.CollisionLayerName))
+				{
+					CollisionLayer = TiledMap.TileLayers[_data.CollisionLayerName];
+				}
+
+				Debug.Log($"Successfully loaded TiledMap from: {_data.TiledMapPath}");
+			}
+			catch (Exception ex)
+			{
+				Debug.Log(Debug.LogType.Error, $"Failed to load TiledMap from {_data.TiledMapPath}: {ex.Message}");
+			}
+		}
 	}
 }

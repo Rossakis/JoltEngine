@@ -139,9 +139,9 @@ namespace Nez
 					CollidesWithLayers = colliderData.CollidesWithLayers,
 					ShouldColliderScaleAndRotateWithTransform = colliderData.ShouldColliderScaleAndRotateWithTransform,
 					Rectangle = colliderData.Rectangle,
-					CircleRadius = colliderData.CircleRadius,
+					CircleRadius = colliderData.CircleRadius, 
 					CircleOffset = colliderData.CircleOffset,
-					PolygonPoints = colliderData.PolygonPoints?.ToArray() // Deep copy array if it exists
+					PolygonPoints = colliderData.PolygonPoints// Deep copy array if it exists
 				};
 			}
 			

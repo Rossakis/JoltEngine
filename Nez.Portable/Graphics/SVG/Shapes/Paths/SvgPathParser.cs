@@ -41,7 +41,7 @@ namespace Nez.Svg
 			}
 			catch (System.Exception exc)
 			{
-				Debug.Error("Error parsing path \"{0}\": {1}", path, exc.Message);
+				Debug.Error($"Error parsing path \"{path}\": {exc.Message}");
 			}
 
 			return segments;

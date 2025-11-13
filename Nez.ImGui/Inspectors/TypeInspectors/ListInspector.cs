@@ -65,7 +65,6 @@ namespace Nez.ImGuiTools.TypeInspectors
 					ImGui.SameLine(ImGui.GetWindowWidth() - ImGui.GetItemRectSize().X -
 					               ImGui.GetStyle().ItemInnerSpacing.X);
 
-					// ImGui.SameLine( 0, ImGui.GetWindowWidth() * 0.65f - ImGui.GetItemRectSize().X + ImGui.GetStyle().ItemInnerSpacing.X - ImGui.GetStyle().IndentSpacing );
 					if (ImGui.Button("Clear"))
 					{
 						ImGui.OpenPopup("Clear Data");
@@ -101,26 +100,48 @@ namespace Nez.ImGuiTools.TypeInspectors
 		void DrawWidget(int value, int index)
 		{
 			if (ImGui.DragInt($"{index}", ref value))
+			{
 				_list[index] = value;
+				SpecialCasesHandling();
+			}
 		}
+
 
 		void DrawWidget(float value, int index)
 		{
 			if (ImGui.DragFloat($"{index}", ref value))
+			{
 				_list[index] = value;
+				SpecialCasesHandling();
+			}
 		}
 
 		void DrawWidget(string value, int index)
 		{
 			if (ImGui.InputText($"{index}", ref value, 200))
+			{
 				_list[index] = value;
+				SpecialCasesHandling();
+			}
 		}
 
 		void DrawWidget(Vector2 value, int index)
 		{
 			var vec = value.ToNumerics();
 			if (ImGui.DragFloat2($"{index}", ref vec))
+			{
 				_list[index] = vec.ToXNA();
+				SpecialCasesHandling();
+			}
+		}
+
+		/// <summary>
+		/// Used when we need to handle special cases after modifying the list (e.g. PolygonCollider needing to update its shape)
+		/// </summary>
+		private void SpecialCasesHandling()
+		{
+			if (_target is PolygonCollider polyCollider)
+				polyCollider.UpdateShapeFromPoints();
 		}
 	}
 }

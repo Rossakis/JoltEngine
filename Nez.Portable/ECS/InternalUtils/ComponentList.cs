@@ -68,7 +68,7 @@ public class ComponentList : IEnumerable<Component>
 	public void Remove(Component component)
 	{
 		Debug.WarnIf(_componentsToRemove.Contains(component),
-			"You are trying to remove a Component ({0}) that you already removed", component);
+			$"You are trying to remove a Component ({component}) that you already removed");
 
 		// this may not be a live Component so we have to watch out for if it hasnt been processed yet but it is being removed in the same frame
 		if (_componentsToAdd.Contains(component))

@@ -44,7 +44,7 @@ namespace Nez.PhysicsShapes.BETA
 				// https://play.google.com/books/reader?printsec=frontcover&output=reader&id=VSoIBwAAAEAJ&pg=GBS.PA267
 				// https://github.com/noonat/hello/blob/580b986f3bb27b93645087441d2744eeb99d6d35/hello/collisions/Collision.hx#L675
 				//throw new NotImplementedException();
-				Debug.Log("m == 3. corner {0}", Time.FrameCount);
+				Debug.Log($"m == 3. corner {Time.FrameCount}");
 			}
 
 			// if only one bit is set in m then point is in a face region

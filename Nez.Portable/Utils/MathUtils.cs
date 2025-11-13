@@ -15,7 +15,17 @@ namespace Nez.Utils
             return float.IsNaN(vector.X) || float.IsNaN(vector.Y);
         }
 
-        public static bool IsNumBetween(float max, float min, float value)
+        public static bool IsVectorNaNOrInfinite(Vector2 vector)
+        {
+	        return float.IsNaN(vector.X) || float.IsNaN(vector.Y) || float.IsInfinity(vector.X) || float.IsInfinity(vector.Y);
+        }
+
+        public static bool IsVectorInfinite(Vector2 vector)
+        {
+	        return float.IsInfinity(vector.X) || float.IsInfinity(vector.Y);
+		}
+
+		public static bool IsNumBetween(float max, float min, float value)
         {
 	        return value <= max && value >= min;
         }

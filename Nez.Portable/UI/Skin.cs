@@ -236,8 +236,7 @@ namespace Nez.UI
 						styleField.SetValue(styleClass, theStyle);
 
 						if (theStyle == null)
-							Debug.Error("could not find a style reference named {0} when setting {1} on {2}",
-								identifier, name, styleName);
+							Debug.Error($"could not find a style reference named {identifier} when setting {name} on {styleName}");
 					}
 				}
 				else
@@ -248,8 +247,7 @@ namespace Nez.UI
 					if (drawable != null)
 						ReflectionUtils.GetFieldInfo(styleClass, name).SetValue(styleClass, drawable);
 					else
-						Debug.Error("could not find a drawable or color named {0} when setting {1} on {2}", identifier,
-							name, styleName);
+						Debug.Error($"could not find a drawable or color named {name} when setting {identifier} on {styleName}");
 				}
 			}
 

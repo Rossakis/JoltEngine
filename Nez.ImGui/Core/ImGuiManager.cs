@@ -501,7 +501,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 		if (ImGui.IsItemHovered())
 		{
-			ImGui.SetTooltip("Normal Cursor (Press Q or 1)");
+			ImGui.SetTooltip("Default Cursor (Press Q or 1)");
 		}
 		ImGui.SameLine(0, spacing);
 
@@ -520,7 +520,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 		if (ImGui.IsItemHovered())
 		{
-			ImGui.SetTooltip("Resize Cursor (Press E or 2)");
+			ImGui.SetTooltip("Resize Entities (Press E or 2)");
 		}
 		ImGui.SameLine(0, spacing);
 
@@ -539,7 +539,29 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 		if (ImGui.IsItemHovered())
 		{
-			ImGui.SetTooltip("Rotate Cursor (Press R or 3)");
+			ImGui.SetTooltip("Rotate Entities (Press R or 3)");
+		}
+
+		ImGui.SameLine(0, spacing);
+
+		// Collider Resize Button
+		System.Numerics.Vector4 colliderResizeButtonColor;
+		if (_cursorSelectionManager.SelectionMode == CursorSelectionMode.ColliderResize)
+			colliderResizeButtonColor = new System.Numerics.Vector4(0.2f, 0.5f, 1f, 1f);
+		else
+			colliderResizeButtonColor = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
+
+		ImGui.PushStyleColor(ImGuiCol.Button, colliderResizeButtonColor);
+
+		bool colliderResizeHovered = ImGui.ImageButton("Collider Resize", _imageLoader.ColliderResizeCursorIconID, new Num.Vector2(iconSize, iconSize));
+		if (colliderResizeHovered)
+			_cursorSelectionManager.SelectionMode = CursorSelectionMode.ColliderResize;
+
+		ImGui.PopStyleColor();
+
+		if (ImGui.IsItemHovered())
+		{
+			ImGui.SetTooltip("Resize Colliders (Press T or 4)");
 		}
 
 		ImGui.End();

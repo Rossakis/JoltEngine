@@ -22,20 +22,26 @@ namespace Nez
 			public Vector2 LocalOffset;
 
 			// BoxCollider
-			public RectangleF Rectangle; // Local rectangle (x, y, width, height)
+			public RectangleF Rectangle;
 
 			// CircleCollider
 			public float CircleRadius;
 			public Vector2 CircleOffset;
 
 			// PolygonCollider
-			public Vector2[] PolygonPoints; // Local points
+			public List<Vector2> PolygonPoints; 
 		}
 
 		public override ComponentData Data
 		{
 			get
 			{
+				// Let PolygonCollider handle its own serialization
+				if (this is PolygonCollider)
+				{
+					return (this as PolygonCollider).Data;
+				}
+
 				_data.Enabled = Enabled;
 				_data.IsTrigger = IsTrigger;
 				_data.PhysicsLayer = PhysicsLayer;
@@ -57,18 +63,18 @@ namespace Nez
 					_data.CircleRadius = circle.Radius;
 					_data.CircleOffset = circle.LocalOffset;
 				}
-				else if (this is PolygonCollider polygon)
-				{
-					// Return a copy to avoid exposing internal array
-					_data.PolygonPoints = polygon.Shape is Polygon polyShape
-						? polyShape.Points?.ToArray()
-						: null;
-				}
 
 				return _data;
 			}
 			set
 			{
+				// Let PolygonCollider handle its own deserialization
+				if (this is PolygonCollider polyCollider && value is ColliderComponentData)
+				{
+					polyCollider.Data = value;
+					return;
+				}
+
 				if (value is ColliderComponentData colliderData)
 				{
 					Enabled = colliderData.Enabled;
@@ -92,11 +98,6 @@ namespace Nez
 					{
 						circle.LocalOffset = colliderData.CircleOffset;
 						circle.Radius = colliderData.CircleRadius;
-					}
-					else if (this is PolygonCollider polygon && colliderData.PolygonPoints != null)
-					{
-						// Set the points on the PolygonCollider
-						polygon.Shape = new Polygon(colliderData.PolygonPoints);
 					}
 
 					_data = colliderData;
@@ -542,7 +543,7 @@ namespace Nez
 					Rectangle = _data.Rectangle,
 					CircleRadius = _data.CircleRadius,
 					CircleOffset = _data.CircleOffset,
-					PolygonPoints = _data.PolygonPoints?.ToArray() // Deep copy array
+					PolygonPoints = _data.PolygonPoints 
 				};
 			}
 			

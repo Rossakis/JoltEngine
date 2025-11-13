@@ -44,7 +44,7 @@ namespace Nez.ImGuiTools.Persistence
 			}
 			catch
 			{
-				Debug.Log(Debug.LogType.Error, "Couldn't Save the Editor's Settings.");
+				Debug.Error("Couldn't Save the Editor's Settings.");
 			}
 		}
 

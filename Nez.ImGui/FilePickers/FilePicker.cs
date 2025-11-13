@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using Num = System.Numerics;
 
-namespace Nez.ImGuiTools.Utils
+namespace Nez.ImGuiTools.FilePickers
 {
 	public class FilePicker
 	{
@@ -215,7 +215,7 @@ namespace Nez.ImGuiTools.Utils
 				{
 					if (di.Parent != null && (!picker.DontAllowTraverselBeyondRootFolder || picker.CurrentFolder != picker.RootFolder))
 					{
-						ImGui.PushStyleColor(ImGuiCol.Text, Microsoft.Xna.Framework.Color.Yellow.PackedValue);
+						ImGui.PushStyleColor(ImGuiCol.Text, Color.Yellow.PackedValue);
 						if (ImGui.Selectable("../", false, ImGuiSelectableFlags.DontClosePopups))
 							picker.CurrentFolder = di.Parent.FullName;
 						ImGui.PopStyleColor();
@@ -227,7 +227,7 @@ namespace Nez.ImGuiTools.Utils
 						if (Directory.Exists(fse))
 						{
 							var name = Path.GetFileName(fse);
-							ImGui.PushStyleColor(ImGuiCol.Text, Microsoft.Xna.Framework.Color.Yellow.PackedValue);
+							ImGui.PushStyleColor(ImGuiCol.Text, Color.Yellow.PackedValue);
 							if (ImGui.Selectable(name + "/", false, ImGuiSelectableFlags.DontClosePopups))
 								picker.CurrentFolder = fse;
 							ImGui.PopStyleColor();

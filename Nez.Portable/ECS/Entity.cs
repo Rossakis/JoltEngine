@@ -94,6 +94,8 @@ public class Entity : IComparable<Entity>
 	[JsonExclude]
 	public readonly ComponentList Components;
 
+	public bool IsSelectableInEditor = true;
+
 	[JsonExclude] 
 	public List<Component> ComponentsToAdd => Components._componentsToAdd;
 
@@ -421,7 +423,7 @@ public class Entity : IComparable<Entity>
 	/// </summary>
 	public void DetachFromScene()
 	{
-		Scene.Entities.Remove(this);
+        Scene.Entities.Remove(this);
 		Components.DeregisterAllComponents();
 
 		for (var i = 0; i < Transform.ChildCount; i++)
@@ -478,11 +480,9 @@ public class Entity : IComparable<Entity>
 				continue;
 			}
 
-			// Copy basic component properties
 			clonedComponent.Name = sourceComponent.Name;
 			clonedComponent.Enabled = sourceComponent.Enabled;
 
-			// Add the component first
 			AddComponent(clonedComponent);
 
 			// Use JSON serialization for reliable component data copying
@@ -503,21 +503,7 @@ public class Entity : IComparable<Entity>
 				}
 				catch (Exception ex)
 				{
-					System.Console.WriteLine($"Failed to copy component data via JSON for {sourceComponent.GetType().Name}: {ex.Message}");
-					//
-					// // Fallback to Clone method
-					// try
-					// {
-					// 	var fallbackClone = sourceComponent.Clone();
-					// 	if (fallbackClone?.Data != null)
-					// 	{
-					// 		clonedComponent.Data = fallbackClone.Data;
-					// 	}
-					// }
-					// catch (Exception cloneEx)
-					// {
-					// 	System.Console.WriteLine($"Clone fallback also failed for {sourceComponent.GetType().Name}: {cloneEx.Message}");
-					// }
+					Debug.Warn($"Failed to copy component data via JSON for {sourceComponent.GetType().Name}: {ex.Message}");
 				}
 			}
 		}
@@ -703,11 +689,17 @@ public class Entity : IComparable<Entity>
 		{
 			// If not allowing multiple, return the first existing component of this type
 			if (!allowSameComponentsOnEntity && comp.GetType() == type)
+			{
+				Debug.Log(Debug.LogType.Error, $"Can't add the same Component more than once on Entity: {this.Name}");
 				return comp;
+			}
 
 			// Prevent adding if a component of the same type and name already exists
 			if (comp.GetType() == type && comp.Name == component.Name)
+			{
+				Debug.Log(Debug.LogType.Error, $"Can't add two components with the same name: {comp.Name}, on Entity: {this.Name}");
 				return comp;
+			}
 		}
 
 		int maxIndex = -1;

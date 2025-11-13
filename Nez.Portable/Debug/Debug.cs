@@ -59,15 +59,16 @@ namespace Nez
         #region Logging
 
         [DebuggerHidden]
-        public static void Log(
+        private static void Log(
             LogType type,
             string format,
-            object[] args = null,
-            [CallerFilePath] string callerFile = "",
-            [CallerLineNumber] int callerLine = 0)
+            object[] args,
+            string callerFile,
+            int callerLine)
         {
             string msg = args != null && args.Length > 0 ? string.Format(format, args) : format;
             string callerClass = System.IO.Path.GetFileNameWithoutExtension(callerFile);
+            
             var key = (type, msg, callerClass, callerLine);
 
             lock (_logLock)
@@ -81,7 +82,7 @@ namespace Nez
                     }
                     else if (count == MaxRepeatedMessages)
                     {
-                        string summary = $"\"{msg}\" was logged more than {MaxRepeatedMessages} times.";
+                        string summary = $"\"{msg}\" was logged more than {MaxRepeatedMessages} times. [at {callerClass}:{callerLine}]";
                         _logEntries.Add(new LogEntry(LogType.Warn, summary, DateTime.Now, callerClass, callerLine));
                         _messageCounts[key] = count + 1;
                     }
@@ -98,34 +99,53 @@ namespace Nez
         }
 
         [DebuggerHidden]
-        public static void Error(string format, params object[] args)
+        public static void Error(
+            string format,
+            [CallerFilePath] string callerFile = "",
+            [CallerLineNumber] int callerLine = 0,
+            params object[] args)
         {
-            Log(LogType.Error, format, args);
+            Log(LogType.Error, format, args, callerFile, callerLine);
         }
 
         [DebuggerHidden]
-        public static void ErrorIf(bool condition, string format, params object[] args)
+        public static void ErrorIf(
+            bool condition,
+            string format,
+            [CallerFilePath] string callerFile = "",
+            [CallerLineNumber] int callerLine = 0,
+            params object[] args)
         {
             if (condition)
-                Log(LogType.Error, format, args);
+                Log(LogType.Error, format, args, callerFile, callerLine);
         }
 
         [DebuggerHidden]
-        public static void Warn(string format, params object[] args)
+        public static void Warn(
+            string format,
+            [CallerFilePath] string callerFile = "",
+            [CallerLineNumber] int callerLine = 0,
+            params object[] args)
         {
-            Log(LogType.Warn, format, args);
+            Log(LogType.Warn, format, args, callerFile, callerLine);
         }
 
         [DebuggerHidden]
-        public static void WarnIf(bool condition, string format, params object[] args)
+        public static void WarnIf(
+            bool condition,
+            string format,
+            [CallerFilePath] string callerFile = "",
+            [CallerLineNumber] int callerLine = 0,
+            params object[] args)
         {
             if (condition)
-                Log(LogType.Warn, format, args);
+                Log(LogType.Warn, format, args, callerFile, callerLine);
         }
 
         [Conditional("DEBUG")]
         [DebuggerHidden]
-        public static void Log(object obj,
+        public static void Log(
+            object obj,
             [CallerFilePath] string callerFile = "",
             [CallerLineNumber] int callerLine = 0)
         {
@@ -134,31 +154,48 @@ namespace Nez
 
         [Conditional("DEBUG")]
         [DebuggerHidden]
-        public static void Log(string format, params object[] args)
+        public static void Log(
+            string format,
+            [CallerFilePath] string callerFile = "",
+            [CallerLineNumber] int callerLine = 0,
+            params object[] args)
         {
-            Log(LogType.Log, format, args);
+            Log(LogType.Log, format, args, callerFile, callerLine);
         }
 
         [Conditional("DEBUG")]
         [DebuggerHidden]
-        public static void LogIf(bool condition, string format, params object[] args)
+        public static void LogIf(
+            bool condition,
+            string format,
+            [CallerFilePath] string callerFile = "",
+            [CallerLineNumber] int callerLine = 0,
+            params object[] args)
         {
             if (condition)
-                Log(LogType.Log, format, args);
+                Log(LogType.Log, format, args, callerFile, callerLine);
         }
 
         [Conditional("DEBUG")]
         [DebuggerHidden]
-        public static void Info(string format, params object[] args)
+        public static void Info(
+            string format,
+            [CallerFilePath] string callerFile = "",
+            [CallerLineNumber] int callerLine = 0,
+            params object[] args)
         {
-            Log(LogType.Info, format, args);
+            Log(LogType.Info, format, args, callerFile, callerLine);
         }
 
         [Conditional("DEBUG")]
         [DebuggerHidden]
-        public static void Trace(string format, params object[] args)
+        public static void Trace(
+            string format,
+            [CallerFilePath] string callerFile = "",
+            [CallerLineNumber] int callerLine = 0,
+            params object[] args)
         {
-            Log(LogType.Trace, format, args);
+            Log(LogType.Trace, format, args, callerFile, callerLine);
         }
 
         #endregion
@@ -177,7 +214,7 @@ namespace Nez
         }
 
         /// <summary>
-        /// times how long an Action takes to run and returns the TimeSpan
+        /// Times how long an Action takes to run and returns the TimeSpan
         /// </summary>
         /// <returns>The action.</returns>
         /// <param name="action">Action.</param>

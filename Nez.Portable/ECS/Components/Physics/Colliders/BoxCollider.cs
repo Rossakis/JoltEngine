@@ -11,7 +11,7 @@ namespace Nez
 		[Range(1, float.MaxValue, true)]
 		public float Width
 		{
-			get 
+			get
 			{
 				if (Shape is Box box)
 					return box.Width;
@@ -24,7 +24,7 @@ namespace Nez
 		[Range(1, float.MaxValue, true)]
 		public float Height
 		{
-			get 
+			get
 			{
 				if (Shape is Box box)
 					return box.Height;
@@ -60,7 +60,8 @@ namespace Nez
 			Shape = new Box(width, height);
 		}
 
-		public BoxCollider(float width, float height, string name = null) : this(-width / 2, -height / 2, width, height, name)
+		public BoxCollider(float width, float height, string name = null) : this(-width / 2, -height / 2, width, height,
+			name)
 		{
 		}
 
@@ -83,14 +84,14 @@ namespace Nez
 		public BoxCollider SetWidth(float width)
 		{
 			_colliderRequiresAutoSizing = false;
-			
+
 			// Ensure we have a Box shape
 			if (!(Shape is Box box))
 			{
 				Shape = new Box(width, Height);
 				box = Shape as Box;
 			}
-			
+
 			if (box != null && width != box.Width)
 			{
 				// update the box, dirty our bounds and if we need to update our bounds in the Physics system
@@ -111,14 +112,14 @@ namespace Nez
 		public BoxCollider SetHeight(float height)
 		{
 			_colliderRequiresAutoSizing = false;
-			
+
 			// Ensure we have a Box shape
 			if (!(Shape is Box box))
 			{
 				Shape = new Box(Width, height);
 				box = Shape as Box;
 			}
-			
+
 			if (box != null && height != box.Height)
 			{
 				// update the box, dirty our bounds and if we need to update our bounds in the Physics system
@@ -140,14 +141,14 @@ namespace Nez
 		public BoxCollider SetSize(float width, float height)
 		{
 			_colliderRequiresAutoSizing = false;
-			
+
 			// Ensure we have a Box shape
 			if (!(Shape is Box box))
 			{
 				Shape = new Box(width, height);
 				box = Shape as Box;
 			}
-			
+
 			if (box != null && (width != box.Width || height != box.Height))
 			{
 				// update the box, dirty our bounds and if we need to update our bounds in the Physics system
@@ -165,22 +166,22 @@ namespace Nez
 
 		public override void DebugRender(Batcher batcher)
 		{
-			if(!DebugRenderEnabled)
+			if (!DebugRenderEnabled)
 				return;
 
 			var poly = Shape as Polygon;
 			batcher.DrawHollowRect(Bounds, Debug.Colors.ColliderBounds, Debug.Size.LineSizeMultiplier);
 
-			if(Enabled)
+			if (Enabled)
 				batcher.DrawPolygon(Shape.Position, poly.Points, Debug.Colors.ColliderEdge, true,
-				Debug.Size.LineSizeMultiplier);
-			else if(!Enabled && IsVisibleEvenDisabled)
+					Debug.Size.LineSizeMultiplier);
+			else if (!Enabled && IsVisibleEvenDisabled)
 				batcher.DrawPolygon(Shape.Position, poly.Points, Debug.Colors.ColliderDisabledModeEdge, true,
 					Debug.Size.LineSizeMultiplier);
 
 			if (Entity == null)
 				return;
-			
+
 			batcher.DrawPixel(Entity.Transform.Position, Debug.Colors.ColliderPosition,
 				4 * Debug.Size.LineSizeMultiplier);
 			batcher.DrawPixel(Entity.Transform.Position + Shape.Center, Debug.Colors.ColliderCenter,
@@ -191,42 +192,39 @@ namespace Nez
 		{
 			return string.Format("[BoxCollider: bounds: {0}", Bounds);
 		}
-		
+
 		/// <summary>
-/// Creates a deep clone of this BoxCollider component.
-/// </summary>
-/// <returns>A new BoxCollider instance with all properties deep-copied</returns>
-public override Component Clone()
-{
-	// Get current dimensions before cloning
-	float currentWidth = Width;
-	float currentHeight = Height;
-	
-	// Create new BoxCollider with the same dimensions using the proper constructor
-	var clone = new BoxCollider(currentWidth, currentHeight, Name);
-	
-	// Copy all base Collider properties
-	clone.LocalOffset = LocalOffset;
-	clone.ShouldColliderScaleAndRotateWithTransform = ShouldColliderScaleAndRotateWithTransform;
-	clone.IsTrigger = IsTrigger;
-	clone.PhysicsLayer = PhysicsLayer;
-	clone.CollidesWithLayers = CollidesWithLayers;
-	clone.Enabled = Enabled;
-	clone.IsVisibleEvenDisabled = IsVisibleEvenDisabled;
-	clone.DebugRenderEnabled = DebugRenderEnabled;
-	
-	// Copy internal state flags
-	clone._colliderRequiresAutoSizing = _colliderRequiresAutoSizing;
-	clone._localOffsetLength = _localOffsetLength;
-	
-	// Reset entity-specific state (the clone isn't attached to any entity yet)
-	clone.Entity = null;
-	clone._isParentEntityAddedToScene = false;
-	clone._isColliderRegistered = false;
-	clone._isPositionDirty = true;
-	clone._isRotationDirty = true;
-	
-	return clone;
-}
+		/// Creates a deep clone of this BoxCollider component.
+		/// </summary>
+		/// <returns>A new BoxCollider instance with all properties deep-copied</returns>
+		public override Component Clone()
+		{
+			float currentWidth = Width;
+			float currentHeight = Height;
+			var clone = new BoxCollider(currentWidth, currentHeight, Name);
+
+			// Copy all base Collider properties
+			clone.LocalOffset = LocalOffset;
+			clone.ShouldColliderScaleAndRotateWithTransform = ShouldColliderScaleAndRotateWithTransform;
+			clone.IsTrigger = IsTrigger;
+			clone.PhysicsLayer = PhysicsLayer;
+			clone.CollidesWithLayers = CollidesWithLayers;
+			clone.Enabled = Enabled;
+			clone.IsVisibleEvenDisabled = IsVisibleEvenDisabled;
+			clone.DebugRenderEnabled = DebugRenderEnabled;
+
+			// Copy internal state flags
+			clone._colliderRequiresAutoSizing = _colliderRequiresAutoSizing;
+			clone._localOffsetLength = _localOffsetLength;
+
+			// Reset entity-specific state (the clone isn't attached to any entity yet)
+			clone.Entity = null;
+			clone._isParentEntityAddedToScene = false;
+			clone._isColliderRegistered = false;
+			clone._isPositionDirty = true;
+			clone._isRotationDirty = true;
+
+			return clone;
+		}
 	}
 }

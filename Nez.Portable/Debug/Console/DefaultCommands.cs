@@ -132,7 +132,7 @@ namespace Nez.Console
 			}
 			else
 			{
-				_drawCallTimer = Core.Schedule(delay, true, timer => { Debug.Log("Draw Calls: {0}", Core.drawCalls); });
+				_drawCallTimer = Core.Schedule(delay, true, timer => { Debug.Log($"Draw Calls: {Core.drawCalls}"); });
 			}
 		}
 

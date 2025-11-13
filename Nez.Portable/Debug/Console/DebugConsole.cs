@@ -649,7 +649,7 @@ namespace Nez.Console
 			}
 			catch (Exception e)
 			{
-				Debug.Log("DebugConsole pooped itself trying to get all the loaded assemblies. {0}", e);
+				Debug.Log($"DebugConsole pooped itself trying to get all the loaded assemblies. {e}");
 			}
 
 
