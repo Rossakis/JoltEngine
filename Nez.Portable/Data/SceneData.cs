@@ -31,7 +31,8 @@ public class SceneData
         public bool Enabled;
         public int UpdateOrder;
         public int Tag;
-        public bool DebugRenderEnabled;
+        public bool IsSelectableInEditor;
+		public bool DebugRenderEnabled;
         public string ParentEntityName;
 		public string OriginalPrefabName;
 
@@ -46,6 +47,7 @@ public class SceneData
             EntityData = new EntityData();
             Enabled = true;
             UpdateOrder = 0;
+            IsSelectableInEditor = true;
             Tag = 0;
             DebugRenderEnabled = true;
             ParentEntityName = null;

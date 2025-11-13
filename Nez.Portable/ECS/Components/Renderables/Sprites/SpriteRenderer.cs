@@ -361,7 +361,6 @@ namespace Nez.Sprites
 		/// </summary>
 		public Sprite NormalMap;
 
-		public bool IsSelectableInEditor { get; set; } = true;
 
 		protected Vector2 _origin;
 		protected Sprite _sprite;
@@ -861,7 +860,6 @@ namespace Nez.Sprites
 
 			// Copy SpriteRenderer-specific properties
 			clone.SpriteEffects = SpriteEffects;
-			clone.IsSelectableInEditor = IsSelectableInEditor;
 			
 			// Deep clone the sprite if it exists
 			if (_sprite != null)

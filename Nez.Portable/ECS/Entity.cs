@@ -94,6 +94,8 @@ public class Entity : IComparable<Entity>
 	[JsonExclude]
 	public readonly ComponentList Components;
 
+	public bool IsSelectableInEditor = true;
+
 	[JsonExclude] 
 	public List<Component> ComponentsToAdd => Components._componentsToAdd;
 
@@ -478,11 +480,9 @@ public class Entity : IComparable<Entity>
 				continue;
 			}
 
-			// Copy basic component properties
 			clonedComponent.Name = sourceComponent.Name;
 			clonedComponent.Enabled = sourceComponent.Enabled;
 
-			// Add the component first
 			AddComponent(clonedComponent);
 
 			// Use JSON serialization for reliable component data copying
@@ -503,21 +503,7 @@ public class Entity : IComparable<Entity>
 				}
 				catch (Exception ex)
 				{
-					System.Console.WriteLine($"Failed to copy component data via JSON for {sourceComponent.GetType().Name}: {ex.Message}");
-					//
-					// // Fallback to Clone method
-					// try
-					// {
-					// 	var fallbackClone = sourceComponent.Clone();
-					// 	if (fallbackClone?.Data != null)
-					// 	{
-					// 		clonedComponent.Data = fallbackClone.Data;
-					// 	}
-					// }
-					// catch (Exception cloneEx)
-					// {
-					// 	System.Console.WriteLine($"Clone fallback also failed for {sourceComponent.GetType().Name}: {cloneEx.Message}");
-					// }
+					Debug.Warn($"Failed to copy component data via JSON for {sourceComponent.GetType().Name}: {ex.Message}");
 				}
 			}
 		}

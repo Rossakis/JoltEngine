@@ -269,6 +269,34 @@ public class EntityInspector
 				}
 			}
 
+			NezImGui.MediumVerticalSpace();
+
+			// IsSelectableInEditor
+			{
+				bool oldSelectable = Entity.IsSelectableInEditor;
+				bool isSelectable = oldSelectable;
+				if (ImGui.Checkbox("Can Be Selected", ref isSelectable) && isSelectable != oldSelectable)
+				{
+					EditorChangeTracker.PushUndo(
+						new GenericValueChangeAction(
+							Entity,
+							typeof(Entity).GetProperty(nameof(Entity.IsSelectableInEditor)),
+							oldSelectable,
+							isSelectable,
+							$"{Entity.Name}.IsSelectableInEditor"
+						),
+						Entity,
+						$"{Entity.Name}.IsSelectableInEditor"
+					);
+					Entity.IsSelectableInEditor = isSelectable;
+				}
+
+				if (ImGui.IsItemHovered())
+				{
+					ImGui.SetTooltip("If FALSE, you won't be able select this \n Entity with your cursor in the Editor.");
+				}
+			}
+
 			// DebugRenderEnabled
 			{
 				bool oldDebugEnabled = Entity.DebugRenderEnabled;
