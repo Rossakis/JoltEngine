@@ -37,36 +37,29 @@ namespace Nez.ImGuiTools
 		private Vector2 _boxSelectEndWorld;
 		private Vector2 mouseScreen;
 
-		// Gizmo/dragging state
-		private bool _draggingX = false;
-		private bool _draggingY = false;
-
-		// Gizmo rotate 
-		private bool _draggingRotate = false;
-		private float _dragStartAngle;
-		private float _dragStartEntityRotation;
-
-		// Gizmo scale
-		private Dictionary<Entity, Vector2> _dragStartEntityScales = new();
-		private Dictionary<Entity, Vector2> _dragEndEntityScales = new();
-		private Vector2 _dragStartScaleMouse;
-		private bool _draggingScaleX = false;
-		private bool _draggingScaleY = false;
-
-		private Vector2 _dragStartMousePos;
-		private Vector2 _dragStartWorldMouse;
-		private Dictionary<Entity, Vector2> _dragStartEntityPositions = new();
-		private Dictionary<Entity, Vector2> _dragEndEntityPositions = new();
-
 		// Gizmo handlers
+		private EntityTransformGizmoHandler _transformGizmoHandler;
+		private EntityRotateGizmoHandler _rotateGizmoHandler;
+		private EntityScaleGizmoHandler _scaleGizmoHandler;
 		private PolygonColliderGizmoHandler _polygonGizmoHandler;
 		private RectangleGizmoHandler _rectangleGizmoHandler;
+
+		// Cycling selection state
+		private List<Entity> _selectableCandidates = new();
+		private int _currentCandidateIndex = -1;
+		private float _lastDoubleClickTime = 0f;
+		private Vector2 _lastDoubleClickPosition = Vector2.Zero;
+		private const float DOUBLE_CLICK_TIMEOUT = 1f; // 1 second timeout
+		private const float POSITION_TOLERANCE = 5f; // 5 pixels tolerance for considering it the "same" position
 
 		public bool IsMouseOverGizmo { get; private set; }
 
 		public ImGuiCursorSelectionManager(ImGuiManager imGuiManager)
 		{
 			_imGuiManager = imGuiManager;
+			_transformGizmoHandler = new EntityTransformGizmoHandler();
+			_rotateGizmoHandler = new EntityRotateGizmoHandler();
+			_scaleGizmoHandler = new EntityScaleGizmoHandler();
 			_polygonGizmoHandler = new PolygonColliderGizmoHandler();
 			_rectangleGizmoHandler = new RectangleGizmoHandler();
 		}
@@ -87,15 +80,14 @@ namespace Nez.ImGuiTools
 
 			if (ImGui.IsKeyPressed(ImGuiKey.Escape))
 			{
-				_draggingX = false;
-				_draggingY = false;
-				_draggingRotate = false;
-				_draggingScaleX = false;
-				_draggingScaleY = false;
-				_isBoxSelecting = false;
-
+				_transformGizmoHandler.Reset();
+				_rotateGizmoHandler.Reset();
+				_scaleGizmoHandler.Reset();
 				_polygonGizmoHandler.Reset();
 				_rectangleGizmoHandler.Reset();
+				
+				_isBoxSelecting = false;
+				ResetCyclingSelection();
 
 				Debug.Log("Reset all gizmo drag states.");
 			}
@@ -115,20 +107,68 @@ namespace Nez.ImGuiTools
 					Debug.Warn("BoxCollider/AreaLight drag state was stuck. Resetting.");
 					_rectangleGizmoHandler.Reset();
 				}
+
+				if (_transformGizmoHandler.IsDragging)
+				{
+					Debug.Warn("Transform drag state was stuck. Resetting.");
+					_transformGizmoHandler.Reset();
+				}
+
+				if (_rotateGizmoHandler.IsDragging)
+				{
+					Debug.Warn("Rotate drag state was stuck. Resetting.");
+					_rotateGizmoHandler.Reset();
+				}
+
+				if (_scaleGizmoHandler.IsDragging)
+				{
+					Debug.Warn("Scale drag state was stuck. Resetting.");
+					_scaleGizmoHandler.Reset();
+				}
+			}
+
+			// Check for timeout on cycling selection
+			if (_selectableCandidates.Count > 0)
+			{
+				float currentTime = (float)Time.TotalTime;
+				if (currentTime - _lastDoubleClickTime > DOUBLE_CLICK_TIMEOUT)
+				{
+					ResetCyclingSelection();
+				}
 			}
 
 			if (_imGuiManager.IsGameWindowFocused && IsCursorWithinGameWindow())
 			{
-				if (SelectionMode == CursorSelectionMode.Normal)
-					DrawEntityArrowsGizmo();
-				else if (SelectionMode == CursorSelectionMode.Resize)
-					DrawEntityScaleGizmo();
-				else if (SelectionMode == CursorSelectionMode.Rotate)
-					DrawEntityRotateGizmo();
-				else if (SelectionMode == CursorSelectionMode.ColliderResize)
-					DrawColliderResizeGizmo();
+				var camera = Core.Scene.Camera;
+				var worldMouse = camera.ScreenToWorldPoint(Input.ScaledMousePosition);
+				var selectedEntities = _imGuiManager.SceneGraphWindow.EntityPane.SelectedEntities;
 
-				if (!IsMouseOverGizmo && Core.IsEditMode && !_polygonGizmoHandler.IsDragging && !_rectangleGizmoHandler.IsDragging)
+				if (Core.IsEditMode)
+				{
+					if (SelectionMode == CursorSelectionMode.Normal)
+					{
+						_transformGizmoHandler.Draw(selectedEntities, worldMouse, camera);
+						IsMouseOverGizmo = _transformGizmoHandler.IsMouseOverGizmo;
+					}
+					else if (SelectionMode == CursorSelectionMode.Resize)
+					{
+						_scaleGizmoHandler.Draw(selectedEntities, worldMouse, camera);
+						IsMouseOverGizmo = _scaleGizmoHandler.IsMouseOverGizmo;
+					}
+					else if (SelectionMode == CursorSelectionMode.Rotate)
+					{
+						_rotateGizmoHandler.Draw(selectedEntities, worldMouse, camera);
+						IsMouseOverGizmo = _rotateGizmoHandler.IsMouseOverGizmo;
+					}
+					else if (SelectionMode == CursorSelectionMode.ColliderResize)
+					{
+						DrawColliderResizeGizmo();
+					}
+				}
+
+				if (!IsMouseOverGizmo && Core.IsEditMode && 
+					!_polygonGizmoHandler.IsDragging && !_rectangleGizmoHandler.IsDragging &&
+					!_transformGizmoHandler.IsDragging && !_rotateGizmoHandler.IsDragging && !_scaleGizmoHandler.IsDragging)
 					HandleBoxSelection();
 
 				if (Input.DoubleLeftMouseButtonPressed)
@@ -139,10 +179,13 @@ namespace Nez.ImGuiTools
 					TrySelectEntityAtMouse();
 					_isBoxSelecting = false;
 				}
-				else if (Input.LeftMouseButtonPressed && !_draggingX && !_draggingY && !IsMouseOverGizmo &&
-						 !_ctrlDown && !_shiftDown && !_polygonGizmoHandler.IsDragging && !_rectangleGizmoHandler.IsDragging)
+				else if (Input.LeftMouseButtonPressed && 
+						!_transformGizmoHandler.IsDragging && !_rotateGizmoHandler.IsDragging && !_scaleGizmoHandler.IsDragging &&
+						!IsMouseOverGizmo && !_ctrlDown && !_shiftDown && 
+						!_polygonGizmoHandler.IsDragging && !_rectangleGizmoHandler.IsDragging)
 				{
 					DeselectEntity();
+					ResetCyclingSelection();
 				}
 			}
 		}
@@ -155,7 +198,7 @@ namespace Nez.ImGuiTools
 
 			bool withinX = mousePos.X >= windowPos.X && mousePos.X < windowPos.X + windowSize.X;
 			bool withinY = mousePos.Y >= windowPos.Y && mousePos.Y < windowPos.Y + windowSize.Y;
-
+			
 			return withinX && withinY;
 		}
 
@@ -163,6 +206,14 @@ namespace Nez.ImGuiTools
 		{
 			_ctrlDown = ImGui.GetIO().KeyCtrl || ImGui.GetIO().KeySuper;
 			_shiftDown = ImGui.GetIO().KeyShift;
+		}
+
+		private void ResetCyclingSelection()
+		{
+			_selectableCandidates.Clear();
+			_currentCandidateIndex = -1;
+			_lastDoubleClickTime = 0f;
+			_lastDoubleClickPosition = Vector2.Zero;
 		}
 
 		private void HandleBoxSelection()
@@ -223,8 +274,9 @@ namespace Nez.ImGuiTools
 
 				var sprite = entity.GetComponent<SpriteRenderer>();
 				var collider = entity.GetComponent<Collider>();
+				var deferredLight = entity.GetComponent<DeferredLight>();
 
-				if (sprite == null && collider == null)
+				if (sprite == null && collider == null && deferredLight == null)
 					continue;
 
 				if (sprite != null)
@@ -275,6 +327,9 @@ namespace Nez.ImGuiTools
 				_imGuiManager.OpenMainEntityInspector(selectedEntities[0]);
 				SetCameraTargetPosition(selectedEntities[0].Transform.Position);
 			}
+			
+			// Reset cycling selection after box selection
+			ResetCyclingSelection();
 		}
 
 		private RectangleF GetEntityBounds(Entity entity, bool isSpriteSelectionOn = false)
@@ -282,6 +337,11 @@ namespace Nez.ImGuiTools
 			var collider = entity.GetComponent<Collider>();
 			if (collider != null)
 				return collider.Bounds;
+
+			// Check for DeferredLight components (PointLight, AreaLight, etc.)
+			var deferredLight = entity.GetComponent<DeferredLight>();
+			if (deferredLight != null)
+				return deferredLight.Bounds;
 
 			// Sprite selection will not be supported with SelectEntitiesInBox
 			if (isSpriteSelectionOn)
@@ -318,21 +378,63 @@ namespace Nez.ImGuiTools
 		private void TrySelectEntityAtMouse()
 		{
 			var mouseWorld = Core.Scene.Camera.ScreenToWorldPoint(Input.ScaledMousePosition);
-			Entity selected = null;
+			var mouseScreen = Input.ScaledMousePosition;
+			float currentTime = (float)Time.TotalTime;
+			
+			// Check if this is a continuation of the cycling selection
+			bool isCyclingContinuation = false;
+			if (_selectableCandidates.Count > 0)
+			{
+				float timeSinceLastClick = currentTime - _lastDoubleClickTime;
+				float positionDistance = Vector2.Distance(mouseScreen, _lastDoubleClickPosition);
+				
+				if (timeSinceLastClick <= DOUBLE_CLICK_TIMEOUT && positionDistance <= POSITION_TOLERANCE)
+				{
+					isCyclingContinuation = true;
+				}
+				else
+				{
+					// Reset if position changed or timeout occurred
+					ResetCyclingSelection();
+				}
+			}
 
-			// Priority 1= Entities with Colliders (highest)
-			Entity closestColliderEntity = null;
-			float closestColliderDistance = float.MaxValue;
+			// If we're continuing cycling, just advance to the next candidate
+			if (isCyclingContinuation && _selectableCandidates.Count > 0)
+			{
+				_currentCandidateIndex = (_currentCandidateIndex + 1) % _selectableCandidates.Count;
+				var selected = _selectableCandidates[_currentCandidateIndex];
+				
+				// Update last click time and position
+				_lastDoubleClickTime = currentTime;
+				_lastDoubleClickPosition = mouseScreen;
+				
+				// Treat Shift as Control for game window selection
+				bool additive = _ctrlDown || _shiftDown;
 
+				_imGuiManager.SceneGraphWindow.EntityPane.SetSelectedEntity(selected, additive, false);
+				_imGuiManager.OpenMainEntityInspector(selected);
+
+				if (!MathUtils.IsVectorNaNOrInfinite(selected.Transform.Position))
+				{
+					SetCameraTargetPosition(selected.Transform.Position);
+				}
+				
+				return;
+			}
+
+			// Build the list of selectable entities at this position
+			_selectableCandidates.Clear();
+			_currentCandidateIndex = -1;
+
+			// Priority 1: Entities with Colliders
+			var collidersAtPosition = new List<(Entity entity, float distance)>();
 			for (int i = Core.Scene.Entities.Count - 1; i >= 0; i--)
 			{
 				var entity = Core.Scene.Entities[i];
 				
 				if (MathUtils.IsVectorNaNOrInfinite(entity.Transform.Position))
-				{
-					Debug.Warn($"Entity '{entity.Name}' has invalid position: {entity.Transform.Position}. Skipping selection.");
 					continue;
-				}
 
 				if (!entity.IsSelectableInEditor)
 					continue;
@@ -345,660 +447,142 @@ namespace Nez.ImGuiTools
 						collider.Bounds.Y + collider.Bounds.Height * 0.5f
 					);
 					float distance = Vector2.Distance(mouseWorld, colliderCenter);
-					
-					if (distance < closestColliderDistance)
-					{
-						closestColliderDistance = distance;
-						closestColliderEntity = entity;
-					}
+					collidersAtPosition.Add((entity, distance));
 				}
 			}
 
-			if (closestColliderEntity != null)
+			// Sort colliders by distance and add to candidates
+			collidersAtPosition.Sort((a, b) => a.distance.CompareTo(b.distance));
+			foreach (var (entity, _) in collidersAtPosition)
 			{
-				selected = closestColliderEntity;
+				_selectableCandidates.Add(entity);
 			}
-			else
-			{
-				// Priority 2 = Entities with SpriteRenderer
-				Entity lowestRenderLayerSprite = null;
-				int lowestRenderLayer = int.MaxValue;
-				float minDist = 16f;
 
-				for (int i = Core.Scene.Entities.Count - 1; i >= 0; i--)
+			// Priority 2: Entities with SpriteRenderer
+			var spritesAtPosition = new List<(Entity entity, int renderLayer, float distance)>();
+			for (int i = Core.Scene.Entities.Count - 1; i >= 0; i--)
+			{
+				var entity = Core.Scene.Entities[i];
+				
+				if (MathUtils.IsVectorNaNOrInfinite(entity.Transform.Position))
+					continue;
+				
+				if (!entity.IsSelectableInEditor)
+					continue;
+				
+				var sprite = entity.GetComponent<SpriteRenderer>();
+				if (sprite != null)
 				{
-					var entity = Core.Scene.Entities[i];
-					
-					// Skip entities with invalid positions
-					if (MathUtils.IsVectorNaNOrInfinite(entity.Transform.Position))
-						continue;
-					
-					if (!entity.IsSelectableInEditor)
-						continue;
-					
-					var sprite = entity.GetComponent<SpriteRenderer>();
-					if (sprite != null)
+					var bounds = sprite.Bounds;
+					if (bounds.Contains(mouseWorld))
 					{
-						var bounds = sprite.Bounds;
-						if (bounds.Contains(mouseWorld))
-						{
-							// Check if this sprite has a lower render layer (renders on top)
-							// Lower value = renders later = appears in front
-							if (sprite.RenderLayer < lowestRenderLayer)
-							{
-								lowestRenderLayer = sprite.RenderLayer;
-								lowestRenderLayerSprite = entity;
-							}
-							else if (sprite.RenderLayer == lowestRenderLayer)
-							{
-								// If render layers are equal, prefer the closer one
-								if (lowestRenderLayerSprite != null)
-								{
-									float currentDist = Vector2.Distance(entity.Transform.Position, mouseWorld);
-									float existingDist = Vector2.Distance(lowestRenderLayerSprite.Transform.Position, mouseWorld);
-									
-									if (currentDist < existingDist)
-									{
-										lowestRenderLayerSprite = entity;
-									}
-								}
-								else
-								{
-									lowestRenderLayerSprite = entity;
-								}
-							}
-						}
-					}
-				}
-
-				selected = lowestRenderLayerSprite;
-
-				// Priority 3 = Fallback to entities without sprites/colliders
-				if (selected == null)
-				{
-					float minDistFallback = 16f;
-					for (int i = Core.Scene.Entities.Count - 1; i >= 0; i--)
-					{
-						var entity = Core.Scene.Entities[i];
-						
-						if (MathUtils.IsVectorNaNOrInfinite(entity.Transform.Position))
-							continue;
-						
-						if (!entity.IsSelectableInEditor)
-							continue;
-						
-						if (entity.GetComponent<SpriteRenderer>() == null && 
-						    entity.GetComponent<Collider>() == null)
-						{
-							float dist = Vector2.Distance(entity.Transform.Position, mouseWorld);
-							if (dist < minDistFallback)
-							{
-								selected = entity;
-								minDistFallback = dist;
-							}
-						}
+						float distance = Vector2.Distance(entity.Transform.Position, mouseWorld);
+						spritesAtPosition.Add((entity, sprite.RenderLayer, distance));
 					}
 				}
 			}
 
-			if (selected != null)
+			// Sort sprites by render layer (lower = in front), then by distance
+			spritesAtPosition.Sort((a, b) =>
 			{
+				int layerCompare = a.renderLayer.CompareTo(b.renderLayer);
+				if (layerCompare != 0) return layerCompare;
+				return a.distance.CompareTo(b.distance);
+			});
+
+			foreach (var (entity, _, _) in spritesAtPosition)
+			{
+				if (!_selectableCandidates.Contains(entity))
+					_selectableCandidates.Add(entity);
+			}
+
+			// Priority 3: Entities with DeferredLight
+			var lightsAtPosition = new List<(Entity entity, float distance)>();
+			for (int i = Core.Scene.Entities.Count - 1; i >= 0; i--)
+			{
+				var entity = Core.Scene.Entities[i];
+				
+				if (MathUtils.IsVectorNaNOrInfinite(entity.Transform.Position))
+					continue;
+				
+				if (!entity.IsSelectableInEditor)
+					continue;
+				
+				var deferredLight = entity.GetComponent<DeferredLight>();
+				if (deferredLight != null)
+				{
+					var bounds = deferredLight.Bounds;
+					if (bounds.Contains(mouseWorld))
+					{
+						var lightCenter = new Vector2(
+							bounds.X + bounds.Width * 0.5f,
+							bounds.Y + bounds.Height * 0.5f
+						);
+						float distance = Vector2.Distance(mouseWorld, lightCenter);
+						lightsAtPosition.Add((entity, distance));
+					}
+				}
+			}
+
+			// Sort lights by distance and add to candidates
+			lightsAtPosition.Sort((a, b) => a.distance.CompareTo(b.distance));
+			foreach (var (entity, _) in lightsAtPosition)
+			{
+				if (!_selectableCandidates.Contains(entity))
+					_selectableCandidates.Add(entity);
+			}
+
+			// Priority 4: Fallback to entities without sprites/colliders/lights
+			var fallbackEntities = new List<(Entity entity, float distance)>();
+			for (int i = Core.Scene.Entities.Count - 1; i >= 0; i--)
+			{
+				var entity = Core.Scene.Entities[i];
+				
+				if (MathUtils.IsVectorNaNOrInfinite(entity.Transform.Position))
+					continue;
+				
+				if (!entity.IsSelectableInEditor)
+					continue;
+				
+				if (entity.GetComponent<SpriteRenderer>() == null && 
+				    entity.GetComponent<Collider>() == null &&
+				    entity.GetComponent<DeferredLight>() == null)
+				{
+					float dist = Vector2.Distance(entity.Transform.Position, mouseWorld);
+					if (dist < 16f)
+					{
+						fallbackEntities.Add((entity, dist));
+					}
+				}
+			}
+
+			// Sort fallback entities by distance and add to candidates
+			fallbackEntities.Sort((a, b) => a.distance.CompareTo(b.distance));
+			foreach (var (entity, _) in fallbackEntities)
+			{
+				if (!_selectableCandidates.Contains(entity))
+					_selectableCandidates.Add(entity);
+			}
+
+			// Select the first candidate if any exist
+			if (_selectableCandidates.Count > 0)
+			{
+				_currentCandidateIndex = 0;
+				var selected = _selectableCandidates[_currentCandidateIndex];
+				
+				// Update last click time and position
+				_lastDoubleClickTime = currentTime;
+				_lastDoubleClickPosition = mouseScreen;
+
 				// Treat Shift as Control for game window selection
 				bool additive = _ctrlDown || _shiftDown;
 
 				_imGuiManager.SceneGraphWindow.EntityPane.SetSelectedEntity(selected, additive, false);
 				_imGuiManager.OpenMainEntityInspector(selected);
 
-				if (MathUtils.IsVectorNaNOrInfinite(selected.Transform.Position))
+				if (!MathUtils.IsVectorNaNOrInfinite(selected.Transform.Position))
 				{
-					Debug.Error($"Selected entity '{selected.Name}' has invalid position. Not setting camera target.");
-					return;
-				}
-				
-				SetCameraTargetPosition(selected.Transform.Position);
-			}
-		}
-
-		/// <summary>
-		/// Draws the X/Y axis arrows for the selected entity and handles axis hover.
-		/// </summary>
-		private void DrawEntityArrowsGizmo()
-		{
-			var entityPane = _imGuiManager.SceneGraphWindow.EntityPane;
-			IsMouseOverGizmo = false;
-
-			if (entityPane.SelectedEntities.Count == 0 || !Core.IsEditMode)
-				return;
-
-			// Calculate center, skipping entities with invalid positions
-			Vector2 center = Vector2.Zero;
-			int validEntityCount = 0;
-			
-			foreach (var e in entityPane.SelectedEntities)
-			{
-				// Skip entities with NaN or Infinity positions
-				if (MathUtils.IsVectorNaNOrInfinite(e.Transform.Position))
-				{
-					Debug.Warn($"Entity '{e.Name}' has invalid position: {e.Transform.Position}. Skipping from gizmo center calculation.");
-					continue;
-				}
-				
-				center += e.Transform.Position;
-				validEntityCount++;
-			}
-			
-			// If no valid entities, don't draw gizmo
-			if (validEntityCount == 0)
-			{
-				Debug.Warn("No valid entities to draw gizmo for.");
-				return;
-			}
-			
-			center /= validEntityCount;
-
-			var camera = Core.Scene.Camera;
-			float baseLength = 30f;
-			float minLength = 10f;
-			float maxLength = 100f;
-			float axisLength = baseLength / MathF.Max(camera.RawZoom, 0.01f);
-			axisLength = Math.Clamp(axisLength, minLength, maxLength);
-
-			float baseWidth = 4f;
-			float maxWidth = 16f;
-			float scaledWidth = baseWidth;
-			if (camera.RawZoom > 1f)
-				scaledWidth = MathF.Min(baseWidth * camera.RawZoom, maxWidth);
-
-			var screenPos = camera.WorldToScreenPoint(center);
-			var axisEndX = camera.WorldToScreenPoint(center + new Vector2(axisLength, 0));
-			var axisEndY = camera.WorldToScreenPoint(center + new Vector2(0, -axisLength));
-
-			Color xColor = Color.Red;
-			Color yColor = Color.LimeGreen;
-
-			var mousePos = Input.ScaledMousePosition;
-
-			bool xHovered = IsMouseNearLine(mousePos, screenPos, axisEndX);
-			bool yHovered = IsMouseNearLine(mousePos, screenPos, axisEndY);
-
-			IsMouseOverGizmo = xHovered || yHovered;
-
-			if (_draggingX)
-				xColor = Color.Yellow;
-			else if (xHovered)
-				xColor = Color.Orange;
-
-			if (_draggingY)
-				yColor = Color.Yellow;
-			else if (yHovered)
-				yColor = Color.Orange;
-
-			Debug.DrawArrow(center, center + new Vector2(axisLength, 0), scaledWidth, scaledWidth, xColor);
-			Debug.DrawArrow(center, center + new Vector2(0, -axisLength), scaledWidth, scaledWidth, yColor);
-
-			// Axis hover and drag logic
-			HandleEntityDragging();
-		}
-
-		/// <summary>
-		/// Handles entity dragging based on gizmo axis hover.
-		/// </summary>
-		private void HandleEntityDragging()
-		{
-			var entityPane = _imGuiManager.SceneGraphWindow.EntityPane;
-			var selectedEntities = entityPane.SelectedEntities;
-			if (selectedEntities.Count == 0 || !Core.IsEditMode)
-				return;
-
-			var camera = Core.Scene.Camera;
-			var mousePos = Input.ScaledMousePosition;
-			var worldMouse = camera.ScreenToWorldPoint(mousePos);
-
-			// Compute gizmo axis positions (skip invalid entities)
-			Vector2 center = Vector2.Zero;
-			int validEntityCount = 0;
-			
-			foreach (var e in selectedEntities)
-			{
-				if (MathUtils.IsVectorNaNOrInfinite(e.Transform.Position))
-				{
-					continue;
-				}
-				
-				center += e.Transform.Position;
-				validEntityCount++;
-			}
-			
-			if (validEntityCount == 0)
-				return;
-		
-			center /= validEntityCount;
-
-			float baseLength = 30f;
-			float minLength = 10f;
-			float maxLength = 100f;
-			float axisLength = baseLength / MathF.Max(camera.RawZoom, 0.01f);
-			axisLength = Math.Clamp(axisLength, minLength, maxLength);
-
-			var screenPos = camera.WorldToScreenPoint(center);
-			var axisEndX = camera.WorldToScreenPoint(center + new Vector2(axisLength, 0));
-			var axisEndY = camera.WorldToScreenPoint(center + new Vector2(0, -axisLength));
-
-			bool xHovered = IsMouseNearLine(mousePos, screenPos, axisEndX);
-			bool yHovered = IsMouseNearLine(mousePos, screenPos, axisEndY);
-
-			// Start dragging if not already dragging
-			if (!_draggingX && !_draggingY)
-			{
-				if ((xHovered && yHovered && Input.LeftMouseButtonPressed) ||
-				    (xHovered && Input.LeftMouseButtonPressed) ||
-				    (yHovered && Input.LeftMouseButtonPressed))
-				{
-					if (xHovered && yHovered)
-					{
-						_draggingX = true;
-						_draggingY = true;
-					}
-					else if (xHovered)
-					{
-						_draggingX = true;
-					}
-					else if (yHovered)
-					{
-						_draggingY = true;
-					}
-
-					_dragStartEntityPositions.Clear();
-					foreach (var entity in selectedEntities)
-					{
-						// Skip entities with invalid positions
-						if (MathUtils.IsVectorNaNOrInfinite(entity.Transform.Position))
-						{
-							continue;
-						}
-						
-						_dragStartEntityPositions[entity] = entity.Transform.Position;
-					}
-
-					_dragStartWorldMouse = camera.ScreenToWorldPoint(mousePos);
-				}
-			}
-
-			// Dragging
-			if ((_draggingX || _draggingY) && Input.LeftMouseButtonDown)
-			{
-				var delta = worldMouse - _dragStartWorldMouse;
-				foreach (var entity in selectedEntities)
-				{
-					// Skip entities with invalid positions
-					if (MathUtils.IsVectorNaNOrInfinite(entity.Transform.Position))
-					{
-						continue;
-					}
-					
-					var startPos = _dragStartEntityPositions.TryGetValue(entity, out var pos)
-						? pos
-						: entity.Transform.Position;
-					if (_draggingX && _draggingY)
-					{
-						ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeAll);
-						entity.Transform.Position = startPos + delta;
-					}
-					else if (_draggingX)
-					{
-						ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
-						entity.Transform.Position = new Vector2(startPos.X + delta.X, startPos.Y);
-					}
-					else if (_draggingY)
-					{
-						ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
-						entity.Transform.Position = new Vector2(startPos.X, startPos.Y + delta.Y);
-					}
-				}
-			}
-
-			// End drag
-			if ((_draggingX || _draggingY) && !Input.LeftMouseButtonDown)
-			{
-				_draggingX = false;
-				_draggingY = false;
-
-				_dragEndEntityPositions = new Dictionary<Entity, Vector2>();
-				foreach (var entity in selectedEntities)
-				{
-					// Skip entities with invalid positions
-					if (MathUtils.IsVectorNaNOrInfinite(entity.Transform.Position))
-					{
-						continue;
-					}
-					
-					_dragEndEntityPositions[entity] = entity.Transform.Position;
-				}
-
-				// Only push undo if any entity moved
-				bool anyMoved = selectedEntities.Any(e =>
-					_dragStartEntityPositions.TryGetValue(e, out var startPos) &&
-					_dragEndEntityPositions.TryGetValue(e, out var endPos) &&
-					startPos != endPos
-				);
-
-				if (anyMoved)
-				{
-					EditorChangeTracker.PushUndo(
-						new MultiEntityTransformUndoAction(
-							selectedEntities.Where(e => !MathUtils.IsVectorNaNOrInfinite(e.Transform.Position)).ToList(),
-							_dragStartEntityPositions,
-							_dragEndEntityPositions,
-							$"Moved {string.Join(", ", selectedEntities.Select(e => e.Name))}"
-						),
-						selectedEntities.First(e => !MathUtils.IsVectorNaNOrInfinite(e.Transform.Position)),
-						$"Moved {string.Join(", ", selectedEntities.Select(e => e.Name))}"
-					);
-				}
-			}
-		}
-
-		private void DrawEntityRotateGizmo()
-		{
-			var entityPane = _imGuiManager.SceneGraphWindow.EntityPane;
-			IsMouseOverGizmo = false;
-
-			if (entityPane.SelectedEntities.Count == 0 || !Core.IsEditMode)
-				return;
-
-			Vector2 center = Vector2.Zero;
-			foreach (var e in entityPane.SelectedEntities)
-				center += e.Transform.Position;
-			center /= entityPane.SelectedEntities.Count;
-
-			var camera = Core.Scene.Camera;
-			var screenCenter = camera.WorldToScreenPoint(center);
-
-			float baseRadius = 30f;
-			float minRadius = 28f;
-			float maxRadius = 33f;
-			float radius = baseRadius / MathF.Max(camera.RawZoom, 0.01f);
-			radius = Math.Clamp(radius, minRadius, maxRadius);
-
-			Color circleColor = Color.CornflowerBlue;
-
-			var mousePos = Input.ScaledMousePosition;
-			float distToCenter = Vector2.Distance(mousePos, screenCenter);
-
-			// Only allow rotation if cursor is inside the circle
-			bool hoveredCircle = distToCenter <= radius;
-
-			if (hoveredCircle)
-			{
-				circleColor = Color.Orange;
-				IsMouseOverGizmo = true;
-			}
-			if (_draggingRotate)
-				circleColor = Color.Yellow;
-
-			Debug.DrawCircle(center, radius / camera.RawZoom, circleColor);
-
-			// Draw up (Y) and right (X) axes for visual reference only
-			DrawRotateGizmoAxesUpRight(center, radius, camera, entityPane.SelectedEntities[0].Transform.Rotation);
-
-			// Start rotation only if mouse is inside the circle
-			if (!_draggingRotate && hoveredCircle && Input.LeftMouseButtonPressed)
-			{
-				_draggingRotate = true;
-				_dragStartMousePos = mousePos;
-				_dragStartAngle = MathF.Atan2(mousePos.Y - screenCenter.Y, mousePos.X - screenCenter.X);
-				_dragStartEntityRotation = entityPane.SelectedEntities[0].Transform.Rotation;
-			}
-
-			// Apply rotation as long as we're dragging inside the circle
-			if (_draggingRotate && Input.LeftMouseButtonDown)
-			{
-				var currentAngle = MathF.Atan2(mousePos.Y - screenCenter.Y, mousePos.X - screenCenter.X);
-				float deltaAngle = currentAngle - _dragStartAngle;
-
-				if (deltaAngle > MathF.PI) deltaAngle -= MathF.PI * 2;
-				if (deltaAngle < -MathF.PI) deltaAngle += MathF.PI * 2;
-
-				foreach (var entity in entityPane.SelectedEntities)
-					entity.Transform.Rotation = _dragStartEntityRotation + deltaAngle;
-
-				ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
-			}
-
-			if (_draggingRotate && Input.LeftMouseButtonReleased)
-			{
-				_draggingRotate = false;
-
-				var startRotations = new Dictionary<Entity, float>();
-				var endRotations = new Dictionary<Entity, float>();
-				foreach (var entity in entityPane.SelectedEntities)
-				{
-					startRotations[entity] = _dragStartEntityRotation;
-					endRotations[entity] = entity.Transform.Rotation;
-				}
-
-				bool anyRotated = entityPane.SelectedEntities.Any(e =>
-					startRotations.TryGetValue(e, out var startRot) &&
-					endRotations.TryGetValue(e, out var endRot) &&
-					startRot != endRot
-				);
-
-				if (anyRotated)
-				{
-					EditorChangeTracker.PushUndo(
-						new MultiEntityRotationUndoAction(
-							entityPane.SelectedEntities.ToList(),
-							startRotations,
-							endRotations,
-							$"Rotated {string.Join(", ", entityPane.SelectedEntities.Select(e => e.Name))}"
-						),
-						entityPane.SelectedEntities.First(),
-						$"Rotated {string.Join(", ", entityPane.SelectedEntities.Select(e => e.Name))}"
-					);
-				}
-			}
-		}
-
-		// Draws only up (Y) and right (X) axes inside the rotate gizmo for visual reference
-		private void DrawRotateGizmoAxesUpRight(Vector2 center, float radius, Camera camera, float rotation, Vector2? mousePos = null)
-		{
-			float axisLength = radius * 0.7f / camera.RawZoom;
-
-			// Right (X) axis
-			Vector2 axisXDir = new Vector2(MathF.Cos(rotation), MathF.Sin(rotation));
-			Vector2 axisXStart = center;
-			Vector2 axisXEnd = center + axisXDir * axisLength;
-
-			// Up (Y) axis (90 degrees offset)
-			float axisYAngle = rotation - MathF.PI / 2f;
-			Vector2 axisYDir = new Vector2(MathF.Cos(axisYAngle), MathF.Sin(axisYAngle));
-			Vector2 axisYStart = center;
-			Vector2 axisYEnd = center + axisYDir * axisLength;
-
-			Debug.DrawLine(axisXStart, axisXEnd, Color.Red);
-			Debug.DrawLine(axisYStart, axisYEnd, Color.LimeGreen);
-		}
-
-		private void DrawEntityScaleGizmo()
-		{
-			var entityPane = _imGuiManager.SceneGraphWindow.EntityPane;
-			IsMouseOverGizmo = false;
-
-			if (entityPane.SelectedEntities.Count == 0 || !Core.IsEditMode)
-				return;
-
-			// Compute center of all selected entities
-			Vector2 center = Vector2.Zero;
-			foreach (var e in entityPane.SelectedEntities)
-				center += e.Transform.Position;
-			center /= entityPane.SelectedEntities.Count;
-
-			var camera = Core.Scene.Camera;
-			float baseLength = 30f;
-			float minLength = 10f;
-			float maxLength = 100f;
-			float axisLength = baseLength / MathF.Max(camera.RawZoom, 0.01f);
-			axisLength = Math.Clamp(axisLength, minLength, maxLength);
-
-			var screenPos = camera.WorldToScreenPoint(center);
-
-			// If dragging, move only the selected axis's end to follow the mouse position instantly
-			Vector2 axisEndX, axisEndY;
-			var mousePos = Input.ScaledMousePosition;
-			var worldMouse = camera.ScreenToWorldPoint(mousePos);
-
-			bool isDragging = _draggingScaleX || _draggingScaleY;
-
-			if (isDragging)
-			{
-				// X axis follows mouse X only if dragging X, otherwise stays at default length
-				if (_draggingScaleX)
-					axisEndX = camera.WorldToScreenPoint(new Vector2(worldMouse.X, center.Y));
-				else
-					axisEndX = camera.WorldToScreenPoint(center + new Vector2(axisLength, 0));
-
-				// Same as X
-				if (_draggingScaleY)
-					axisEndY = camera.WorldToScreenPoint(new Vector2(center.X, worldMouse.Y));
-				else
-					axisEndY = camera.WorldToScreenPoint(center + new Vector2(0, -axisLength));
-			}
-			else
-			{
-				axisEndX = camera.WorldToScreenPoint(center + new Vector2(axisLength, 0));
-				axisEndY = camera.WorldToScreenPoint(center + new Vector2(0, -axisLength));
-			}
-
-			Color xColor = Color.DeepSkyBlue;
-			Color yColor = Color.MediumVioletRed;
-
-			bool xHovered = IsMouseNearLine(mousePos, screenPos, axisEndX);
-			bool yHovered = IsMouseNearLine(mousePos, screenPos, axisEndY);
-
-			Debug.DrawLine(center, camera.ScreenToWorldPoint(axisEndX), xColor);
-			Debug.DrawLine(center, camera.ScreenToWorldPoint(axisEndY), yColor);
-
-			// Draw rectangles at the end of each axis
-			float rectSize = 8f / camera.RawZoom;
-			Vector2 rectOrigin = new Vector2(rectSize / 2f, rectSize / 2f);
-			Debug.DrawRect(new RectangleF(camera.ScreenToWorldPoint(axisEndX).X - rectOrigin.X, camera.ScreenToWorldPoint(axisEndX).Y - rectOrigin.Y, rectSize, rectSize), xHovered ? Color.Orange : xColor, 0f);
-			Debug.DrawRect(new RectangleF(camera.ScreenToWorldPoint(axisEndY).X - rectOrigin.X, camera.ScreenToWorldPoint(axisEndY).Y - rectOrigin.Y, rectSize, rectSize), yHovered ? Color.Orange : yColor, 0f);
-
-			IsMouseOverGizmo = xHovered || yHovered;
-
-			HandleEntityScaleDragging(center, axisLength, xHovered, yHovered);
-		}
-
-		private void HandleEntityScaleDragging(Vector2 center, float axisLength, bool xHovered, bool yHovered)
-		{
-			var entityPane = _imGuiManager.SceneGraphWindow.EntityPane;
-			var selectedEntities = entityPane.SelectedEntities;
-			if (selectedEntities.Count == 0 || !Core.IsEditMode)
-				return;
-
-			var camera = Core.Scene.Camera;
-			var mousePos = Input.ScaledMousePosition;
-			var worldMouse = camera.ScreenToWorldPoint(mousePos);
-
-			// Start dragging
-			if (!_draggingScaleX && !_draggingScaleY)
-			{
-				if ((xHovered && yHovered && Input.LeftMouseButtonPressed) ||
-				    (xHovered && Input.LeftMouseButtonPressed) ||
-				    (yHovered && Input.LeftMouseButtonPressed))
-				{
-					if (xHovered && yHovered)
-					{
-						_draggingScaleX = true;
-						_draggingScaleY = true;
-					}
-					else if (xHovered)
-					{
-						_draggingScaleX = true;
-					}
-					else if (yHovered)
-					{
-						_draggingScaleY = true;
-					}
-
-					_dragStartEntityScales.Clear();
-					foreach (var entity in selectedEntities)
-						_dragStartEntityScales[entity] = entity.Transform.Scale;
-
-					_dragStartScaleMouse = camera.ScreenToWorldPoint(mousePos);
-
-					// No need to set _scaleGizmoAxisLengthOverride here, handled in DrawEntityScaleGizmo
-				}
-			}
-
-			// Dragging
-			if ((_draggingScaleX || _draggingScaleY) && Input.LeftMouseButtonDown)
-			{
-				var delta = (worldMouse - _dragStartScaleMouse) / 10f; // 10x slower scaling
-
-				// Reverse Y scaling direction only for entity scaling
-				var entityDelta = new Vector2(delta.X, -delta.Y);
-
-				foreach (var entity in selectedEntities)
-				{
-					var startScale = _dragStartEntityScales.TryGetValue(entity, out var scale)
-						? scale
-						: entity.Transform.Scale;
-					Vector2 newScale = startScale;
-
-					if (_draggingScaleX && _draggingScaleY)
-					{
-						ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeAll);
-						newScale = startScale + entityDelta;
-					}
-					else if (_draggingScaleX)
-					{
-						ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeEW);
-						newScale = new Vector2(startScale.X + entityDelta.X, startScale.Y);
-					}
-					else if (_draggingScaleY)
-					{
-						ImGui.SetMouseCursor(ImGuiMouseCursor.ResizeNS);
-						newScale = new Vector2(startScale.X, startScale.Y + entityDelta.Y);
-					}
-
-					// Prevent negative or zero scale
-					newScale.X = MathF.Max(newScale.X, 0.01f);
-					newScale.Y = MathF.Max(newScale.Y, 0.01f);
-
-					entity.Transform.Scale = newScale;
-				}
-			}
-
-			// End drag
-			if ((_draggingScaleX || _draggingScaleY) && !Input.LeftMouseButtonDown)
-			{
-				_draggingScaleX = false;
-				_draggingScaleY = false;
-
-				_dragEndEntityScales = new Dictionary<Entity, Vector2>();
-				foreach (var entity in selectedEntities)
-					_dragEndEntityScales[entity] = entity.Transform.Scale;
-
-				// Only push undo if any entity scaled
-				bool anyScaled = selectedEntities.Any(e =>
-					_dragStartEntityScales.TryGetValue(e, out var startScale) &&
-					_dragEndEntityScales.TryGetValue(e, out var endScale) &&
-					startScale != endScale
-				);
-
-				if (anyScaled)
-				{
-					EditorChangeTracker.PushUndo(
-						new MultiEntityScaleUndoAction(
-							selectedEntities.ToList(),
-							_dragStartEntityScales,
-							_dragEndEntityScales,
-							$"Scaled {string.Join(", ", selectedEntities.Select(e => e.Name))}"
-						),
-						selectedEntities.First(),
-						$"Scaled {string.Join(", ", selectedEntities.Select(e => e.Name))}"
-					);
+					SetCameraTargetPosition(selected.Transform.Position);
 				}
 			}
 		}
@@ -1040,16 +624,6 @@ namespace Nez.ImGuiTools
 				_rectangleGizmoHandler.Draw(boxColliders, areaLights, worldMouse, camera, _shiftDown);
 				IsMouseOverGizmo = _rectangleGizmoHandler.IsMouseOverGizmo;
 			}
-		}
-
-		private bool IsMouseNearLine(Vector2 mouse, Vector2 a, Vector2 b, float threshold = 10f)
-		{
-			var ap = mouse - a;
-			var ab = b - a;
-			float abLen = ab.Length();
-			float t = Math.Clamp(Vector2.Dot(ap, ab) / (abLen * abLen), 0, 1);
-			var closest = a + ab * t;
-			return (mouse - closest).Length() < threshold;
 		}
 	}
 }
