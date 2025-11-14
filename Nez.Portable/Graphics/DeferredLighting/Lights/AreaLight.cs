@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Nez.Systems;
 
 
 namespace Nez.DeferredLighting
@@ -73,6 +74,31 @@ namespace Nez.DeferredLighting
 		public override float Height => _areaHeight;
 
 		/// <summary>
+		/// Override Bounds to properly calculate the world-space rectangle for this AreaLight
+		/// </summary>
+		public override RectangleF Bounds
+		{
+			get
+			{
+				if (_areBoundsDirty)
+				{
+					var scale = Entity.Transform.Scale;
+					var width = _areaWidth * scale.X;
+					var height = _areaHeight * scale.Y;
+					
+					_bounds.X = Entity.Transform.Position.X - width / 2f;
+					_bounds.Y = Entity.Transform.Position.Y - height / 2f;
+					_bounds.Width = width;
+					_bounds.Height = height;
+					
+					_areBoundsDirty = false;
+				}
+
+				return _bounds;
+			}
+		}
+
+		/// <summary>
 		/// direction of the light
 		/// </summary>
 		public Vector3 Direction = new Vector3(500, 500, 50);
@@ -118,6 +144,14 @@ namespace Nez.DeferredLighting
 			_areaHeight = height;
 			_areBoundsDirty = true;
 			return this;
+		}
+		
+		/// <summary>
+		/// Called when the entity's transform changes. Mark bounds as dirty.
+		/// </summary>
+		public override void OnEntityTransformChanged(Transform.Component comp)
+		{
+			_areBoundsDirty = true;
 		}
 	}
 }

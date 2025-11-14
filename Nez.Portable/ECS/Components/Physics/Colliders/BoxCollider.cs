@@ -142,7 +142,6 @@ namespace Nez
 		{
 			_colliderRequiresAutoSizing = false;
 
-			// Ensure we have a Box shape
 			if (!(Shape is Box box))
 			{
 				Shape = new Box(width, height);

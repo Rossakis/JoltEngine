@@ -169,9 +169,6 @@ namespace Nez.ImGuiTools.TypeInspectors
 			{
 				if (customInspectorType.InspectorType.GetTypeInfo().IsSubclassOf(abstractTypeInspectorType))
 					return (AbstractTypeInspector) Activator.CreateInstance(customInspectorType.InspectorType);
-
-				Debug.Warn(
-					$"found CustomInspector {customInspectorType.InspectorType} but it is not a subclass of AbstractTypeInspector");
 			}
 
 			// Nez types
@@ -184,8 +181,6 @@ namespace Nez.ImGuiTools.TypeInspectors
 			// last ditch effort. If the class is serializeable we use a generic ObjectInspector
 			if (valueType != objectType && valueType.IsDefined(serializationAttrType))
 				return new ObjectInspectors.ObjectInspector();
-
-			Debug.Info($"no inspector found for type {valueType} on object {target.GetType()}");
 
 			return null;
 		}
