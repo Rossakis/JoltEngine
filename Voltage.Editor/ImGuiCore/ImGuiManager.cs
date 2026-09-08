@@ -1519,6 +1519,8 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 			if (ImGui.Button("Don't Save", new System.Numerics.Vector2(buttonWidth, 0)))
 			{
+				// Re-read from disk: clearing the dirty mark alone leaves the edits in the shared cache instance.
+				DataAssetWindow?.DiscardChanges();
 				EditorChangeTracker.Clear();
 				onDiscardChanges();
 				ImGui.CloseCurrentPopup();
@@ -1787,6 +1789,10 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 	private void ResetScene()
 	{
+		// An isolated prefab scene has no file behind it, so reset means re-instantiating the .vprefab.
+		if (IsInPrefabEditScene && ReloadPrefabEditScene())
+			return;
+
 		var sceneManager = SceneManager.Instance;
 		if (sceneManager.HasLoadedScene)
 		{
@@ -1802,8 +1808,50 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		EditorChangeTracker.Clear();
 	}
 
+	/// <summary>Re-opens the prefab under edit from its .vprefab, discarding the isolated scene. False when it cannot be resolved, so the caller can fall back.</summary>
+	private bool ReloadPrefabEditScene()
+	{
+		var guid = _prefabEdit.PrefabGuid;
+		var prefabName = _prefabEdit.PrefabName;
+		var path = Voltage.Editor.Assets.AssetDatabase.Instance?.GetPath(guid);
+
+		if (string.IsNullOrEmpty(path) || !File.Exists(path))
+		{
+			Debug.Warn($"Reset Scene: no .vprefab on disk for '{prefabName}' - it may have been moved or deleted.");
+			return false;
+		}
+
+		Voltage.Data.PrefabData? prefabData;
+		try
+		{
+			prefabData = SerializationManager.Instance.LoadPrefabDataFromPath(path);
+		}
+		catch (Exception ex)
+		{
+			Debug.Error($"Reset Scene: failed to reload prefab '{prefabName}': {ex.Message}");
+			return false;
+		}
+
+		if (!prefabData.HasValue)
+			return false;
+
+		// Read before the reload: ActivateScene already cleared the current scene path.
+		var prevScenePath = _prefabEdit.PreviousScenePath;
+		var prevSceneName = _prefabEdit.PreviousSceneName;
+
+		// Reset discards edits, so drop the session and the dirty flag first.
+		_prefabEdit = null;
+		EditorChangeTracker.Clear();
+		OpenPrefabIsolated(prefabData.Value, prefabName, guid, prevScenePath, prevSceneName,
+			promptOnUnsaved: false);
+		return true;
+	}
+
 	private async Task SaveSceneAsyncAndThenAct()
 	{
+		// Data assets ride along with the same prompt; they are in the same unsaved list.
+		DataAssetWindow?.SaveIfDirty();
+
 		// While editing a prefab in isolation the "scene" is the prefab — save it back to its .vprefab
 		// rather than trying (and failing) to write a scene file for the temporary in-memory scene.
 		if (IsInPrefabEditScene)
@@ -1910,9 +1958,15 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	{
 		// Remember the scene to return to (the current real, file-backed scene). Captured now, before
 		// the swap, so "Go Back" can reload it.
-		string prevScenePath = SceneManager.Instance.CurrentScenePath;
-		string prevSceneName = SceneManager.Instance.CurrentSceneName;
+		OpenPrefabIsolated(prefabData, prefabName, prefabGuid,
+			SceneManager.Instance.CurrentScenePath, SceneManager.Instance.CurrentSceneName,
+			promptOnUnsaved: true);
+	}
 
+	/// <summary>The previous scene is passed in because an isolated prefab scene has no current path to read; promptOnUnsaved is false when the caller is already inside the unsaved-changes prompt.</summary>
+	private void OpenPrefabIsolated(Voltage.Data.PrefabData prefabData, string prefabName, Guid prefabGuid,
+		string prevScenePath, string prevSceneName, bool promptOnUnsaved)
+	{
 		Func<Scene> factory = () =>
 		{
 			var scene = new Scene();
@@ -1930,7 +1984,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			return scene;
 		};
 
-		if (EditorChangeTracker.IsDirty)
+		if (promptOnUnsaved && EditorChangeTracker.IsDirty)
 		{
 			_pendingSceneChange = true;
 			_requestedSceneName = null;

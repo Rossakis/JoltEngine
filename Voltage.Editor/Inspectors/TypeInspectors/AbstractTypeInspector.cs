@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using ImGuiNET;
 using Voltage;
 using Voltage.Utils;
@@ -368,9 +369,33 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 		}
 
 
+		/// <summary>Bumped on every inspector write, so a window can tell a real edit from merely clicking a header.</summary>
+		public static int ValueWriteCount { get; private set; }
+
+		// Per object as well as globally, so an edit on a scene entity cannot dirty the Data Asset window.
+		private static readonly ConditionalWeakTable<object, StrongBox<int>> _writeCounts = new();
+
+		/// <summary>How many inspector writes have landed on this object. Compare across frames to spot edits.</summary>
+		public static int WriteCountFor(object target) =>
+			target != null && _writeCounts.TryGetValue(target, out var box) ? box.Value : 0;
+
+		/// <summary>For writes that bypass the inspectors, such as undo/redo applying a value by reflection.</summary>
+		public static void NoteExternalValueWrite(object target = null) => NoteWrite(target);
+
+		/// <summary>For edits that mutate the value in place rather than assigning it, e.g. list elements.</summary>
+		protected void NoteValueWritten() => NoteWrite(GetRootTarget());
+
+		private static void NoteWrite(object target)
+		{
+			ValueWriteCount++;
+			if (target != null)
+				_writeCounts.GetOrCreateValue(target).Value++;
+		}
+
 		protected void SetValue(object value)
 		{
 		    _setter.Invoke(value);
+		    NoteWrite(GetRootTarget());
 		}
 
 		public FieldInfo GetFieldInfo()

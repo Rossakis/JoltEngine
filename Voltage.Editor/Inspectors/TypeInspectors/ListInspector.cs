@@ -89,6 +89,8 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 							_list.Add("");
 						else
 							_list.Add(Activator.CreateInstance(_elementType));
+
+						NoteValueWritten();
 					}
 
 					ImGui.SameLine(ImGui.GetWindowWidth() - ImGui.GetItemRectSize().X -
@@ -100,6 +102,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 					if (VoltageEditorUtils.SimpleDialog("Clear Data", "Are you sure you want to clear the data?"))
 					{
 						_list.Clear();
+						NoteValueWritten();
 						Debug.Log($"list count: {_list.Count}");
 					}
 				}
@@ -120,7 +123,10 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 				}
 
 				if (removeAt >= 0 && !_isArray)
+				{
 					_list.RemoveAt(removeAt);
+					NoteValueWritten();
+				}
 
 				ImGui.PopItemWidth();
 
@@ -158,6 +164,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			if (ImGui.DragInt($"{index}", ref value))
 			{
 				_list[index] = value;
+				NoteValueWritten();
 				SpecialCasesHandling();
 			}
 		}
@@ -167,6 +174,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			if (ImGui.DragFloat($"{index}", ref value))
 			{
 				_list[index] = value;
+				NoteValueWritten();
 				SpecialCasesHandling();
 			}
 		}
@@ -176,6 +184,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			if (ImGui.InputText($"{index}", ref value, 200))
 			{
 				_list[index] = value;
+				NoteValueWritten();
 				SpecialCasesHandling();
 			}
 		}
@@ -186,6 +195,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			if (ImGui.DragFloat2($"{index}", ref vec))
 			{
 				_list[index] = vec.ToXNA();
+				NoteValueWritten();
 				SpecialCasesHandling();
 			}
 		}
@@ -247,7 +257,10 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 					{
 						var dragged = ComponentReferenceTypeInspector.DraggedComponent;
 						if (_elementType.IsAssignableFrom(dragged.GetType()))
+						{
 							_list[index] = dragged;
+							NoteValueWritten();
+						}
 						else
 							Debug.Warn($"[ListInspector] Cannot assign {dragged.GetType().Name} to element of type {_elementType.Name}.");
 						ComponentReferenceTypeInspector.DraggedComponent = null;
@@ -271,7 +284,10 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			if (ImGui.BeginPopupContextItem($"reflist_ctx_{index}"))
 			{
 				if (ImGui.Selectable("Clear"))
+				{
 					_list[index] = null;
+					NoteValueWritten();
+				}
 				ImGui.EndPopup();
 			}
 
@@ -314,7 +330,10 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 				    ref _pickerSearch, out bool cleared, out var picked))
 			{
 				if (cleared)
+				{
 					_list[_activePickerIndex] = null;
+					NoteValueWritten();
+				}
 				else
 					AssignEntityAt(_activePickerIndex, picked);
 
@@ -362,6 +381,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			if (ImGui.Selectable($"  None ({_elementType.Name})", currentComp == null))
 			{
 				_list[_activePickerIndex] = null;
+				NoteValueWritten();
 				_activePickerIndex = -1;
 				ImGui.CloseCurrentPopup();
 			}
@@ -765,7 +785,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 		{
 			var newArray = Array.CreateInstance(_elementType, newSize);
 			Array.Copy((Array) _list, newArray, Math.Min(_list.Count, newSize));
-			_setter(newArray);
+			SetValue(newArray);
 			_list = newArray;
 		}
 

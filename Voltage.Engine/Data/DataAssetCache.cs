@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Voltage.Persistence;
 using Voltage.Serialization;
 
@@ -153,6 +154,13 @@ namespace Voltage.Data
 			ReloadInstance(existing);
 		}
 
+		// Per instance: ReloadVersion is global, so a window keyed on it refreshes when any .vasset changes.
+		private static readonly ConditionalWeakTable<DataAsset, StrongBox<int>> _reloadCounts = new();
+
+		/// <summary>How many times this instance has been re-read from disk.</summary>
+		public static int ReloadCountFor(DataAsset asset) =>
+			asset != null && _reloadCounts.TryGetValue(asset, out var box) ? box.Value : 0;
+
 		private static void ReloadInstance(DataAsset existing)
 		{
 			var path = existing.SourcePath;
@@ -170,7 +178,10 @@ namespace Voltage.Data
 			existing.OnLoaded();
 
 			lock (_lock)
+			{
 				ReloadVersion++;
+				_reloadCounts.GetOrCreateValue(existing).Value++;
+			}
 		}
 
 		/// <summary>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using ImGuiNET;
 using Voltage;
 using Voltage.Editor.Undo.ComponentActions;
@@ -21,6 +22,28 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
     {
         private List<AbstractTypeInspector> _inspectors = new();
         private bool _isHeaderOpen;
+
+        // ImGui keys open state by widget id and a rebuilt inspector gets a new one, so remember it per object.
+        private static readonly ConditionalWeakTable<object, Dictionary<string, bool>> _expandedGroups = new();
+
+        private string GroupStateKey => _pathFromRoot.Count > 0 ? string.Join(".", _pathFromRoot) : _name;
+
+        private bool ExpandedState
+        {
+            get
+            {
+                var owner = GetRootTarget();
+                return owner != null
+                       && _expandedGroups.GetOrCreateValue(owner).TryGetValue(GroupStateKey, out var open)
+                       && open;
+            }
+            set
+            {
+                var owner = GetRootTarget();
+                if (owner != null)
+                    _expandedGroups.GetOrCreateValue(owner)[GroupStateKey] = value;
+            }
+        }
 
         // Edit session state for drag/slider operations
         private bool _isEditingGroup = false;
@@ -96,7 +119,10 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
             if (groupAttr?.Label != null)
                 label = groupAttr.Label;
 
+            // Our store is the source of truth; CollapsingHeader still returns the post-click value.
+            ImGui.SetNextItemOpen(ExpandedState, ImGuiCond.Always);
             _isHeaderOpen = ImGui.CollapsingHeader(label);
+            ExpandedState = _isHeaderOpen;
             if (_isHeaderOpen)
             {
                 var groupInstance = GetValue();
