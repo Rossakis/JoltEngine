@@ -116,11 +116,16 @@ namespace Voltage.Editor.Plugins
 			return RunPackaging(pluginFolder, project, out log);
 		}
 
-		/// <summary>What to do about it in terms of the checkout, instead of "file not found in the package".</summary>
-		public static string Explain(Result result, string pluginFolder)
+		/// <summary>What to do about it in terms of the checkout, instead of "file not found in the package". A cloned checkout is a throwaway folder, so advice pointing back at it is left out.</summary>
+		public static string Explain(Result result, string pluginFolder, bool isClonedCheckout = false)
 		{
 			var missing = string.Join(", ", result.MissingAfter.Take(4))
 			              + (result.MissingAfter.Count > 4 ? ", ..." : "");
+
+			var buildCommand = isClonedCheckout
+				? null
+				: $"\n    dotnet build \"{result.ProjectPath}\" -t:{PackageTarget} " +
+				  $"-p:VoltageEnginePath=\"{EngineAssembliesPath()}\"";
 
 			switch (result.Outcome)
 			{
@@ -129,26 +134,28 @@ namespace Voltage.Editor.Plugins
 						$"This is a plugin source checkout and its assemblies are not built yet: plugin.json " +
 						$"declares {missing}, which a plugin repository gitignores because CI builds them for a " +
 						"tagged release.\n\n" +
-						"Add it again from Plugin Manager > Add Plugin - that builds it in the background, with " +
-						"progress, instead of stalling the editor. Or build it yourself:\n" +
-						$"    dotnet build \"{result.ProjectPath}\" -t:{PackageTarget} " +
-						$"-p:VoltageEnginePath=\"{EngineAssembliesPath()}\"";
+						(isClonedCheckout
+							? "Install or update it from Plugin Manager - that clones and builds it in the " +
+							  "background, with progress, instead of stalling the editor."
+							: "Add it again from Plugin Manager > Add Plugin - that builds it in the background, " +
+							  "with progress, instead of stalling the editor. Or build it yourself:" + buildCommand);
 
 				case Outcome.NoPackagingProject:
 					return
 						$"This looks like a plugin source checkout rather than a built package: plugin.json declares " +
-						$"{missing}, which {pluginFolder} does not contain. Those are release artifacts - a plugin " +
-						"repository gitignores them and CI builds them for a tagged release.\n\n" +
-						$"There is no project here exposing a '{PackageTarget}' target, so the editor cannot build " +
+						$"{missing}, which {(isClonedCheckout ? "the repository at that commit" : pluginFolder)} does " +
+						"not contain. Those are release artifacts - a plugin repository gitignores them and CI builds " +
+						"them for a tagged release.\n\n" +
+						$"There is no project there exposing a '{PackageTarget}' target, so the editor cannot build " +
 						"them for you. Either build the plugin by hand and add the folder again, or install the " +
 						"published release instead (Plugin Manager > Browse Plugins).";
 
 				case Outcome.Failed:
 					return
 						$"This is a plugin source checkout, and building it did not produce {missing}.\n\n" +
-						$"Build it yourself to see the full errors:\n" +
-						$"    dotnet build \"{result.ProjectPath}\" -t:{PackageTarget} " +
-						$"-p:VoltageEnginePath=\"{EngineAssembliesPath()}\"\n\n" +
+						(isClonedCheckout
+							? "The build output follows:\n\n"
+							: "Build it yourself to see the full errors:" + buildCommand + "\n\n") +
 						Tail(result.BuildLog, 800);
 
 				default:

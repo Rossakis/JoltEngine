@@ -63,7 +63,7 @@ namespace Voltage.Editor.Plugins
 				return ResolvePath(entry, lockEntry, projectPath, allowRepin, allowSourceBuild);
 
 			if (!string.IsNullOrWhiteSpace(entry.Source.Git))
-				return ResolveGit(entry, lockEntry, allowRepin);
+				return ResolveGit(entry, lockEntry, allowRepin, allowSourceBuild);
 
 			return ResolveZip(entry, lockEntry, allowRepin);
 		}
@@ -250,7 +250,8 @@ namespace Voltage.Editor.Plugins
 		#region Git / Zip (remote acquisition)
 
 		/// <summary>Git acquisition through the user's git CLI and ambient credentials, so private repos work without the editor handling credentials. The ref is pinned to a commit SHA, so a force-pushed tag cannot silently change what teammates get.</summary>
-		private static ResolvedPlugin ResolveGit(ProjectPluginEntry entry, PluginLockEntry lockEntry, bool allowRepin)
+		private static ResolvedPlugin ResolveGit(ProjectPluginEntry entry, PluginLockEntry lockEntry, bool allowRepin,
+			bool allowSourceBuild)
 		{
 			var url = entry.Source.Git;
 
@@ -263,6 +264,10 @@ namespace Voltage.Editor.Plugins
 			else
 				commit = ResolveGitRefToSha(entry.Id, url, entry.Source.Ref);
 
+			// Source-built plugins are cached by commit; reuse that before cloning and building again.
+			if (TryUseCachedSourceBuild(entry, lockEntry, commit, out var prebuilt))
+				return prebuilt;
+
 			var staging = CreateStagingDir();
 			try
 			{
@@ -271,8 +276,35 @@ namespace Voltage.Editor.Plugins
 				RunGit(entry.Id, staging, $"fetch --quiet --depth 1 origin {commit}");
 				RunGit(entry.Id, staging, "checkout --quiet FETCH_HEAD");
 
-				var manifest = PluginManifest.LoadFrom(staging);
+				// Source checkouts gitignore their assemblies; build them so the checkout validates as a package.
+				var build = PluginSourceBuild.EnsureBuilt(staging, allowSourceBuild);
+
+				PluginManifest manifest;
+				try
+				{
+					manifest = PluginManifest.LoadFrom(staging);
+				}
+				catch (PluginManifestException ex) when (build.IsSourceCheckout)
+				{
+					var explanation = PluginSourceBuild.Explain(build, staging, isClonedCheckout: true);
+					throw new PluginResolveException(
+						explanation == null ? ex.Message : ex.Message + "\n\n" + explanation);
+				}
+
 				EnsureManifestIdMatches(entry, manifest);
+
+				// Locally built assemblies hash differently per machine, so key on the commit and leave the content unpinned.
+				if (build.IsSourceCheckout)
+				{
+					return new ResolvedPlugin
+					{
+						Manifest = manifest,
+						PayloadDir = PluginCache.CommitToCache(staging, manifest.Id, manifest.Version, commit),
+						ContentHash = null,
+						Commit = commit,
+						IsPinnable = false,
+					};
+				}
 
 				var hash = PluginCache.ComputeContentHash(staging);
 				VerifyAgainstLock(entry, lockEntry, hash, allowRepin,
@@ -293,6 +325,34 @@ namespace Voltage.Editor.Plugins
 				TryDeleteStaging(staging);
 				throw;
 			}
+		}
+
+		/// <summary>Reuses a payload this machine already built for the same commit, so reopening a project does not rebuild it.</summary>
+		private static bool TryUseCachedSourceBuild(ProjectPluginEntry entry, PluginLockEntry lockEntry, string commit,
+			out ResolvedPlugin resolved)
+		{
+			resolved = null;
+
+			// Only an entry pinned by commit alone was source-built; anything with a content hash is a package.
+			if (string.IsNullOrEmpty(commit) || lockEntry?.ContentHash != null || string.IsNullOrEmpty(lockEntry?.Version))
+				return false;
+
+			if (!lockEntry.Source.Matches(entry.Source) || !PluginCache.HasEntry(entry.Id, lockEntry.Version, commit))
+				return false;
+
+			var cachePath = PluginCache.GetEntryPath(entry.Id, lockEntry.Version, commit);
+			var manifest = PluginManifest.LoadFrom(cachePath);
+			EnsureManifestIdMatches(entry, manifest);
+
+			resolved = new ResolvedPlugin
+			{
+				Manifest = manifest,
+				PayloadDir = cachePath,
+				ContentHash = null,
+				Commit = commit,
+				IsPinnable = false,
+			};
+			return true;
 		}
 
 		/// <summary>Https zip acquisition, verified by sha256 content hash against the lockfile.</summary>
