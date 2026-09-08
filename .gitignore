@@ -82,9 +82,9 @@ desktop.ini
 .directory
 *~
 
-.claude
-/.claude
-.claude/settings.local.json
+.claude/*
+!.claude/settings.json
+!.claude/hooks/
 
 # Editor Specific
 Voltage.Editor/Content/
