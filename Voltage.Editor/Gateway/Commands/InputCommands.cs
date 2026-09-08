@@ -14,15 +14,29 @@ internal static class InputCommands
 {
 	public static void Register(GatewayCommandTable table)
 	{
-		table.Add("ui.info", "Window size, cursor position, focus and whether synthetic input owns the devices.", (_, ctx) =>
+		table.Add("ui.info", "Window size, cursor position, game-view placement and scale, focus, and whether synthetic input owns the devices.", (_, ctx) =>
 		{
 			var pp = Core.GraphicsDevice.PresentationParameters;
 			var mouse = Input.CurrentMouseState;
+			var scene = Core.Scene;
 			return new
 			{
 				width = pp.BackBufferWidth,
 				height = pp.BackBufferHeight,
 				mouse = new { x = mouse.X, y = mouse.Y },
+				scaledMouse = new { x = Input.ScaledMousePosition.X, y = Input.ScaledMousePosition.Y },
+				gameView = new
+				{
+					x = ctx.ImGui.GameWindowPosition.X,
+					y = ctx.ImGui.GameWindowPosition.Y,
+					width = ctx.ImGui.GameWindowSize.X,
+					height = ctx.ImGui.GameWindowSize.Y,
+					renderTargetWidth = scene?.SceneRenderTargetSize.X,
+					renderTargetHeight = scene?.SceneRenderTargetSize.Y,
+					resolutionScale = new { x = Input.ResolutionScale.X, y = Input.ResolutionScale.Y },
+					resolutionOffset = new { x = Input.ResolutionOffset.X, y = Input.ResolutionOffset.Y },
+					prefabEditScene = ctx.ImGui.IsInPrefabEditScene
+				},
 				focused = Core.Instance.IsActive,
 				fps = Time.DeltaTime > 0 ? 1f / Time.DeltaTime : 0f,
 				input = ctx.Dispatcher.Input.State()
