@@ -101,6 +101,70 @@ namespace Voltage.Editor.Assets
             "Thumbs.db", "ehthumbs.db", "ehthumbs_vista.db", "desktop.ini", "Icon\r",
         };
 
+        // Editor byproducts, never assets; a .meta sidecar for one of these is a dangling GUID in waiting.
+        private static readonly HashSet<string> TransientExtensions = new(StringComparer.OrdinalIgnoreCase)
+        {
+            // Generic scratch and backups
+            ".tmp", ".temp", ".bak", ".old", ".orig", ".rej", ".save", ".autosave",
+
+            // vim swap files
+            ".swp", ".swo", ".swn", ".swm", ".swl", ".swx", ".kate-swp",
+
+            // Partial writes
+            ".part", ".partial", ".filepart", ".crdownload", ".crswap", ".download",
+
+            // Locks, pids, logs
+            ".lock", ".lck", ".pid", ".log",
+
+            // IDE session and build noise
+            ".sublime-workspace", ".suo", ".ncb", ".vsidx", ".tlog", ".cache",
+        };
+
+        // JetBrains atomic-save markers
+        private static readonly string[] TransientNameMarkers = { "___jb_tmp___", "___jb_old___" };
+
+        // Never assets, and the folders that dominate a repository's file count.
+        private static readonly HashSet<string> TransientDirectoryNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "bin", "obj", "node_modules", "temp", "tmp", "__pycache__",
+            "$RECYCLE.BIN", "System Volume Information",
+        };
+
+        /// <summary>Dot-prefixed folders (.git, .vs, .idea, .claude, …) are tool state, never assets.</summary>
+        private static bool IsTransientDirectoryName(string name) =>
+            !string.IsNullOrEmpty(name) && (name[0] == '.' || TransientDirectoryNames.Contains(name));
+
+        /// <summary>True when a directory between <paramref name="root"/> and the path is transient; the root itself is not judged.</summary>
+        private static bool IsUnderTransientDirectory(string root, string path)
+        {
+            if (string.IsNullOrEmpty(root) || string.IsNullOrEmpty(path))
+                return false;
+
+            string relative;
+            try
+            {
+                relative = Path.GetRelativePath(root, path);
+            }
+            catch
+            {
+                return false;
+            }
+
+            // Outside the root.
+            if (relative.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(relative))
+                return false;
+
+            var segments = relative.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+            for (var i = 0; i < segments.Length - 1; i++)
+            {
+                if (IsTransientDirectoryName(segments[i]))
+                    return true;
+            }
+
+            return false;
+        }
+
         private static bool IsTransientFile(string path)
         {
             var name = Path.GetFileName(path);
@@ -123,8 +187,13 @@ namespace Voltage.Editor.Assets
             if (name.Length > 1 && name[0] == '#' && name[name.Length - 1] == '#')
                 return true;
 
-            var ext = Path.GetExtension(path);
-            return ext.Equals(".tmp", StringComparison.OrdinalIgnoreCase);
+            foreach (var marker in TransientNameMarkers)
+            {
+                if (name.Contains(marker, StringComparison.Ordinal))
+                    return true;
+            }
+
+            return TransientExtensions.Contains(Path.GetExtension(path));
         }
 
     
@@ -260,8 +329,8 @@ namespace Voltage.Editor.Assets
             if (IsScriptFile(absolutePath))
                 return Guid.Empty;
 
-            // Non-asset/build files (.meta, .manifest, .xnb, …) never get their own GUID sidecar.
-            if (SkippedExtensions.Contains(Path.GetExtension(absolutePath)))
+            // Non-asset and transient files never get a GUID sidecar, whoever asks.
+            if (SkippedExtensions.Contains(Path.GetExtension(absolutePath)) || IsTransientFile(absolutePath))
                 return Guid.Empty;
 
             lock (_guidLock)
@@ -481,6 +550,11 @@ namespace Voltage.Editor.Assets
             foreach (var subDir in sortedDirs)
             {
                 var childLabel = Path.GetFileName(subDir);
+
+                // Pruned here so build output and .git are never walked.
+                if (IsTransientDirectoryName(childLabel))
+                    continue;
+
                 // Build a stable relative path key: forward-slash separated.
                 var childRel = relPath.TrimEnd('/') + "/" + childLabel;
                 var childNode = BuildFolderNode(subDir, childLabel, childRel);
@@ -510,7 +584,8 @@ namespace Voltage.Editor.Assets
             foreach (var filePath in files)
             {
                 var ext = Path.GetExtension(filePath);
-                if (SkippedExtensions.Contains(ext) || IsTransientFile(filePath))
+                if (SkippedExtensions.Contains(ext) || IsTransientFile(filePath)
+                    || IsUnderTransientDirectory(rootPath, filePath))
                     continue;
 
                 Utils.ProjectLoadProgress.Report(filePath);
@@ -658,6 +733,10 @@ namespace Voltage.Editor.Assets
             if (SkippedExtensions.Contains(ext) || IsTransientFile(e.FullPath))
                 return;
 
+            // Churn inside obj/, .git/ and the like must not wake the debounce.
+            if (IsUnderTransientDirectory((sender as FileSystemWatcher)?.Path, e.FullPath))
+                return;
+
             lock (_fswLock)
             {
                 _pendingEvents.Add(e);
@@ -674,6 +753,12 @@ namespace Voltage.Editor.Assets
             if (SkippedExtensions.Contains(extNew) && SkippedExtensions.Contains(extOld))
                 return;
             if (IsTransientFile(e.FullPath) && IsTransientFile(e.OldFullPath))
+                return;
+
+            // Both sides, so a file moved OUT of a skipped folder into the project is still imported.
+            var watchRoot = (sender as FileSystemWatcher)?.Path;
+            if (IsUnderTransientDirectory(watchRoot, e.FullPath)
+                && IsUnderTransientDirectory(watchRoot, e.OldFullPath))
                 return;
 
             lock (_fswLock)
