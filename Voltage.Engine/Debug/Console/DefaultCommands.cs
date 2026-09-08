@@ -118,6 +118,19 @@ namespace Voltage.Console
 		}
 
 
+#if EDITOR
+		[Command("mode-diag",
+			"Logs event-subscriber, entity and heap counts on every Play/Stop switch. Counts that climb each cycle are listeners outliving their scene.")]
+		static void ModeDiagnostics(bool enabled = true)
+		{
+			Core.LogModeCycleDiagnostics = enabled;
+			Instance.Log("Play/Stop cycle diagnostics " + (enabled ? "Enabled" : "Disabled"));
+			if (enabled)
+				Instance.Log(Core.ModeCycleDiagnostics());
+		}
+#endif
+
+
 		static ITimer _drawCallTimer;
 
 		[Command("log-drawcalls",

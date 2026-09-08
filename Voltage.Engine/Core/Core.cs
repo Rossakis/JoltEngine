@@ -628,9 +628,35 @@ public class Core : Game
 		if (isEditMode)
 			IsPauseMode = false;
 
-		IsEditMode = isEditMode;
+		// The property setter raises OnSwitchEditMode itself; going through it fired every subscriber twice.
+		_isEditMode = isEditMode;
 		OnSwitchEditMode?.Invoke(isEditMode);
+
+#if EDITOR
+		if (LogModeCycleDiagnostics)
+			Debug.Log(ModeCycleDiagnostics());
+#endif
 	}
+
+#if EDITOR
+	/// <summary>Logs subscriber and object counts on every edit-mode switch, to catch listeners that outlive their scene.</summary>
+	public static bool LogModeCycleDiagnostics = false;
+
+	/// <summary>Subscriber, entity and heap counts; numbers that climb every Play/Stop cycle are listeners outliving their scene.</summary>
+	public static string ModeCycleDiagnostics()
+	{
+		static int Subscribers(Delegate handler) => handler?.GetInvocationList().Length ?? 0;
+
+		return "[mode-cycle] " +
+		       $"OnSwitchEditMode={Subscribers(OnSwitchEditMode)} " +
+		       $"OnResetScene={Subscribers(OnResetScene)} " +
+		       $"OnSwitchPauseMode={Subscribers(OnSwitchPauseMode)} " +
+		       $"OnSwitchAudio={Subscribers(OnSwitchAudio)} " +
+		       $"globalManagers={_instance?._globalManagers.Length ?? 0} " +
+		       $"entities={Scene?.Entities.Count ?? 0} " +
+		       $"heapMB={GC.GetTotalMemory(false) / (1024f * 1024f):F1}";
+	}
+#endif
 
 	/// <summary>
 	/// Toggles PauseMode. Only meaningful while in PlayMode (IsEditMode == false).
