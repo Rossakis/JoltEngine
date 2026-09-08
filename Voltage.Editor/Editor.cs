@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using Voltage.Console;
+using Voltage.Editor.Gateway;
 using Voltage.Editor.ImGuiCore;
 using Voltage.Editor.Persistence;
 using Voltage.Editor.ProjectFile;
@@ -19,6 +20,8 @@ namespace Voltage.Editor;
 
 public class Editor : Core
 {
+	private GatewayDispatcher _gateway;
+
 	protected override void Initialize()
 	{
 		base.Initialize();
@@ -59,6 +62,10 @@ public class Editor : Core
 
 		RegisterGlobalManager(imGuiManager);
 
+		// Registered after ImGuiManager so it updates before it: managers run in reverse registration order.
+		_gateway = new GatewayDispatcher(GatewayOptions.FromArgs(Program.CommandLineArgs), imGuiManager);
+		RegisterGlobalManager(_gateway);
+
 		Scene.OnSceneBegin += TrackSceneChange;
 		Scene.OnSceneBegin += SetSceneClearColor;
 
@@ -80,6 +87,7 @@ public class Editor : Core
 	protected override void EndRun()
 	{
 		base.EndRun();
+		_gateway?.Shutdown();
 		Scene.OnSceneBegin -= TrackSceneChange;
 		Scene.OnSceneBegin -= SetSceneClearColor;
 	}
@@ -105,6 +113,31 @@ public class Editor : Core
 		{
 			PersistentScene.Clear();
 		}
+	}
+
+	protected override void Draw(GameTime gameTime)
+	{
+		// The gateway keeps the loop alive while unfocused, but a minimized window has no surface to draw to.
+		// Update may leave a render target bound for Draw to clear, and Present refuses to run with one active.
+		if (IsWindowMinimized())
+		{
+			GraphicsDevice.SetRenderTarget(null);
+			return;
+		}
+
+		base.Draw(gameTime);
+		_gateway?.AfterDraw();
+	}
+
+	[System.Runtime.InteropServices.UnmanagedFunctionPointer(System.Runtime.InteropServices.CallingConvention.Cdecl)]
+	private delegate uint SdlGetWindowFlags(IntPtr window);
+
+	private const uint SdlWindowMinimized = 0x40;
+
+	private bool IsWindowMinimized()
+	{
+		return Voltage.Editor.Utils.SdlNative.TryGet<SdlGetWindowFlags>("SDL_GetWindowFlags", out var getFlags)
+			&& (getFlags(Window.Handle) & SdlWindowMinimized) != 0;
 	}
 
 	protected override void Update(GameTime gameTime)

@@ -125,6 +125,8 @@ namespace Voltage.Console
 				return;
 			}
 
+			_captureSink?.Add(str);
+
 			// Split the string if you overlow horizontally
 			var maxWidth = Core.GraphicsDevice.PresentationParameters.BackBufferWidth - 40;
 			var screenHeight = Core.GraphicsDevice.PresentationParameters.BackBufferHeight;
@@ -575,6 +577,32 @@ namespace Voltage.Console
 
 
 		#region Execute
+
+		private List<string> _captureSink;
+
+		/// <summary>Runs one console line as if typed and returns every line it logged.</summary>
+		public List<string> Execute(string commandLine)
+		{
+			var data = (commandLine ?? "").Split(new char[] {' ', ','}, StringSplitOptions.RemoveEmptyEntries);
+			var captured = new List<string>();
+			if (data.Length == 0)
+				return captured;
+
+			_captureSink = captured;
+			try
+			{
+				ExecuteCommand(data[0].ToLower(), data.Skip(1).ToArray());
+			}
+			finally
+			{
+				_captureSink = null;
+			}
+
+			return captured;
+		}
+
+		/// <summary>Names of every registered console command.</summary>
+		public IEnumerable<string> CommandNames => _commands.Keys;
 
 		void ExecuteCommand(string command, string[] args)
 		{

@@ -47,6 +47,11 @@ public class Core : Game
 	/// </summary>
 	public static bool PauseOnFocusLost = true;
 
+	/// <summary>Overrides PauseOnFocusLost while something external, such as the editor gateway, is driving the process.</summary>
+	public static volatile bool KeepRunningWhenUnfocused;
+
+	private static bool ShouldPauseForFocus => PauseOnFocusLost && !KeepRunningWhenUnfocused && !_instance.IsActive;
+
 	/// <summary>
 	/// enables/disables debug rendering
 	/// </summary>
@@ -260,7 +265,7 @@ public class Core : Game
 
 	protected override void Update(GameTime gameTime)
 	{
-		if (PauseOnFocusLost && !IsActive)
+		if (ShouldPauseForFocus)
 		{
 			SuppressDraw();
 			return;
@@ -321,7 +326,7 @@ public class Core : Game
 
 	protected override void Draw(GameTime gameTime)
 	{
-		if (PauseOnFocusLost && !IsActive)
+		if (ShouldPauseForFocus)
 			return;
 
 		StartDebugDraw(gameTime.ElapsedGameTime);
@@ -361,6 +366,18 @@ public class Core : Game
 		catch (Exception ex)
 		{
 			Debug.Error($"[Core.Draw] Unhandled exception escaped the scene render loop: {ex.Message}\n{ex.StackTrace}");
+
+		}
+
+		// Present refuses to run with a render target bound. A throw mid-render, a frame with no scene, or an
+		// update-time render that expected the scene to reset it can all leave one active.
+		try
+		{
+			if (GraphicsDevice.GetRenderTargets().Length > 0)
+				GraphicsDevice.SetRenderTarget(null);
+		}
+		catch (Exception)
+		{
 		}
 
 		EndDebugDraw();

@@ -28,6 +28,9 @@ public class PathUndoAction : EditorChangeTracker.IEditorAction
 
 	private void SetValue(object value)
 	{
+		// Each level is kept so a boxed struct along the path can be written back after the leaf changes.
+		var holders = new List<object> { _root };
+		var members = new List<MemberInfo>();
 		object current = _root;
 		Type currentType = current.GetType();
 
@@ -48,6 +51,8 @@ public class PathUndoAction : EditorChangeTracker.IEditorAction
 			if (current == null)
 				throw new InvalidOperationException($"Null encountered while traversing path at '{memberName}'.");
 			currentType = current.GetType();
+			holders.Add(current);
+			members.Add(member);
 		}
 
 		// Set the value on the last member
@@ -61,5 +66,15 @@ public class PathUndoAction : EditorChangeTracker.IEditorAction
 			lastField.SetValue(current, value);
 		else
 			throw new InvalidOperationException($"Member '{lastMemberName}' not found on type '{currentType.Name}'.");
+
+		for (int i = members.Count - 1; i >= 0; i--)
+		{
+			if (!holders[i + 1].GetType().IsValueType)
+				continue;
+			if (members[i] is PropertyInfo p && p.CanWrite)
+				p.SetValue(holders[i], holders[i + 1]);
+			else if (members[i] is FieldInfo f)
+				f.SetValue(holders[i], holders[i + 1]);
+		}
 	}
 }

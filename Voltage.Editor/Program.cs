@@ -47,7 +47,7 @@ public class Program
 			: e.ExceptionObject?.ToString() ?? "Unknown error";
 
 		var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [FATAL] Unhandled exception " +
-		                 $"(IsTerminating={e.IsTerminating}):\n{message}\n";
+		                 $"(IsTerminating={e.IsTerminating}):\n{message}\n" + RecentLogLines();
 
 		// Crash Log File
 		try
@@ -68,6 +68,32 @@ public class Program
 			Debug.Error(logMessage);
 		}
 		catch { }
+
+		// Leaving the runtime to finish the crash raises the OS error dialog on Windows, which blocks until a
+		// person dismisses it. The log is written, so exit now; a debugger still gets its break first.
+		if (e.IsTerminating && !System.Diagnostics.Debugger.IsAttached)
+			Environment.Exit(70);
+	}
+
+	/// <summary>The tail of the editor log, so a crash file shows what led up to it.</summary>
+	private static string RecentLogLines(int count = 40)
+	{
+		try
+		{
+			var entries = Debug.GetLogEntries();
+			var start = Math.Max(0, entries.Count - count);
+			var lines = new System.Text.StringBuilder("\nRecent log:\n");
+			for (var i = start; i < entries.Count; i++)
+			{
+				var entry = entries[i];
+				lines.Append($"[{entry.Timestamp:HH:mm:ss.fff}] [{entry.Type}] {entry.Message} ({entry.CallerClass}:{entry.CallerLine})\n");
+			}
+			return lines.ToString();
+		}
+		catch
+		{
+			return string.Empty;
+		}
 	}
 
 	private static void OnUnobservedTaskException(

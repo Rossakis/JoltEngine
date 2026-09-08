@@ -38,14 +38,18 @@ namespace Voltage
 		private static readonly List<LogEntry> _logEntries = new();
 		private static readonly object _logLock = new();
 
+		/// <summary>Raised for every entry that reaches the log, on the thread that logged it.</summary>
+		public static event Action<LogEntry> OnLogEntry;
+
 		// Track repeated messages
 		private static readonly Dictionary<(LogType, string, string, int), int> _messageCounts = new();
 		private const int MaxRepeatedMessages = 100;
 
+		/// <summary>A snapshot: entries arrive from any thread, so callers must not enumerate the live list.</summary>
 		public static IReadOnlyList<LogEntry> GetLogEntries()
 		{
 			lock (_logLock)
-				return _logEntries.AsReadOnly();
+				return _logEntries.ToArray();
 		}
 
 		public static void ClearLogEntries()
@@ -71,6 +75,7 @@ namespace Voltage
 			string callerClass = System.IO.Path.GetFileNameWithoutExtension(callerFile);
 
 			var key = (type, msg, callerClass, callerLine);
+			LogEntry? added = null;
 
 			lock (_logLock)
 			{
@@ -78,30 +83,36 @@ namespace Voltage
 				{
 					if (count < MaxRepeatedMessages)
 					{
-						_logEntries.Add(new LogEntry(type, msg, DateTime.Now, callerClass, callerLine));
+						added = new LogEntry(type, msg, DateTime.Now, callerClass, callerLine);
 						_messageCounts[key] = count + 1;
 					}
 					else if (count == MaxRepeatedMessages)
 					{
 						string summary = $"\"{msg}\" was logged more than {MaxRepeatedMessages} times. [at {callerClass}:{callerLine}]";
-						_logEntries.Add(new LogEntry(LogType.Warn, summary, DateTime.Now, callerClass, callerLine));
+						added = new LogEntry(LogType.Warn, summary, DateTime.Now, callerClass, callerLine);
 						_messageCounts[key] = count + 1;
 					}
 				}
 				else
 				{
-					_logEntries.Add(new LogEntry(type, msg, DateTime.Now, callerClass, callerLine));
+					added = new LogEntry(type, msg, DateTime.Now, callerClass, callerLine);
 					_messageCounts[key] = 1;
 				}
+
+				if (added.HasValue)
+					_logEntries.Add(added.Value);
 
 				if (_logEntries.Count > 500)
 					_logEntries.RemoveAt(0);
 
 #if !EDITOR && DEBUG
-				// Show Messages in the Debug build of the game 
+				// Show Messages in the Debug build of the game
 				System.Console.WriteLine($"[{type}] {msg} (at {callerClass}:{callerLine})");
 #endif
 			}
+
+			if (added.HasValue)
+				OnLogEntry?.Invoke(added.Value);
 		}
 
 		[DebuggerHidden]

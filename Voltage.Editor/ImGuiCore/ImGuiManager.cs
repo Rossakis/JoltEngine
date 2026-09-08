@@ -201,6 +201,9 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 	private ScriptManager _scriptManager;
 
+	/// <summary>Null until a project with a scripts folder is loaded.</summary>
+	internal ScriptManager ScriptManager => _scriptManager;
+
 	private EditorSettingsWindow _editorSettingsWindow = new();
 	private ProjectSettingsWindow _projectSettingsWindow = new();
 	private AssetBrowserWindow _assetBrowserWindow = new();

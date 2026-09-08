@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net8.0</TargetFramework>
+		<AssemblyName>voltage</AssemblyName>
+		<RootNamespace>Voltage.Cli</RootNamespace>
+		<Nullable>disable</Nullable>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<InvariantGlobalization>true</InvariantGlobalization>
+		<RollForward>LatestMajor</RollForward>
+		<Configurations>Editor-Debug;Editor-Release</Configurations>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Editor-Debug'">
+		<Optimize>false</Optimize>
+		<DebugType>portable</DebugType>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)' == 'Editor-Release'">
+		<Optimize>true</Optimize>
+	</PropertyGroup>
+
+</Project>
