@@ -1812,7 +1812,7 @@ public class EntityInspectorWindow
 		var prefabData = TryLoadPrefabForRevert(Entity.OriginalPrefabName, Entity.OriginalPrefabGuid);
 		if (prefabData.HasValue)
 		{
-			PrefabOverrides.RevertAll(Entity, entitySceneData, prefabData.Value);
+			PrefabOverrides.Revert(Entity, entitySceneData, prefabData.Value);
 			EditorDebug.Log($"Reverted all overrides on '{Entity.Name}' to prefab '{Entity.OriginalPrefabName}'.");
 		}
 		else
@@ -1842,7 +1842,7 @@ public class EntityInspectorWindow
 			return;
 		}
 
-		PrefabOverrides.RevertComponent(Entity, entitySceneData, prefabData.Value, componentName);
+		PrefabOverrides.Revert(Entity, entitySceneData, prefabData.Value, componentName);
 		EditorDebug.Log($"Reverted '{componentName}' on '{Entity.Name}' to prefab version.");
 		DelayedSetEntity(Entity);
 	}

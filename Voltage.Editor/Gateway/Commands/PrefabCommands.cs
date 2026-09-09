@@ -116,12 +116,7 @@ internal static class PrefabCommands
 			var data = LoadPrefabData(entity) ?? throw new GatewayException($"prefab '{entity.OriginalPrefabName}' could not be loaded");
 			var record = SceneRecord(entity);
 
-			if (string.IsNullOrEmpty(component))
-				PrefabOverrides.RevertAll(entity, record, data);
-			else
-				PrefabOverrides.RevertComponent(entity, record, data, component);
-
-			EditorChangeTracker.MarkChanged(entity, $"Revert {entity.Name} to prefab {entity.OriginalPrefabName}");
+			PrefabOverrides.Revert(entity, record, data, string.IsNullOrEmpty(component) ? null : component);
 			ctx.ImGui().MainEntityInspectorWindow?.DelayedSetEntity(entity);
 			return Info(entity);
 		}, P.Str("entity", "Prefab instance id, GUID or name", required: true), P.Str("component", "Component name to revert; default all")).Destructive();

@@ -81,6 +81,9 @@ public class ComponentList : IEnumerable<Component>
 		_componentsToRemove.Add(component);
 	}
 
+	/// <summary>Drops a removal queued this frame, so an undo issued before the commit keeps the component; true when one was pending.</summary>
+	internal bool CancelRemove(Component component) => _componentsToRemove.Remove(component);
+
 	/// <summary>
 	/// removes all components from the component list immediately
 	/// </summary>

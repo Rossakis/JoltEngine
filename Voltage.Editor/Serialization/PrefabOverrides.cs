@@ -8,6 +8,14 @@ namespace Voltage.Editor.Serialization;
 /// <summary>Revert logic shared by the inspector and the gateway: prefab components win, instance-only components go.</summary>
 internal static class PrefabOverrides
 {
+	/// <summary>Runs a revert as one undo step; a null componentName reverts every override.</summary>
+	public static void Revert(Entity entity, SceneData.SceneEntityData record, PrefabData data, string componentName = null)
+	{
+		var action = new Undo.PrefabActions.PrefabRevertUndoAction(entity, record, data, componentName);
+		action.Redo();
+		Undo.Core.EditorChangeTracker.PushUndo(action, entity, action.Description);
+	}
+
 	public static void RevertAll(Entity entity, SceneData.SceneEntityData record, PrefabData data)
 	{
 		if (record != null)

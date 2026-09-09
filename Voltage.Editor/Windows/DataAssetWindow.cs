@@ -82,6 +82,7 @@ namespace Voltage.Editor.Windows
 		/// <summary>Drops the open asset without prompting, e.g. on project close.</summary>
 		public void Close()
 		{
+			EditorChangeTracker.ClearChangesFor(_asset);
 			_asset = null;
 			_path = null;
 			_inspectors = null;
@@ -198,6 +199,8 @@ namespace Voltage.Editor.Windows
 			_inspectors = TypeInspectorUtils.GetInspectableProperties(_asset);
 			_seenReloadVersion = DataAssetCache.ReloadCountFor(_asset);
 			_seenValueWrites = AbstractTypeInspector.WriteCountFor(_asset);
+			// The disk copy is now the truth, so the tracker must forget the edits too or the editor stays dirty forever.
+			EditorChangeTracker.ClearChangesFor(_asset);
 			_dirty = false;
 		}
 

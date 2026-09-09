@@ -52,7 +52,11 @@ public static class GameBuilder
 	/// container so the binary runs on stock SteamOS / older distros. Ignored for non-Linux targets.</param>
 	/// <param name="cancellationToken">Token to cancel the build</param>
 	/// <returns>True if build succeeded</returns>
-	public static async Task<bool> BuildGameAsync(IGameProject project, BuildPlatform platform, bool compileAssets, bool debugBuild, bool useLinuxCompatContainer, CancellationToken cancellationToken)
+	public static Task<bool> BuildGameAsync(IGameProject project, BuildPlatform platform, bool compileAssets, bool debugBuild, bool useLinuxCompatContainer, CancellationToken cancellationToken) =>
+		BuildGameAsync(project, platform, compileAssets, debugBuild, useLinuxCompatContainer, true, cancellationToken);
+
+	/// <summary>With <paramref name="aot"/> false the publish is a plain self-contained build: faster, no C++ toolchain, but not what ships.</summary>
+	public static async Task<bool> BuildGameAsync(IGameProject project, BuildPlatform platform, bool compileAssets, bool debugBuild, bool useLinuxCompatContainer, bool aot, CancellationToken cancellationToken)
 	{
 		if (project == null)
 		{
@@ -138,7 +142,7 @@ public static class GameBuilder
 
 			// 2)  Publish the game project (self-contained + trimmed)
 			OnBuildStepStarted?.Invoke($"Publishing game executable ({platform.DisplayName}, {configuration}, AOT + Trimmed)...");
-			bool publishSuccess = await Task.Run(() => PublishProject(project, platform, configuration, buildDir, useLinuxCompatContainer, cancellationToken), cancellationToken);
+			bool publishSuccess = await Task.Run(() => PublishProject(project, platform, configuration, buildDir, useLinuxCompatContainer && aot, aot, cancellationToken), cancellationToken);
 			OnBuildStepCompleted?.Invoke("Publish game executable", publishSuccess);
 
 			// Restore editor-flavored DLLs immediately after publish so the Roslyn script
@@ -216,7 +220,7 @@ public static class GameBuilder
 	/// Publishes the game project using dotnet publish as an AOT, trimmed deployment.
 	/// Note: EngineLibs should already contain runtime (non-EDITOR) DLLs at this point.
 	/// </summary>
-	private static bool PublishProject(IGameProject project, BuildPlatform platform, string configuration, string buildDir, bool useLinuxCompatContainer, CancellationToken cancellationToken)
+	private static bool PublishProject(IGameProject project, BuildPlatform platform, string configuration, string buildDir, bool useLinuxCompatContainer, bool aot, CancellationToken cancellationToken)
 	{
 		try
 		{
@@ -272,10 +276,9 @@ public static class GameBuilder
 			                $"-r {platform.RuntimeIdentifier} " +
 			                $"-o \"{buildDir}\" " +
 			                $"--self-contained true " +
-			                $"-p:PublishAot=true " +
-			                $"-p:PublishTrimmed=true " +
-			                $"-p:TrimMode=link " +
-			                $"-p:TrimmerRootAssembly={project.ProjectName} " +
+			                (aot
+				                ? $"-p:PublishAot=true -p:PublishTrimmed=true -p:TrimMode=link -p:TrimmerRootAssembly={project.ProjectName} "
+				                : "-p:PublishAot=false -p:PublishTrimmed=false ") +
 			                $"-p:IncludeNativeLibrariesForSelfExtract=true";
 
 			var processInfo = new ProcessStartInfo

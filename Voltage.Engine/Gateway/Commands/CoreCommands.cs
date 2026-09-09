@@ -252,7 +252,29 @@ public static class CoreCommands
 			foreach (var element in stepsElement.EnumerateArray())
 				steps.AddRange(ParseStep(new GatewayArgs(element)));
 			return ctx.Dispatcher.Input.Enqueue(steps);
-		}, P.List("steps", "Objects with action = move|click|hover|drag|down|up|scroll|key|type|wait|waitEvent|release and the same fields as the matching input.* command; waitEvent takes name and timeout (seconds, default 30)", "object", true));
+		}, P.List("steps", "Objects with action = move|click|hover|drag|down|up|scroll|key|keyDown|keyUp|type|wait|waitEvent|release and the same fields as the matching input.* command; waitEvent takes name and timeout (seconds, default 30)", "object", true));
+
+		table.Add("input.record", "Record the mouse, keyboard and typed text as input.script steps for voltage run; synthetic input is recorded too.", (args, ctx) =>
+		{
+			var recorder = ctx.Dispatcher.Recorder;
+			switch (args.String("action", "status").ToLowerInvariant())
+			{
+				case "start":
+					recorder.Start(args.Bool("mouse", true), args.Bool("keyboard", true), args.Bool("text", true));
+					return new { recording = true };
+				case "stop":
+					recorder.Stop();
+					return recorder.State(true);
+				case "status":
+					return recorder.State(args.Bool("steps"));
+				default:
+					throw new GatewayException("action must be start, stop or status");
+			}
+		}, P.Enum("action", "Start, stop, or report the recording so far", new[] { "start", "stop", "status" }, "status"),
+			P.Bool("mouse", "Record cursor moves, buttons and wheel", true),
+			P.Bool("keyboard", "Record key presses and releases", true),
+			P.Bool("text", "Record typed characters", true),
+			P.Bool("steps", "Include the steps so far in a status reply", false));
 
 		// Synthetic input reaches every menu, so the safe profile withholds it along with the actions it could trigger.
 		foreach (var name in new[] { "input.move", "input.click", "input.down", "input.up", "input.hover", "input.drag", "input.scroll", "input.key", "input.type", "input.script" })
@@ -347,6 +369,10 @@ public static class CoreCommands
 			}
 			case "key":
 				return KeyPress(ParseKey(step.Require("key")), step.Strings("modifiers").Select(ParseKey).ToList());
+			case "keydown":
+				return new Step[] { new KeyStep(ParseKey(step.Require("key")), true), new WaitStep(1) };
+			case "keyup":
+				return new Step[] { new KeyStep(ParseKey(step.Require("key")), false), new WaitStep(1) };
 			case "type":
 				return Type(step.Require("text"));
 			case "wait":

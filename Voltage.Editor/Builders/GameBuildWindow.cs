@@ -30,6 +30,7 @@ public class GameBuildWindow
 	private readonly PersistentBool _compileAssets = new("GameBuild.CompileAssets", false);
 	private readonly PersistentBool _debugBuild = new("GameBuild.DebugBuild", false);
 	private readonly PersistentBool _linuxCompatContainer = new("GameBuild.LinuxCompatContainer", true);
+	private readonly PersistentBool _nativeAot = new("GameBuild.NativeAot", true);
 	private readonly PersistentInt _selectedPlatformIndex = new("GameBuild.SelectedPlatformIndex", 0);
 
 	// When set, the advisory build-dependency check is skipped before a build (the user chose "Don't show
@@ -246,7 +247,17 @@ public class GameBuildWindow
 
 			VoltageEditorUtils.SmallVerticalSpace();
 
-			ImGui.TextWrapped("The game will be published as a self-contained, trimmed executable for standalone deployment.");
+			var nativeAotValue = _nativeAot.Value;
+			if (Gui.Checkbox("Native AOT", ref nativeAotValue))
+				_nativeAot.Value = nativeAotValue;
+			if (ImGui.IsItemHovered())
+				ImGui.SetTooltip("On: the trimmed native build you ship.\nOff: a plain self-contained build that is faster and needs no C++ build tools.");
+
+			VoltageEditorUtils.SmallVerticalSpace();
+
+			ImGui.TextWrapped(_nativeAot.Value
+				? "The game will be published as a self-contained, trimmed executable for standalone deployment."
+				: "The game will be published as a self-contained executable without native compilation or trimming.");
 
 				VoltageEditorUtils.SmallVerticalSpace();
 
@@ -624,7 +635,7 @@ public class GameBuildWindow
 		{
 			try
 			{
-				bool success = await GameBuilder.BuildGameAsync(project, platform, _compileAssets.Value, debugBuild, _linuxCompatContainer.Value, token);
+				bool success = await GameBuilder.BuildGameAsync(project, platform, _compileAssets.Value, debugBuild, _linuxCompatContainer.Value, _nativeAot.Value, token);
 
 				if (success && runAfterBuild)
 				{

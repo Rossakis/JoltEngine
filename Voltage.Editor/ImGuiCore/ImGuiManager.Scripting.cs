@@ -62,6 +62,7 @@ public partial class ImGuiManager
 		_scriptManager?.Dispose();
 		_scriptManager = null;
 		_assetBrowserWindow.OnProjectUnloaded();
+		DataAssetWindow.Close();
 		EditorDebug.Log("Project unloaded");
 	}
 

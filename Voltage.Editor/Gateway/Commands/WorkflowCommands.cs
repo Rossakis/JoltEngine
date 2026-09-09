@@ -86,6 +86,7 @@ internal static class WorkflowCommands
 				throw new GatewayException($"{platform.DisplayName} cannot be built here: {platform.UnavailableReason}");
 
 			var debug = args.Bool("debug");
+			var aot = args.Bool("aot", true);
 			var steps = new List<object>();
 			var errors = new List<string>();
 			var lockObj = new object();
@@ -104,7 +105,7 @@ internal static class WorkflowCommands
 			{
 				try
 				{
-					var success = await GameBuilder.BuildGameAsync(project, platform, args.Bool("compileAssets", true), debug, args.Bool("linuxContainer"), CancellationToken.None);
+					var success = await GameBuilder.BuildGameAsync(project, platform, args.Bool("compileAssets", true), debug, args.Bool("linuxContainer"), aot, CancellationToken.None);
 					GameBuilder.OnBuildStepCompleted -= onStep;
 					Debug.OnLogEntry -= onLog;
 
@@ -121,6 +122,7 @@ internal static class WorkflowCommands
 					{
 						success,
 						platform = platform.DisplayName,
+						aot,
 						output = GameBuilder.GetBuildOutputDirectory(project, platform, debug),
 						executable = exe,
 						steps = stepsCopy,
@@ -140,7 +142,7 @@ internal static class WorkflowCommands
 			});
 
 			return GatewayTasks.WithTimeout(tcs.Task, BuildTimeout, "build timed out");
-		}, PlatformParam, DebugParam, P.Bool("compileAssets", "Compile content before publishing", true), P.Bool("linuxContainer", "Build Linux targets inside a container", false)).Unsafe();
+		}, PlatformParam, DebugParam, P.Bool("compileAssets", "Compile content before publishing", true), P.Bool("linuxContainer", "Build Linux targets inside a container", false), P.Bool("aot", "Native AOT publish; false is a plain self-contained build that needs no C++ toolchain", true)).Unsafe();
 
 		table.Add("build.run", "Launch the last built game executable, detached from the editor. With gateway=true the game starts its own gateway on a free port and the answer carries its gateway.json path once it is listening.", (args, ctx) =>
 		{

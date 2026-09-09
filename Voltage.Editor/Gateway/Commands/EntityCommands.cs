@@ -238,7 +238,8 @@ internal static class EntityCommands
 			var component = FindComponent(args);
 			var entity = component.Entity;
 			component.RemoveComponent();
-			EditorChangeTracker.MarkChanged(entity, $"Remove {component.GetType().Name} from {entity.Name}");
+			var action = new ComponentRemovedUndoAction(entity, component);
+			EditorChangeTracker.PushUndo(action, entity, action.Description);
 			return new { removed = true, type = component.GetType().FullName };
 		}, P.Str("entity", "Entity id, GUID or name", required: true), P.Str("type", "Component type name or full name", required: true)).Destructive();
 

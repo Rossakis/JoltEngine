@@ -258,7 +258,13 @@ namespace Voltage.Editor.Inspectors.ObjectInspectors
 
 				if (Gui.Selectable("Remove Component"))
 				{
+					var owner = _component.Entity;
 					_component.RemoveComponent();
+					if (owner != null)
+					{
+						var action = new ComponentRemovedUndoAction(owner, _component);
+						EditorChangeTracker.PushUndo(action, owner, action.Description);
+					}
 				}
 
 				Gui.EndPopup();

@@ -219,6 +219,13 @@ public partial class SerializationManager : GlobalManager
 			.Where(c => c.IsSerialized);
 	}
 
+	/// <summary>The entry a save would write for this component, or null when it carries no data.</summary>
+	internal static ComponentDataEntry? SerializeComponentEntry(Component component)
+	{
+		var entry = SerializeComponent(component);
+		return string.IsNullOrEmpty(entry.Json) ? null : entry;
+	}
+
 	/// <summary>
 	/// Serializes a single component into a ComponentDataEntry.
 	/// If the component's Data property returns null but the component's runtime type

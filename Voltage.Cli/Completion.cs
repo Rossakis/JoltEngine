@@ -9,7 +9,7 @@ namespace Voltage.Cli;
 /// <summary>Shell completion: the scripts call back into 'voltage __complete', which answers from the live command list or its cache.</summary>
 public static class Completion
 {
-	public static readonly string[] Subcommands = { "help", "logs", "watch", "pipe", "json", "mcp", "start", "doctor", "run", "completion" };
+	public static readonly string[] Subcommands = { "help", "logs", "watch", "pipe", "json", "mcp", "start", "doctor", "run", "record", "completion" };
 
 	private static readonly string[] GlobalOptions = { "--config", "--port", "--token", "--timeout", "--compact", "--table", "--field", "--game" };
 
@@ -20,6 +20,7 @@ public static class Completion
 		["start"] = new[] { "--exe", "--wait", "--game" },
 		["doctor"] = new[] { "--json" },
 		["run"] = new[] { "--batch", "--continue" },
+		["record"] = new[] { "--no-mouse", "--no-keyboard", "--no-text" },
 	};
 
 	private static readonly string[] OptionsWithValue = { "--config", "--port", "--token", "--timeout", "--field", "--level", "--count", "--filter", "--exe", "--wait" };

@@ -20,20 +20,21 @@ internal static class ProjectSceneCommands
 
 		table.Add("project.recent", "Recently opened project files.", (_, _) => ProjectManager.Instance.GetRecentProjects()).ReadOnly();
 
-		table.Add("project.load", "Open a .voltage project; answers once it has loaded.", (args, _) =>
+		table.Add("project.load", "Open a .voltage project; answers once it has loaded.", (args, ctx) =>
 		{
 			var path = Path.GetFullPath(args.Require("path"));
 			if (!File.Exists(path))
 				throw new GatewayException($"project file not found: {path}");
 
 			// The dispatcher runs before the ImGui frame begins, so the load can drive its own frames from here.
+			var previous = Core.Scene;
 			if (!ProjectManager.Instance.LoadProject(path))
 				throw new GatewayException("project failed to load; see log.tail");
 
 			// Startup does the same two steps: the project alone leaves an empty placeholder scene behind.
 			var loaded = SceneManager.Instance.LoadLastUsedScene();
 			EditorChangeTracker.Clear();
-			return WhenCurrent(loaded, () => new { project = ProjectInfo(), scene = SceneInfo() });
+			return WhenSettled(ctx, previous, loaded, () => new { project = ProjectInfo(), scene = SceneInfo() });
 		}, P.Str("path", "Path to the .voltage file", required: true)).Destructive();
 
 		table.Add("scene.list", "Scene files of the current project.", (_, _) =>
@@ -119,7 +120,7 @@ internal static class ProjectSceneCommands
 			return WhenCurrent(created, () => new { path, loaded = true, scene = SceneInfo() });
 		}, P.Str("name", "Scene file name without extension", required: true), P.Enum("template", "empty: a new blank scene; copy: the open scene saved under the new name", new[] { "empty", "copy" }, "empty"), P.Bool("load", "Open the new scene", true), P.Bool("force", "Discard unsaved changes when loading", false));
 
-		table.Add("project.create", "Create a new project like the New Project window and open it; answers once it has loaded.", (args, _) =>
+		table.Add("project.create", "Create a new project like the New Project window and open it; answers once it has loaded.", (args, ctx) =>
 		{
 			var name = args.Require("name");
 			var directory = Path.GetFullPath(args.Require("directory"));
@@ -139,17 +140,35 @@ internal static class ProjectSceneCommands
 			if (!args.Bool("load", true))
 				return new { path = result.ProjectPath, voltageFile = result.VoltageFile, scene = result.ScenePath, loaded = false };
 
+			var previous = Core.Scene;
 			if (!ProjectManager.Instance.LoadProject(result.VoltageFile))
 				throw new GatewayException($"project created at {result.ProjectPath} but failed to load; see log.tail");
 			var opened = SceneManager.Instance.LoadLastUsedScene();
 			EditorChangeTracker.Clear();
-			return WhenCurrent(opened, () => new { path = result.ProjectPath, voltageFile = result.VoltageFile, loaded = true, project = ProjectInfo(), scene = SceneInfo() });
+			return WhenSettled(ctx, previous, opened, () => new { path = result.ProjectPath, voltageFile = result.VoltageFile, loaded = true, project = ProjectInfo(), scene = SceneInfo() });
 		}, P.Str("name", "Project and folder name", required: true), P.Str("directory", "Parent folder the project folder is created in", required: true), P.Bool("load", "Open the project after creating it", true), P.Bool("force", "Discard unsaved changes in the open scene", false)).Destructive().Unsafe();
 	}
 
 	/// <summary>Core swaps scenes on the next Update, so answer once the loaded one is current.</summary>
 	private static object WhenCurrent(Scene scene, Func<object> result) =>
 		scene == null ? result() : GatewayTasks.WhenReady(() => ReferenceEquals(Core.Scene, scene), result);
+
+	/// <summary>A project load wakes the script watcher, whose hot reload swaps the scene again; answer once it has stayed quiet for a moment.</summary>
+	private static object WhenSettled(GatewayContext ctx, Scene previous, Scene loaded, Func<object> result)
+	{
+		var quietSince = -1f;
+		return GatewayTasks.WhenReady(() =>
+		{
+			if ((loaded != null && ReferenceEquals(Core.Scene, previous)) || ctx.ImGui().ScriptManager?.IsReloadPending == true)
+			{
+				quietSince = -1f;
+				return false;
+			}
+			if (quietSince < 0)
+				quietSince = Voltage.Utils.Time.TotalTime;
+			return Voltage.Utils.Time.TotalTime - quietSince >= 0.75f;
+		}, result, 30f);
+	}
 
 	private static object ProjectInfo()
 	{

@@ -103,6 +103,8 @@ public static class Program
 				return Watch(connection, args);
 			case "pipe":
 				return Pipe(connection);
+			case "record":
+				return Recorder.Record(connection, args.FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal)), !TakeFlag(args, "--no-mouse"), !TakeFlag(args, "--no-keyboard"), !TakeFlag(args, "--no-text"));
 			case "run":
 			{
 				var batch = TakeFlag(args, "--batch");
@@ -393,6 +395,8 @@ usage:
   voltage logs [--follow] [--level L] [--count N]
   voltage watch [--logs] [--filter scene.*] [--json]
                                        print lifecycle events (and logs) as they happen
+  voltage record <script.json> [--no-mouse] [--no-keyboard] [--no-text]
+                                       record the mouse, keyboard and typed text until Enter, as a script for voltage run
   voltage run <script.json> [--batch] [--continue]
                                        replay {""steps"":[...]} through input.script, or a list of {method, params} calls
   voltage json '{""method"":""..."",""params"":{...}}'

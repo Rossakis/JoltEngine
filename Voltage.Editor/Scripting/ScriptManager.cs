@@ -56,6 +56,9 @@ namespace Voltage.Editor.Scripting
 		public event Action OnBeforeSceneReload;
 		public event Action OnAfterSceneReload;
 
+		/// <summary>True while the file watcher has a compile pending or running.</summary>
+		public bool IsReloadPending => _scriptWatcher?.IsBusy == true;
+
 		public ScriptManager(string scriptsDirectory = null)
 		{
 			_scriptsDirectory = scriptsDirectory ?? Path.Combine(Environment.CurrentDirectory, "Scripts");

@@ -48,6 +48,8 @@ public class GatewayDispatcher : GlobalManager
 
 	public InputSimulator Input { get; } = new();
 
+	public InputRecorder Recorder { get; } = new();
+
 	/// <summary>Where screenshots land when no path is given; the only writable place under --gateway-safe.</summary>
 	public virtual string ScreenshotDirectory => Path.Combine(GatewayStorage.RuntimeRoot, "Screenshots");
 
@@ -166,6 +168,8 @@ public class GatewayDispatcher : GlobalManager
 		_server.Dispose();
 		_server = null;
 		Input.Release();
+		if (Recorder.Recording)
+			Recorder.Stop();
 	}
 
 	public override void Update()
@@ -180,10 +184,12 @@ public class GatewayDispatcher : GlobalManager
 			Handle(client, line);
 
 		// Nobody left to release the devices: give them back rather than leave the user with a dead mouse.
+		// A recording deliberately outlives its client, so a person can start it, work by hand, and stop it later.
 		if (Input.Captured && _server.ClientCount == 0)
 			Input.Release();
 
 		Input.Apply();
+		Recorder.Sample();
 		ExpireWaiters();
 		for (var i = _batches.Count - 1; i >= 0; i--)
 			if (_batches[i].Step())

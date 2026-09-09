@@ -23,6 +23,16 @@ namespace Voltage.Editor.Scripting
 
 		public event Action<CompilationResult> OnCompilationComplete;
 
+		/// <summary>True while a change is debouncing or compiling, so callers can wait for the hot reload it will trigger.</summary>
+		public bool IsBusy
+		{
+			get
+			{
+				lock (_lockObject)
+					return _isCompiling || _changedFiles.Count > 0 || _debounceTimer.Enabled;
+			}
+		}
+
 		/// <summary>
 		/// When true, file changes will automatically trigger compilation.
 		/// When false, file changes are still detected and logged but compilation is not triggered.
