@@ -19,7 +19,7 @@ public class MultiTransformInspector
 	public void Draw()
 	{
 		ImGui.PushID("MultiTransformInspector");
-		if (ImGui.CollapsingHeader("Transform"))
+		if (Gui.CollapsingHeader("Transform"))
 		{
 			// Use the first transform as reference
 			var refTransform = _transforms[0];
@@ -27,9 +27,9 @@ public class MultiTransformInspector
 			var rotation = refTransform.Rotation;
 			var scale = new Num.Vector2(refTransform.Scale.X, refTransform.Scale.Y);
 
-			bool posChanged = ImGui.InputFloat2("Position", ref position);
-			bool rotChanged = ImGui.InputFloat("Rotation", ref rotation);
-			bool scaleChanged = ImGui.InputFloat2("Scale", ref scale);
+			bool posChanged = Gui.InputFloat2("Position", ref position);
+			bool rotChanged = Gui.InputFloat("Rotation", ref rotation);
+			bool scaleChanged = Gui.InputFloat2("Scale", ref scale);
 
 			if (posChanged || rotChanged || scaleChanged)
 			{

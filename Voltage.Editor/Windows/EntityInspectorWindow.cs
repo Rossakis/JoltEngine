@@ -106,11 +106,11 @@ public class EntityInspectorWindow
 
 		if (_isMain)
 		{
-			ImGui.Begin("Main Entity Inspector###MainEntityInspector");
+			Gui.Begin("Main Entity Inspector###MainEntityInspector");
 		}
 		else
 		{
-			ImGui.Begin($"Entity Inspector###EntityInspector_{_id}", ref open);
+			Gui.Begin($"Entity Inspector###EntityInspector_{_id}", ref open);
 		}
 
 		if (_shouldFocusWindow)
@@ -167,7 +167,7 @@ public class EntityInspectorWindow
 			{
 				lockedButtonColor = new Num.Vector4(0.2f, 0.5f, 1f, 1f); // blue
 				ImGui.PushStyleColor(ImGuiCol.Button, lockedButtonColor);
-				if(ImGui.ImageButton("Lock Off", ImguiImageLoader.LockedInspectorIconId, new Num.Vector2(iconSize, iconSize)))
+				if(Gui.ImageButton("Lock Off", ImguiImageLoader.LockedInspectorIconId, new Num.Vector2(iconSize, iconSize)))
 				{
 					_imGuiManager.IsInspectorTabLocked = false;
 					_lockedEntity = null;
@@ -180,7 +180,7 @@ public class EntityInspectorWindow
 			{
 				lockedButtonColor = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
 				ImGui.PushStyleColor(ImGuiCol.Button, lockedButtonColor);
-				if (ImGui.ImageButton("Lock On", ImguiImageLoader.UnlockedInspectorIconId, new Num.Vector2(iconSize, iconSize)))
+				if (Gui.ImageButton("Lock On", ImguiImageLoader.UnlockedInspectorIconId, new Num.Vector2(iconSize, iconSize)))
 				{
 					_imGuiManager.IsInspectorTabLocked = true;
 					_lockedEntity = Entity;
@@ -200,20 +200,20 @@ public class EntityInspectorWindow
 			else
 			{
 				var type = Entity.Type.ToString();
-				ImGui.InputText("InstanceType", ref type, 30);
+				Gui.InputText("InstanceType", ref type, 30);
 
 				// Show OriginalPrefabName / GUID for SerializedPrefab entities (readonly).
 				if (Entity.Type == Entity.InstanceType.SerializedPrefab && !string.IsNullOrEmpty(Entity.OriginalPrefabName))
 				{
 					var originalPrefabName = Entity.OriginalPrefabName;
-					ImGui.InputText("Original SerializedPrefab Name", ref originalPrefabName, 50,
+					Gui.InputText("Original SerializedPrefab Name", ref originalPrefabName, 50,
 						ImGuiInputTextFlags.ReadOnly);
 
 					// Phase 3: show the stable GUID when present (absent on pre-Phase-3 entities).
 					if (Entity.OriginalPrefabGuid != Guid.Empty)
 					{
 						var guidStr = Entity.OriginalPrefabGuid.ToString();
-						ImGui.InputText("Prefab GUID", ref guidStr, 40, ImGuiInputTextFlags.ReadOnly);
+						Gui.InputText("Prefab GUID", ref guidStr, 40, ImGuiInputTextFlags.ReadOnly);
 					}
 
 					// Phase 4b: show component-level override state and revert controls.
@@ -225,7 +225,7 @@ public class EntityInspectorWindow
 				{
 					bool oldEnabled = Entity.Enabled;
 					bool enabled = oldEnabled;
-					if (ImGui.Checkbox("Enabled", ref enabled) && enabled != oldEnabled)
+					if (Gui.Checkbox("Enabled", ref enabled) && enabled != oldEnabled)
 					{
 						EditorChangeTracker.PushUndo(
 							new GenericValueChangeAction(
@@ -245,7 +245,7 @@ public class EntityInspectorWindow
 				// Name (edit session)
 				{
 					string name = Entity.Name;
-					bool changed = ImGui.InputText("Name", ref name, 25);
+					bool changed = Gui.InputText("Name", ref name, 25);
 
 					if (ImGui.IsItemActive() && !_isEditingName)
 					{
@@ -280,7 +280,7 @@ public class EntityInspectorWindow
 				{
 					int oldUpdateOrder = Entity.UpdateOrder;
 					int updateOrder = oldUpdateOrder;
-					if (ImGui.InputInt("Update Order", ref updateOrder) && updateOrder != oldUpdateOrder)
+					if (Gui.InputInt("Update Order", ref updateOrder) && updateOrder != oldUpdateOrder)
 					{
 						EditorChangeTracker.PushUndo(
 							new GenericValueChangeAction(
@@ -301,7 +301,7 @@ public class EntityInspectorWindow
 				{
 					int updateInterval = (int)Entity.UpdateInterval;
 
-					bool changed = ImGui.SliderInt("Update Interval", ref updateInterval, 1, 100);
+					bool changed = Gui.SliderInt("Update Interval", ref updateInterval, 1, 100);
 
 					// Start of edit session: store the initial value
 					if (ImGui.IsItemActive() && !_isEditingUpdateInterval)
@@ -355,7 +355,7 @@ public class EntityInspectorWindow
 					if (selectedIndex < 0)
 						selectedIndex = 0;
 
-					if (ImGui.Combo("Tag", ref selectedIndex, tagNamesArray, tagNamesArray.Length))
+					if (Gui.Combo("Tag", ref selectedIndex, tagNamesArray, tagNamesArray.Length))
 					{
 						var newTag = tagValuesArray[selectedIndex];
 						if (newTag != oldTag)
@@ -382,7 +382,7 @@ public class EntityInspectorWindow
 				{
 					bool oldSelectable = Entity.CanBeSelected;
 					bool isSelectable = oldSelectable;
-					if (ImGui.Checkbox("Can Be Selected", ref isSelectable) && isSelectable != oldSelectable)
+					if (Gui.Checkbox("Can Be Selected", ref isSelectable) && isSelectable != oldSelectable)
 					{
 						EditorChangeTracker.PushUndo(
 							new GenericValueChangeAction(
@@ -408,7 +408,7 @@ public class EntityInspectorWindow
 				{
 					bool oldDebugEnabled = Entity.DebugRenderEnabled;
 					bool debugEnabled = oldDebugEnabled;
-					if (ImGui.Checkbox("Debug Render Enabled", ref debugEnabled) && debugEnabled != oldDebugEnabled)
+					if (Gui.Checkbox("Debug Render Enabled", ref debugEnabled) && debugEnabled != oldDebugEnabled)
 					{
 						EditorChangeTracker.PushUndo(
 							new GenericValueChangeAction(
@@ -497,7 +497,7 @@ public class EntityInspectorWindow
 
 		IsOpen = open;
 
-		ImGui.End();
+		Gui.End();
 	}
 
 
@@ -717,21 +717,21 @@ public class EntityInspectorWindow
 
 			ImGui.TextDisabled($"id: {entry.ComponentId ?? "-"}");
 			ImGui.SameLine();
-			if (ImGui.SmallButton("Remove"))
+			if (Gui.SmallButton("Remove"))
 				ImGui.OpenPopup("confirm-remove-missing");
 
-			if (ImGui.BeginPopup("confirm-remove-missing"))
+			if (Gui.BeginPopup("confirm-remove-missing"))
 			{
 				ImGui.TextWrapped($"Permanently remove the preserved data of '{shortName}'? If the missing plugin is installed later, this component will be gone.");
-				if (ImGui.Button("Remove permanently"))
+				if (Gui.Button("Remove permanently"))
 				{
 					entityData.ComponentDataList.Remove(entry);
 					ImGui.CloseCurrentPopup();
 				}
 				ImGui.SameLine();
-				if (ImGui.Button("Cancel"))
+				if (Gui.Button("Cancel"))
 					ImGui.CloseCurrentPopup();
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 
 			ImGui.EndChild();
@@ -758,14 +758,14 @@ public class EntityInspectorWindow
 		ImGui.SetNextWindowSize(new Num.Vector2(400, 500), ImGuiCond.Appearing);
 
 		bool open = true;
-		if (ImGui.BeginPopupModal("add-component-popup", ref open, ImGuiWindowFlags.NoResize))
+		if (Gui.BeginPopupModal("add-component-popup", ref open, ImGuiWindowFlags.NoResize))
 		{
 			ImGui.Text("Add Component");
 			ImGui.Separator();
 
 			// Search/filter box
 			ImGui.Text("Search:");
-			ImGui.InputText("##ComponentFilter", ref _componentFilterText, 50);
+			Gui.InputText("##ComponentFilter", ref _componentFilterText, 50);
 
 			VoltageEditorUtils.SmallVerticalSpace();
 
@@ -782,7 +782,7 @@ public class EntityInspectorWindow
 					var displayName = $"{componentType.Name}";
 					var namespace_text = $"({componentType.Namespace})";
 
-					if (ImGui.Selectable(displayName))
+					if (Gui.Selectable(displayName))
 					{
 						AddComponentToEntity(componentType);
 						ImGui.CloseCurrentPopup();
@@ -811,13 +811,13 @@ public class EntityInspectorWindow
 
 			ImGui.SetCursorPosX(centerStart);
 
-			if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
+			if (Gui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
 			{
 				_componentFilterText = "";
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 	}
 
@@ -839,7 +839,7 @@ public class EntityInspectorWindow
 		if (entities == null || entities.Count == 0)
 			return;
 
-		if (!ImGui.CollapsingHeader($"Entity ({entities.Count} selected)", ImGuiTreeNodeFlags.DefaultOpen))
+		if (!Gui.CollapsingHeader($"Entity ({entities.Count} selected)", ImGuiTreeNodeFlags.DefaultOpen))
 			return;
 
 		MultiCheckbox(entities, "Enabled", null,
@@ -926,7 +926,7 @@ public class EntityInspectorWindow
 		var shared = SharedValue(entities, get, out var mixed);
 		var value = !mixed && shared;
 
-		if (ImGui.Checkbox(label, ref value) && (mixed || value != shared))
+		if (Gui.Checkbox(label, ref value) && (mixed || value != shared))
 			ApplyToAll(entities, get, set, value, label);
 
 		if (tooltip != null && ImGui.IsItemHovered())
@@ -941,7 +941,7 @@ public class EntityInspectorWindow
 		var shared = SharedValue(entities, get, out var mixed);
 		var value = shared;
 
-		if (ImGui.InputInt(label, ref value) && (mixed || value != shared))
+		if (Gui.InputInt(label, ref value) && (mixed || value != shared))
 			ApplyToAll(entities, get, set, value, label);
 
 		MixedHint(mixed);
@@ -953,7 +953,7 @@ public class EntityInspectorWindow
 		var shared = SharedValue(entities, e => e.UpdateInterval, out var mixed);
 		var value = (int)shared;
 
-		var changed = ImGui.SliderInt("Update Interval", ref value, 1, 100);
+		var changed = Gui.SliderInt("Update Interval", ref value, 1, 100);
 
 		if (ImGui.IsItemActive() && !_isEditingMultiUpdateInterval)
 		{
@@ -1016,7 +1016,7 @@ public class EntityInspectorWindow
 		if (selectedIndex < 0)
 			selectedIndex = 0;
 
-		if (ImGui.Combo("Tag", ref selectedIndex, tagNamesArray, tagNamesArray.Length))
+		if (Gui.Combo("Tag", ref selectedIndex, tagNamesArray, tagNamesArray.Length))
 		{
 			var newTag = tagValuesArray[selectedIndex];
 			if (mixed || newTag != shared)
@@ -1118,13 +1118,13 @@ public class EntityInspectorWindow
 		ImGui.SetNextWindowPos(center, ImGuiCond.Appearing, new Num.Vector2(0.5f, 0.5f));
 
 		bool open = true;
-		if (ImGui.BeginPopupModal("prefab-creator", ref open, ImGuiWindowFlags.AlwaysAutoResize))
+		if (Gui.BeginPopupModal("prefab-creator", ref open, ImGuiWindowFlags.AlwaysAutoResize))
 		{
 			ImGui.Text("Create SerializedPrefab from Entity");
 			ImGui.Separator();
 			
 			ImGui.Text("SerializedPrefab Name:");
-			ImGui.InputText("##PrefabName", ref _prefabName, 50);
+			Gui.InputText("##PrefabName", ref _prefabName, 50);
 
 			// Check if prefab name already exists and show warning
 			var correctedName = CorrectPrefabName(_prefabName.Trim(), Entity.GetType().Name);
@@ -1150,7 +1150,7 @@ public class EntityInspectorWindow
 			if (prefabExists)
 				ImGui.BeginDisabled();
 			
-			if (ImGui.Button("Create", new Num.Vector2(buttonWidth, 0)))
+			if (Gui.Button("Create", new Num.Vector2(buttonWidth, 0)))
 			{
 				if (!string.IsNullOrWhiteSpace(_prefabName))
 				{
@@ -1164,12 +1164,12 @@ public class EntityInspectorWindow
 			
 			ImGui.SameLine();
 			
-			if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
+			if (Gui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
 			{
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 	}
 
@@ -1458,7 +1458,7 @@ public class EntityInspectorWindow
 		ImGui.SetNextWindowSize(new Num.Vector2(450, 0), ImGuiCond.Appearing);
 
 		bool open = true;
-		if (ImGui.BeginPopupModal("apply-to-prefab-copies-confirmation", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoTitleBar))
+		if (Gui.BeginPopupModal("apply-to-prefab-copies-confirmation", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoTitleBar))
 		{
 			ImGui.Text("Apply Changes to SerializedPrefab Copies");
 			ImGui.Separator();
@@ -1497,7 +1497,7 @@ public class EntityInspectorWindow
 			
 			ImGui.SetCursorPosX(centerStart);
 			
-			if (ImGui.Button("OK", new Num.Vector2(buttonWidth, 0)))
+			if (Gui.Button("OK", new Num.Vector2(buttonWidth, 0)))
 			{
 				// Proceed with applying changes
 				ApplyToPrefabCopies(Entity);
@@ -1506,14 +1506,14 @@ public class EntityInspectorWindow
 			
 			ImGui.SameLine();
 			
-			if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
+			if (Gui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
 			{
 				// Clear the list and close popup
 				_prefabCopiesToModify.Clear();
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 	}
 
@@ -1534,7 +1534,7 @@ public class EntityInspectorWindow
 		ImGui.SetNextWindowSize(new Num.Vector2(400, 0), ImGuiCond.Appearing);
 
 		bool open = true;
-		if (ImGui.BeginPopupModal("apply-to-original-prefab-confirmation", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoTitleBar))
+		if (Gui.BeginPopupModal("apply-to-original-prefab-confirmation", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoTitleBar))
 		{
 			ImGuiSafe.TextColoredSafe(new Num.Vector4(1.0f, 0.6f, 0.2f, 1.0f), $"Are you sure you want to override the data of '{Entity.OriginalPrefabName}'?");
 			ImGui.Separator();
@@ -1551,7 +1551,7 @@ public class EntityInspectorWindow
 			
 			ImGui.SetCursorPosX(centerStart);
 
-			if (ImGui.Button("Yes", new Num.Vector2(buttonWidth, 0)))
+			if (Gui.Button("Yes", new Num.Vector2(buttonWidth, 0)))
 			{
 				ApplyToOriginalPrefabWithUndo();
 				ImGui.CloseCurrentPopup();
@@ -1559,12 +1559,12 @@ public class EntityInspectorWindow
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("No", new Num.Vector2(buttonWidth, 0)))
+			if (Gui.Button("No", new Num.Vector2(buttonWidth, 0)))
 			{
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 	}
 
@@ -1663,7 +1663,7 @@ public class EntityInspectorWindow
 				ImGui.PopStyleColor();
 
 				ImGui.SameLine(ImGui.GetContentRegionAvail().X - 60f);
-				if (ImGui.SmallButton($"Revert##{name}"))
+				if (Gui.SmallButton($"Revert##{name}"))
 					_revertComponentName = name;
 
 				if (ImGui.IsItemHovered())
@@ -1682,7 +1682,7 @@ public class EntityInspectorWindow
 					ImGui.PopStyleColor();
 
 					ImGui.SameLine(ImGui.GetContentRegionAvail().X - 60f);
-					if (ImGui.SmallButton($"Restore##{name}"))
+					if (Gui.SmallButton($"Restore##{name}"))
 						_revertComponentName = name;
 
 					if (ImGui.IsItemHovered())
@@ -1714,7 +1714,7 @@ public class EntityInspectorWindow
 		ImGui.SetNextWindowSize(new Num.Vector2(420, 0), ImGuiCond.Appearing);
 
 		bool open = true;
-		if (ImGui.BeginPopupModal("revert-all-overrides-confirmation", ref open,
+		if (Gui.BeginPopupModal("revert-all-overrides-confirmation", ref open,
 			ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoTitleBar))
 		{
 			ImGui.TextColored(new Num.Vector4(1f, 0.6f, 0.2f, 1f),
@@ -1730,7 +1730,7 @@ public class EntityInspectorWindow
 			var bw = 80f;
 			ImGui.SetCursorPosX((ImGui.GetWindowSize().X - bw * 2 - 10f) * 0.5f);
 
-			if (ImGui.Button("Revert", new Num.Vector2(bw, 0)))
+			if (Gui.Button("Revert", new Num.Vector2(bw, 0)))
 			{
 				RevertAllOverrides();
 				ImGui.CloseCurrentPopup();
@@ -1738,10 +1738,10 @@ public class EntityInspectorWindow
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Cancel", new Num.Vector2(bw, 0)))
+			if (Gui.Button("Cancel", new Num.Vector2(bw, 0)))
 				ImGui.CloseCurrentPopup();
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 	}
 
@@ -1760,7 +1760,7 @@ public class EntityInspectorWindow
 		ImGui.SetNextWindowSize(new Num.Vector2(420, 0), ImGuiCond.Appearing);
 
 		bool open = true;
-		if (ImGui.BeginPopupModal("revert-component-override-confirmation", ref open,
+		if (Gui.BeginPopupModal("revert-component-override-confirmation", ref open,
 			ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoTitleBar))
 		{
 			var compName = _revertComponentName ?? "(unknown)";
@@ -1777,7 +1777,7 @@ public class EntityInspectorWindow
 			var bw = 80f;
 			ImGui.SetCursorPosX((ImGui.GetWindowSize().X - bw * 2 - 10f) * 0.5f);
 
-			if (ImGui.Button("Revert", new Num.Vector2(bw, 0)))
+			if (Gui.Button("Revert", new Num.Vector2(bw, 0)))
 			{
 				RevertComponentOverride(_revertComponentName);
 				_revertComponentName = null;
@@ -1786,13 +1786,13 @@ public class EntityInspectorWindow
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Cancel", new Num.Vector2(bw, 0)))
+			if (Gui.Button("Cancel", new Num.Vector2(bw, 0)))
 			{
 				_revertComponentName = null;
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 	}
 
@@ -1809,16 +1809,10 @@ public class EntityInspectorWindow
 		if (entitySceneData == null)
 			return;
 
-		// Clear override metadata — next save will produce a fresh (possibly zero-override) diff.
-		entitySceneData.PrefabOverrides         = new System.Collections.Generic.HashSet<string>();
-		entitySceneData.RemovedPrefabComponents = null;
-		entitySceneData.EntityData              = new Voltage.Data.EntityData();
-
-		// Reload live component data from the source prefab.
 		var prefabData = TryLoadPrefabForRevert(Entity.OriginalPrefabName, Entity.OriginalPrefabGuid);
 		if (prefabData.HasValue)
 		{
-			ApplyPrefabDataToEntity(Entity, prefabData.Value);
+			PrefabOverrides.RevertAll(Entity, entitySceneData, prefabData.Value);
 			EditorDebug.Log($"Reverted all overrides on '{Entity.Name}' to prefab '{Entity.OriginalPrefabName}'.");
 		}
 		else
@@ -1848,54 +1842,7 @@ public class EntityInspectorWindow
 			return;
 		}
 
-		// Find the component entry in the prefab.
-		var prefabEntry = prefabData.Value.EntityData?.ComponentDataList
-			?.FirstOrDefault(e => string.Equals(e.ComponentName, componentName, StringComparison.Ordinal));
-
-		// Remove from override set.
-		entitySceneData.PrefabOverrides?.Remove(componentName);
-		entitySceneData.RemovedPrefabComponents?.Remove(componentName);
-
-		// Remove instance override entry from EntityData.
-		entitySceneData.EntityData?.ComponentDataList?.RemoveAll(
-			e => string.Equals(e.ComponentName, componentName, StringComparison.Ordinal));
-
-		// Apply prefab component data to the live entity.
-		if (prefabEntry.HasValue && !string.IsNullOrEmpty(prefabEntry.Value.ComponentTypeName))
-		{
-			// Find or recreate the component on the entity.
-			var liveComp = Entity.Components
-				.Concat(Entity.ComponentsToAdd)
-				.FirstOrDefault(c => string.Equals(c.Name, componentName, StringComparison.Ordinal));
-
-			if (liveComp == null)
-			{
-				// Component was removed — re-add it from the prefab.
-				liveComp = SerializationManager.CreateComponentInstancePublic(prefabEntry.Value.ComponentTypeName, prefabEntry.Value.ComponentId);
-				if (liveComp != null)
-				{
-					liveComp.Name = componentName;
-					liveComp.SetSerialized(true);
-					Entity.AddComponent(liveComp, true);
-				}
-			}
-
-			if (liveComp != null && !string.IsNullOrEmpty(prefabEntry.Value.DataTypeName) &&
-			    !string.IsNullOrEmpty(prefabEntry.Value.Json))
-			{
-				SerializationManager.Instance.ApplyComponentEntry(liveComp, prefabEntry.Value);
-			}
-		}
-		else
-		{
-			// Component not in prefab — it was added on instance, now being reverted means
-			// removing it from the entity entirely.
-			var liveComp = Entity.Components
-				.Concat(Entity.ComponentsToAdd)
-				.FirstOrDefault(c => string.Equals(c.Name, componentName, StringComparison.Ordinal));
-			liveComp?.Entity?.RemoveComponent(liveComp);
-		}
-
+		PrefabOverrides.RevertComponent(Entity, entitySceneData, prefabData.Value, componentName);
 		EditorDebug.Log($"Reverted '{componentName}' on '{Entity.Name}' to prefab version.");
 		DelayedSetEntity(Entity);
 	}
@@ -1925,48 +1872,4 @@ public class EntityInspectorWindow
 		}
 	}
 
-	/// <summary>
-	/// Applies <see cref="PrefabData"/> component data to a live entity's components,
-	/// replacing existing data for matching components.
-	/// </summary>
-	private static void ApplyPrefabDataToEntity(Entity entity, PrefabData prefabData)
-	{
-		if (prefabData.EntityData?.ComponentDataList == null)
-			return;
-
-		foreach (var entry in prefabData.EntityData.ComponentDataList)
-		{
-			var liveComp = entity.Components
-				.Concat(entity.ComponentsToAdd)
-				.FirstOrDefault(c => string.Equals(c.Name, entry.ComponentName, StringComparison.Ordinal));
-
-			if (liveComp == null)
-			{
-				// Add component from prefab (was removed on instance).
-				liveComp = SerializationManager.CreateComponentInstancePublic(entry.ComponentTypeName, entry.ComponentId);
-				if (liveComp != null)
-				{
-					liveComp.Name = entry.ComponentName;
-					liveComp.SetSerialized(true);
-					entity.AddComponent(liveComp, true);
-				}
-			}
-
-			if (liveComp != null && !string.IsNullOrEmpty(entry.DataTypeName) && !string.IsNullOrEmpty(entry.Json))
-				SerializationManager.Instance.ApplyComponentEntry(liveComp, entry);
-		}
-
-		// Remove any components that exist on the entity but are not in the prefab.
-		var prefabNames = new System.Collections.Generic.HashSet<string>(
-			prefabData.EntityData.ComponentDataList.Select(e => e.ComponentName),
-			StringComparer.Ordinal);
-
-		var toRemove = entity.Components
-			.Concat(entity.ComponentsToAdd)
-			.Where(c => c.IsSerialized && !prefabNames.Contains(c.Name))
-			.ToList();
-
-		foreach (var comp in toRemove)
-			entity.RemoveComponent(comp);
-	}
 }

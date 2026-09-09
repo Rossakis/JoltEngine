@@ -21,6 +21,16 @@ public class EntityReparentUndoAction : EditorChangeTracker.IEditorAction
         _description = description;
     }
 
+    /// <summary>MoveEntityToIndex takes the index before removal; indices here are final positions, so a move down needs one more.</summary>
+    public static void MoveRootTo(Entity entity, int index)
+    {
+        var entities = entity.Scene?.Entities;
+        if (entities == null || index < 0)
+            return;
+        var current = entities.EntityFastList.IndexOf(entity);
+        entities.MoveEntityToIndex(entity, current >= 0 && index > current ? index + 1 : index);
+    }
+
     public void Undo()
     {
         foreach (var entry in _entries)
@@ -31,7 +41,7 @@ public class EntityReparentUndoAction : EditorChangeTracker.IEditorAction
 
             entry.entity.Transform.SetParentAt(entry.oldParent, entry.oldIndex);
             if (entry.oldParent == null)
-                entry.entity.Scene?.Entities.MoveEntityToIndex(entry.entity, entry.oldIndex);
+                MoveRootTo(entry.entity, entry.oldIndex);
 
             entry.entity.Transform.RecomputeLocalsFromWorld(worldPos, worldRot, worldScale);
         }
@@ -47,7 +57,7 @@ public class EntityReparentUndoAction : EditorChangeTracker.IEditorAction
 
             entry.entity.Transform.SetParentAt(entry.newParent, entry.newIndex);
             if (entry.newParent == null)
-                entry.entity.Scene?.Entities.MoveEntityToIndex(entry.entity, entry.newIndex);
+                MoveRootTo(entry.entity, entry.newIndex);
 
             entry.entity.Transform.RecomputeLocalsFromWorld(worldPos, worldRot, worldScale);
         }

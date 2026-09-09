@@ -75,11 +75,11 @@ namespace Voltage.Editor.Inspectors.SceneGraphPanes
 
 		void DrawPostProcessorSelectorPopup()
 		{
-			if (ImGui.BeginPopup("postprocessor-selector"))
+			if (Gui.BeginPopup("postprocessor-selector"))
 			{
 				foreach (var subclassType in InspectorCache.GetAllPostProcessorSubclassTypes())
 				{
-					if (ImGui.Selectable(subclassType.Name))
+					if (Gui.Selectable(subclassType.Name))
 					{
 						var postprocessor = (PostProcessor)Activator.CreateInstance(subclassType, new object[] { _postProcessorInspectors.Count });
 						Core.Scene.AddPostProcessor(postprocessor);
@@ -87,7 +87,7 @@ namespace Voltage.Editor.Inspectors.SceneGraphPanes
 					}
 				}
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 		}
 	}

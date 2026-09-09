@@ -9,7 +9,7 @@ namespace Voltage.Editor.FilePickers
 	/// A folder chooser that uses the OS-native dialog when available (tinyfiledialogs) and transparently
 	/// falls back to the editor's built-in ImGui folder picker otherwise. Usage from a window:
 	/// <code>
-	/// if (ImGui.Button("Browse...")) _browser.Open("Select folder", currentPath, this);
+	/// if (Gui.Button("Browse...")) _browser.Open("Select folder", currentPath, this);
 	/// _browser.Draw();                                   // renders the ImGui fallback popup if active
 	/// if (_browser.TryTakeResult(out var folder)) { ... } // fires once when a folder is chosen
 	/// </code>
@@ -70,7 +70,7 @@ namespace Voltage.Editor.FilePickers
 			ImGui.SetNextWindowSize(new Num.Vector2(600, 500), ImGuiCond.Appearing);
 
 			var open = true;
-			if (ImGui.BeginPopupModal(_popupId, ref open, ImGuiWindowFlags.NoResize))
+			if (Gui.BeginPopupModal(_popupId, ref open, ImGuiWindowFlags.NoResize))
 			{
 				ImGui.TextColored(new Num.Vector4(0.2f, 0.8f, 1f, 1f), title);
 				ImGui.Separator();
@@ -83,7 +83,7 @@ namespace Voltage.Editor.FilePickers
 					ImGui.CloseCurrentPopup();
 				}
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 
 			if (!open)

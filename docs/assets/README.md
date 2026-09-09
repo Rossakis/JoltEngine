@@ -1,4 +1,10 @@
-# Voltage Engine — Asset File Formats
+---
+title: Asset File Formats
+sidebar_position: 3
+description: How the engine's own asset file types work, and how to add your own.
+---
+
+# Asset File Formats
 
 How the engine's own asset file types work, and how to add your own — for engine contributors, plugin
 authors, and game developers.
@@ -419,10 +425,5 @@ option per flavour — the Asset Browser renders those as a nested submenu autom
 
 ## See also
 
-- [`vasset-plan.md`](vasset-plan.md) — the `.vasset` data-container (ScriptableObject-equivalent) plan.
-  Phase 0 shipped the pattern documented above; Phases 1–6 build user-declared data assets, typed
-  inspector slots, and difficulty/region variant swapping on top of it.
-- [`../cinematics/timeline-review.md`](../cinematics/timeline-review.md) — how the Timeline system compares
-  to other engines, and how it interacts with data assets
-- [`../plugins/README.md`](../plugins/README.md) — shipping a format (and its editor tooling) as a plugin
-- `FAQs/ContentManagement.md` — the `ContentManager` layer for source assets (textures, audio, effects)
+- [Plugins](../plugins/README.md) — shipping a format (and its editor tooling) as a plugin
+- [Content Loading](../scripting/content-loading.md) — the `ContentManager` layer for source assets (textures, audio, effects)

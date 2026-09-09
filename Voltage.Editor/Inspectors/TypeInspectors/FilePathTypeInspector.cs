@@ -49,11 +49,11 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
             // Show the current path as a selectable read-only input
             ImGui.SetNextItemWidth(-80);
-            ImGui.InputText($"##{_scopeId}_path", ref currentValue, 512, ImGuiInputTextFlags.ReadOnly);
+            Gui.InputText($"##{_scopeId}_path", ref currentValue, 512, ImGuiInputTextFlags.ReadOnly);
 
             ImGui.SameLine();
 
-            if (ImGui.Button($"Browse##{_scopeId}"))
+            if (Gui.Button($"Browse##{_scopeId}"))
             {
                 ImGui.OpenPopup(_popupId);
 
@@ -71,7 +71,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
             // Draw the popup modal
             bool popupOpen = true;
-            if (ImGui.BeginPopupModal(_popupId, ref popupOpen, ImGuiWindowFlags.NoTitleBar))
+            if (Gui.BeginPopupModal(_popupId, ref popupOpen, ImGuiWindowFlags.NoTitleBar))
             {
                 var picker = FilePicker.GetFilePicker(this, Environment.CurrentDirectory, _filePathAttribute?.Filter);
                 picker.DontAllowTraverselBeyondRootFolder = true;
@@ -101,7 +101,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
                     FilePicker.RemoveFilePicker(this);
                 }
 
-                ImGui.EndPopup();
+                Gui.EndPopup();
             }
         }
     }

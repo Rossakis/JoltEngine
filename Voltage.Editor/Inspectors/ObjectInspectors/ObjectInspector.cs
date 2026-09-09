@@ -24,7 +24,7 @@ namespace Voltage.Editor.Inspectors.ObjectInspectors
 
 		public override void DrawMutable()
 		{
-			if (ImGui.CollapsingHeader(_name))
+			if (Gui.CollapsingHeader(_name))
 			{
 				foreach (var inspector in _inspectors)
 					inspector.Draw();

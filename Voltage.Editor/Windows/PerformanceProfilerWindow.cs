@@ -29,9 +29,9 @@ namespace Voltage.Editor.Windows
 				return;
 
 			ImGui.SetNextWindowSize(new Num.Vector2(380, 320), ImGuiCond.FirstUseEver);
-			if (!ImGui.Begin("Performance Profiler ###PerformanceProfiler", ref IsOpen))
+			if (!Gui.Begin("Performance Profiler ###PerformanceProfiler", ref IsOpen))
 			{
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
@@ -102,7 +102,7 @@ namespace Voltage.Editor.Windows
 			ImGui.TextWrapped("Frame time uses the engine's unscaled delta. Green >= 55 FPS, amber >= 30, red below 30.");
 			ImGui.PopStyleColor();
 
-			ImGui.End();
+			Gui.End();
 		}
 
 		private static void Tip(string text)

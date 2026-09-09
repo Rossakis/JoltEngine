@@ -128,12 +128,12 @@ public class Core : Game
 	/// facilitates easy access to the global Content instance for internal classes
 	/// </summary>
 	internal static Core _instance;
+	private string _windowTitle;
 
 #if EDITOR
 	internal static long drawCalls;
 	private TimeSpan _frameCounterElapsedTime = TimeSpan.Zero;
 	private int _frameCounter = 0;
-	private string _windowTitle;
 
 	/// <summary>Extra context for the window title. A provider, not a string, because the title is rebuilt once a second and the editor would otherwise have to push changes.</summary>
 	public static Func<string> WindowTitleStatusProvider;
@@ -182,8 +182,8 @@ public class Core : Game
 	public Core(int width = 1280, int height = 720, bool isFullScreen = false, string windowTitle = "Voltage",
 		string contentDirectory = "Content", bool hardwareModeSwitch = true)
 	{
-#if EDITOR
 		_windowTitle = windowTitle;
+#if EDITOR
 		IsEditMode = true;
 #else
 		IsEditMode = false;
@@ -261,6 +261,25 @@ public class Core : Game
 		base.Initialize();
 
 		GraphicsDevice = base.GraphicsDevice;
+		StartRuntimeGateway();
+	}
+
+	private Gateway.GatewayDispatcher _runtimeGateway;
+
+	/// <summary>A built game only listens when --gateway or VOLTAGE_GATEWAY=1 asks it to; the editor overrides this with its own dispatcher.</summary>
+	protected virtual void StartRuntimeGateway()
+	{
+		if (IsEditorMode)
+			return;
+
+		var args = Environment.GetCommandLineArgs();
+		var name = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name ?? _windowTitle;
+		var options = Gateway.GatewayOptions.ForRuntime(args.Length > 1 ? args[1..] : Array.Empty<string>(), name);
+		if (!options.Enabled)
+			return;
+
+		_runtimeGateway = new Gateway.GatewayDispatcher(options);
+		RegisterGlobalManager(_runtimeGateway);
 	}
 
 	protected override void Update(GameTime gameTime)
@@ -327,7 +346,11 @@ public class Core : Game
 	protected override void Draw(GameTime gameTime)
 	{
 		if (ShouldPauseForFocus)
+		{
+			// KeepRunningWhenUnfocused can flip between Update and Draw; Present still needs no target bound.
+			UnbindRenderTarget();
 			return;
+		}
 
 		StartDebugDraw(gameTime.ElapsedGameTime);
 
@@ -371,6 +394,14 @@ public class Core : Game
 
 		// Present refuses to run with a render target bound. A throw mid-render, a frame with no scene, or an
 		// update-time render that expected the scene to reset it can all leave one active.
+		UnbindRenderTarget();
+
+		EndDebugDraw();
+		_runtimeGateway?.AfterDraw();
+	}
+
+	private void UnbindRenderTarget()
+	{
 		try
 		{
 			if (GraphicsDevice.GetRenderTargets().Length > 0)
@@ -379,8 +410,6 @@ public class Core : Game
 		catch (Exception)
 		{
 		}
-
-		EndDebugDraw();
 	}
 
 	private static bool _allowExit = false;

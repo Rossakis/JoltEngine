@@ -59,13 +59,13 @@ namespace Voltage.Editor.Windows
 			ImGui.SetNextWindowSize(
 				new Num.Vector2(workSize.X, workSize.Y * 0.3f), ImGuiCond.FirstUseEver);
 
-			ImGui.Begin("Debug Log ###DebugWindow", ImGuiWindowFlags.HorizontalScrollbar);
+			Gui.Begin("Debug Log ###DebugWindow", ImGuiWindowFlags.HorizontalScrollbar);
 
 			// Controls row
 			ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Num.Vector2(4, 4));
 
 			bool collapseText = _isCollapseTextOn.Value;
-			if (ImGui.Checkbox("Collapse Text", ref collapseText))
+			if (Gui.Checkbox("Collapse Text", ref collapseText))
 			{
 				_isCollapseTextOn.Value = collapseText;
 			}
@@ -73,20 +73,20 @@ namespace Voltage.Editor.Windows
 			ImGui.SameLine();
 
 			bool groupLogsValue = _isGroupLogsOn.Value;
-			if (ImGui.Checkbox("Group Logs", ref groupLogsValue))
+			if (Gui.Checkbox("Group Logs", ref groupLogsValue))
 			{
 				_isGroupLogsOn.Value = groupLogsValue;
 			}
 
 			ImGui.SameLine();
-			if (ImGui.Button("Clear"))
+			if (Gui.Button("Clear"))
 			{
 				Debug.ClearLogEntries();
 			}
 
 			ImGui.PushItemWidth(200);
 			var maxMessagesInput = _maxMessages.Value;
-			if (ImGui.InputInt("Max Messages", ref maxMessagesInput))
+			if (Gui.InputInt("Max Messages", ref maxMessagesInput))
 			{
 				_maxMessages.Value = Math.Clamp(maxMessagesInput, 1, 100000);
 			}
@@ -163,7 +163,7 @@ namespace Voltage.Editor.Windows
 			}
 
 			ImGui.EndChild();
-			ImGui.End();
+			Gui.End();
 		}
 
 		private void DrawLogEntry(Debug.LogType type, string message, string callerClass, int callerLine,
@@ -227,7 +227,7 @@ namespace Voltage.Editor.Windows
 			// Create an invisible button overlay for reliable click detection
 			ImGui.SetCursorScreenPos(itemRectMin);
 			var buttonSize = new Num.Vector2(itemRectMax.X - itemRectMin.X, itemRectMax.Y - itemRectMin.Y);
-			ImGui.InvisibleButton($"##logentry_{text.GetHashCode()}_{timestamp.Ticks}", buttonSize);
+			Gui.InvisibleButton($"##logentry_{text.GetHashCode()}_{timestamp.Ticks}", buttonSize);
 
 			if (ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
 			{
@@ -235,14 +235,14 @@ namespace Voltage.Editor.Windows
 				ImGui.OpenPopup($"LogContextMenu##{text.GetHashCode()}_{timestamp.Ticks}");
 			}
 
-			if (ImGui.BeginPopup($"LogContextMenu##{text.GetHashCode()}_{timestamp.Ticks}"))
+			if (Gui.BeginPopup($"LogContextMenu##{text.GetHashCode()}_{timestamp.Ticks}"))
 			{
-				if (ImGui.MenuItem("Copy text"))
+				if (Gui.MenuItem("Copy text"))
 				{
 					Clipboard.SetContents(_copiedText);
 				}
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 
 			ImGui.SetWindowFontScale(1.0f);

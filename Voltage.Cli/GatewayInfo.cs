@@ -8,35 +8,43 @@ using System.Threading;
 
 namespace Voltage.Cli;
 
-/// <summary>What a running (or last-run) editor wrote to gateway.json.</summary>
-public sealed record GatewayInfo(int Port, string Token, int Pid, DateTime Started, string Exe, string[] Args, string Logs)
+/// <summary>What a running (or last-run) editor or game wrote to gateway.json.</summary>
+public sealed record GatewayInfo(int Port, string Token, int Pid, DateTime Started, string Exe, string[] Args, string Logs, string Host, string Game)
 {
-	/// <summary>Mirrors EditorStorage.Root so the CLI needs no editor reference.</summary>
-	public static string DefaultInfoPath()
+	/// <summary>Mirrors the engine's GatewayStorage layout so the CLI needs no engine reference. host is "editor" or "game".</summary>
+	public static string DefaultInfoPath(string host = "editor")
 	{
+		var game = host == "game";
 		var overridden = Environment.GetEnvironmentVariable("VOLTAGE_EDITOR_DATA");
 		string root;
 		if (!string.IsNullOrWhiteSpace(overridden))
-			root = Path.Combine(overridden, "Data");
-		else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-			root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library/Application Support", "VoltageEngine", "Editor");
-		else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-		{
-			var xdg = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
-			var baseDir = string.IsNullOrWhiteSpace(xdg) ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config") : xdg;
-			root = Path.Combine(baseDir, "VoltageEngine", "Editor");
-		}
+			root = game ? Path.Combine(overridden, "Data", "Runtime") : Path.Combine(overridden, "Data");
 		else
-			root = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VoltageEngine", "Editor");
+		{
+			var folder = game ? "Runtime" : "Editor";
+			string baseDir;
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+				baseDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library/Application Support");
+			else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+			{
+				var xdg = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
+				baseDir = string.IsNullOrWhiteSpace(xdg) ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config") : xdg;
+			}
+			else
+				baseDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+			root = Path.Combine(baseDir, "VoltageEngine", folder);
+		}
 
 		return Path.Combine(root, "gateway.json");
 	}
 
-	/// <summary>Reads the file without checking whether that editor is still alive.</summary>
+	public string HostLabel => Host == "game" ? (string.IsNullOrEmpty(Game) ? "game" : $"game '{Game}'") : "editor";
+
+	/// <summary>Reads the file without checking whether the process that wrote it is still alive.</summary>
 	public static GatewayInfo Read(string path)
 	{
 		if (!File.Exists(path))
-			throw new CliException($"no editor has run yet ({path} is missing). Start the Voltage Editor first.");
+			throw new CliException($"no gateway has been recorded yet ({path} is missing). Start the Voltage Editor, or a game with --gateway, first.");
 
 		using var doc = JsonDocument.Parse(File.ReadAllText(path));
 		var root = doc.RootElement;
@@ -47,10 +55,12 @@ public sealed record GatewayInfo(int Port, string Token, int Pid, DateTime Start
 			root.TryGetProperty("started", out var started) && started.TryGetDateTime(out var when) ? when : DateTime.MinValue,
 			root.TryGetProperty("exe", out var exe) ? exe.GetString() : null,
 			root.TryGetProperty("args", out var args) && args.ValueKind == JsonValueKind.Array ? args.EnumerateArray().Select(a => a.GetString()).ToArray() : Array.Empty<string>(),
-			root.TryGetProperty("logs", out var logs) ? logs.GetString() : null);
+			root.TryGetProperty("logs", out var logs) ? logs.GetString() : null,
+			root.TryGetProperty("host", out var host) && host.ValueKind == JsonValueKind.String ? host.GetString() : "editor",
+			root.TryGetProperty("game", out var game) && game.ValueKind == JsonValueKind.String ? game.GetString() : null);
 	}
 
-	/// <summary>Reads the file and insists the editor that wrote it is still running; a crash log, when one exists, is named in the error.</summary>
+	/// <summary>Reads the file and insists the process that wrote it is still running; a crash log, when one exists, is named in the error.</summary>
 	public static GatewayInfo Load(string path)
 	{
 		var info = Read(path);
@@ -58,13 +68,12 @@ public sealed record GatewayInfo(int Port, string Token, int Pid, DateTime Start
 			return info;
 
 		var crash = info.NewestCrashLog();
-		var hint = crash != null
-			? $"It crashed; see {crash}. Run 'voltage start' to relaunch it."
-			: "Run 'voltage start' to relaunch it.";
-		throw new CliException($"the editor that wrote {path} (pid {info.Pid}) is no longer running. {hint}");
+		var relaunch = info.Host == "game" ? "Run 'voltage start --game <exe>' to relaunch it." : "Run 'voltage start' to relaunch it.";
+		var hint = crash != null ? $"It crashed; see {crash}. {relaunch}" : relaunch;
+		throw new CliException($"the {info.HostLabel} that wrote {path} (pid {info.Pid}) is no longer running. {hint}");
 	}
 
-	/// <summary>Newest crash log written after this editor started, or null.</summary>
+	/// <summary>Newest crash log written after this process started, or null.</summary>
 	public string NewestCrashLog()
 	{
 		if (string.IsNullOrEmpty(Logs) || !Directory.Exists(Logs))
@@ -101,11 +110,33 @@ public sealed record GatewayInfo(int Port, string Token, int Pid, DateTime Start
 			throw new CliException($"an editor is already running (pid {previous.Pid})");
 
 		var exe = exeOverride ?? previous?.Exe;
-		if (string.IsNullOrEmpty(exe) || !File.Exists(exe))
+		if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe))
 			throw new CliException("no editor executable is known yet; pass --exe <path to Voltage.Editor> the first time");
 
-		// The editor must not inherit this process's stdout: a caller capturing our output would otherwise
-		// block until the editor exits. Windows can detach through the shell; elsewhere the pipes are drained.
+		var arguments = !string.IsNullOrEmpty(projectPath)
+			? new[] { Path.GetFullPath(projectPath) }
+			: previous?.Args ?? Array.Empty<string>();
+		return Launch(exe, arguments, infoPath, wait, "editor");
+	}
+
+	/// <summary>Launches a built game with its gateway on and waits until it answers.</summary>
+	public static GatewayInfo StartGame(string infoPath, string exe, TimeSpan wait)
+	{
+		if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe))
+			throw new CliException("pass the path of a built game executable: voltage start --game <exe>");
+
+		GatewayInfo previous = null;
+		try { previous = Read(infoPath); } catch (CliException) { }
+		if (previous != null && previous.Pid != 0 && IsRunning(previous.Pid))
+			throw new CliException($"a game with a gateway is already running (pid {previous.Pid}); quit it first (voltage --game app.exit)");
+
+		return Launch(Path.GetFullPath(exe), new[] { "--gateway", "--gateway-port", "0", "--gateway-info", infoPath }, infoPath, wait, "game");
+	}
+
+	private static GatewayInfo Launch(string exe, string[] arguments, string infoPath, TimeSpan wait, string what)
+	{
+		// The child must not inherit this process's stdout: a caller capturing our output would otherwise
+		// block until the child exits. Windows can detach through the shell; elsewhere the pipes are drained.
 		var windows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 		var startInfo = new ProcessStartInfo(exe)
 		{
@@ -114,11 +145,8 @@ public sealed record GatewayInfo(int Port, string Token, int Pid, DateTime Start
 			RedirectStandardError = !windows,
 			WorkingDirectory = Path.GetDirectoryName(exe) ?? "."
 		};
-		if (!string.IsNullOrEmpty(projectPath))
-			startInfo.ArgumentList.Add(Path.GetFullPath(projectPath));
-		else if (previous != null)
-			foreach (var arg in previous.Args)
-				startInfo.ArgumentList.Add(arg);
+		foreach (var arg in arguments)
+			startInfo.ArgumentList.Add(arg);
 
 		var process = Process.Start(startInfo) ?? throw new CliException($"could not start {exe}");
 		if (!windows)
@@ -134,7 +162,7 @@ public sealed record GatewayInfo(int Port, string Token, int Pid, DateTime Start
 		{
 			Thread.Sleep(500);
 			if (process.HasExited)
-				throw new CliException($"the editor exited during startup with code {process.ExitCode}");
+				throw new CliException($"the {what} exited during startup with code {process.ExitCode}");
 
 			GatewayInfo info;
 			try { info = Read(infoPath); } catch (Exception) { continue; }
@@ -152,6 +180,6 @@ public sealed record GatewayInfo(int Port, string Token, int Pid, DateTime Start
 			}
 		}
 
-		throw new CliException($"the editor (pid {process.Id}) did not answer within {wait.TotalSeconds:0}s");
+		throw new CliException($"the {what} (pid {process.Id}) did not answer within {wait.TotalSeconds:0}s");
 	}
 }

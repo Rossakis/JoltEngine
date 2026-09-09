@@ -98,6 +98,9 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	private SpriteAtlasEditorWindow _spriteAtlasEditorWindow;
 	private List<Action> _drawCommands = new();
 	private ImGuiRenderer _renderer;
+
+	/// <summary>Closes the frame Update opened when Draw is skipped, as on a minimized window.</summary>
+	public void DiscardFrame() => _renderer?.DiscardFrame();
 	private GizmoSelectionManager _cursorSelectionManager;
 	private ImGuiWindowFlags _gameWindowFlags = 0;
 
@@ -184,6 +187,9 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	private bool _showSaveLayoutPopup = false;
 	private bool _isFirstFrame = true;
 
+	/// <summary>ImGui undocks a window that begins in a frame whose dockspace was not submitted, so the game window waits for a frame that has one.</summary>
+	private int _dockspaceFrame = -1;
+
 	// Build effects progress window
 	private EffectsCompileProgressWindow _effectsCompileProgressWindow;
 	private System.Threading.CancellationTokenSource _effectBuildCancelToken;
@@ -238,7 +244,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		ImGui.SetNextWindowSize(new Num.Vector2(500, 0), ImGuiCond.Appearing);
 
 		bool open = true;
-		if (ImGui.BeginPopupModal("create-scene-for-save", ref open, ImGuiWindowFlags.AlwaysAutoResize))
+		if (Gui.BeginPopupModal("create-scene-for-save", ref open, ImGuiWindowFlags.AlwaysAutoResize))
 		{
 			ImGui.Text("Save Current Scene");
 			ImGui.Separator();
@@ -250,7 +256,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 			ImGui.Text("Scene Name:");
 			ImGui.SetNextItemWidth(450);
-			ImGui.InputText("##SceneName", ref _newSceneNameForSave, 50);
+			Gui.InputText("##SceneName", ref _newSceneNameForSave, 50);
 
 			// Validate scene name
 			bool isValidName = !string.IsNullOrWhiteSpace(_newSceneNameForSave);
@@ -285,7 +291,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			if (!isValidName || sceneExists)
 				ImGui.BeginDisabled();
 
-			if (ImGui.Button("Save", new Num.Vector2(buttonWidth, 0)))
+			if (Gui.Button("Save", new Num.Vector2(buttonWidth, 0)))
 			{
 				CreateAndSaveScene(_newSceneNameForSave);
 				ImGui.CloseCurrentPopup();
@@ -296,20 +302,20 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Don't Save", new Num.Vector2(buttonWidth, 0)))
+			if (Gui.Button("Don't Save", new Num.Vector2(buttonWidth, 0)))
 			{
 				ImGui.CloseCurrentPopup();
 			}
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 0))
+			if (Gui.Button("Cancel", new Num.Vector2(buttonWidth, 0))
 				)
 			{
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 	}
 
@@ -522,11 +528,11 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		if (ShowStyleEditor)
 		{
 			var showStyleEditor = ShowStyleEditor;
-			ImGui.Begin("Style Editor", ref showStyleEditor);
+			Gui.Begin("Style Editor", ref showStyleEditor);
 			ShowStyleEditor = showStyleEditor;
 
 			ImGui.ShowStyleEditor();
-			ImGui.End();
+			Gui.End();
 		}
 
 		if (!_hasCheckedEngineEffects && !_engineEffectsCheckComplete)
@@ -707,7 +713,12 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 				}
 			}
 
-			if (needsBuild)
+			if (needsBuild && EditorRunMode.NoPrompts)
+			{
+				Gateway.EditorGatewayDispatcher.SuppressPrompt("Missing Engine Effects", $"no compiled effects in {effectsDir}; run effects.compile");
+				_engineEffectsCheckComplete = true;
+			}
+			else if (needsBuild)
 			{
 				_showEngineEffectsPrompt = true;
 			}
@@ -722,6 +733,13 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			_engineEffectsCheckComplete = true;
 		}
 	}
+
+	/// <summary>Where the editor looks for its compiled engine effects.</summary>
+	internal static string EngineEffectsDirectory => Path.Combine(FindProjectDir(), "Content", "Voltage", "Effects");
+
+	/// <summary>Starts the same engine-effects build the Effects menu runs.</summary>
+	internal void CompileEngineEffects() =>
+		EffectsCompiler.BuildEditorEngineEffects(_effectsCompileProgressWindow, ref _effectBuildCancelToken);
 
 	/// <summary>
 	/// Finds the Voltage.Editor project directory
@@ -760,14 +778,15 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Num.Vector2(0.0f, 0.0f));
 		ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Num.Vector2(0.0f, 0.0f));
 
-		ImGui.Begin("DockSpaceWindow", windowFlags);
+		Gui.Begin("DockSpaceWindow", windowFlags);
 		ImGui.PopStyleVar(4);
 
 		var dockspaceId = ImGui.GetID("MainDockSpace");
 		ImGui.DockSpace(dockspaceId, new Num.Vector2(0.0f, 0.0f),
 			ImGuiDockNodeFlags.PassthruCentralNode | ImGuiDockNodeFlags.NoDockingInCentralNode);
+		_dockspaceFrame = ImGui.GetFrameCount();
 
-		ImGui.End();
+		Gui.End();
 	}
 
 	public void GlobalKeyCommands()
@@ -860,7 +879,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 	private void DrawMainMenuBar()
 	{
-		if (ImGui.BeginMainMenuBar())
+		if (Gui.BeginMainMenuBar())
 		{
 			DrawFileMenu();
 			DrawProjectMenu();
@@ -875,7 +894,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			// Centering here only worked while the window was wide: the clamp that stops it overdrawing
 			// the menus puts it flush against Help on a small screen.
 
-			ImGui.EndMainMenuBar();
+			Gui.EndMainMenuBar();
 		}
 	}
 
@@ -894,7 +913,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 	private void DrawEditorToolsBar()
 	{
-		ImGui.Begin("Editor Tools", ImGuiWindowFlags.NoScrollbar);
+		Gui.Begin("Editor Tools", ImGuiWindowFlags.NoScrollbar);
 
 		float spacing = 12f * FontSizeMultiplier;
 		float iconSize = 24f * FontSizeMultiplier;
@@ -908,7 +927,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 		ImGui.PushStyleColor(ImGuiCol.Button, normalButtonColor);
 		bool normalHovered =
-			ImGui.ImageButton("Normal", ImguiImageLoader.NormalCursorIconID, new Num.Vector2(iconSize, iconSize));
+			Gui.ImageButton("Normal", ImguiImageLoader.NormalCursorIconID, new Num.Vector2(iconSize, iconSize));
 		if (normalHovered)
 			_cursorSelectionManager.SelectionMode = CursorSelectionMode.Normal;
 		ImGui.PopStyleColor();
@@ -928,7 +947,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 		ImGui.PushStyleColor(ImGuiCol.Button, resizeButtonColor);
 		bool resizeHovered =
-			ImGui.ImageButton("Resize", ImguiImageLoader.ResizeCursorIconID, new Num.Vector2(iconSize, iconSize));
+			Gui.ImageButton("Resize", ImguiImageLoader.ResizeCursorIconID, new Num.Vector2(iconSize, iconSize));
 		if (resizeHovered)
 			_cursorSelectionManager.SelectionMode = CursorSelectionMode.Resize;
 		ImGui.PopStyleColor();
@@ -948,7 +967,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 		ImGui.PushStyleColor(ImGuiCol.Button, rotateButtonColor);
 		bool rotateHovered =
-			ImGui.ImageButton("Rotate", ImguiImageLoader.RotateCursorIconID, new Num.Vector2(iconSize, iconSize));
+			Gui.ImageButton("Rotate", ImguiImageLoader.RotateCursorIconID, new Num.Vector2(iconSize, iconSize));
 		if (rotateHovered)
 			_cursorSelectionManager.SelectionMode = CursorSelectionMode.Rotate;
 		ImGui.PopStyleColor();
@@ -968,7 +987,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 		ImGui.PushStyleColor(ImGuiCol.Button, colliderResizeButtonColor);
 
-		bool colliderResizeHovered = ImGui.ImageButton("Collider Resize", ImguiImageLoader.ColliderResizeCursorIconID,
+		bool colliderResizeHovered = Gui.ImageButton("Collider Resize", ImguiImageLoader.ColliderResizeCursorIconID,
 			new Num.Vector2(iconSize, iconSize));
 		if (colliderResizeHovered)
 			_cursorSelectionManager.SelectionMode = CursorSelectionMode.ColliderResize;
@@ -989,7 +1008,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			tilePaintButtonColor = ImGui.GetStyle().Colors[(int)ImGuiCol.Button];
 
 		ImGui.PushStyleColor(ImGuiCol.Button, tilePaintButtonColor);
-		bool tilePaintHovered = ImGui.ImageButton("Tile Brush", ImguiImageLoader.TileBrushCursorIconID,
+		bool tilePaintHovered = Gui.ImageButton("Tile Brush", ImguiImageLoader.TileBrushCursorIconID,
 			new Num.Vector2(iconSize, iconSize));
 		if (tilePaintHovered)
 		{
@@ -1035,7 +1054,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		ImGui.SameLine();
 		DrawAudioToggleRightAligned();
 
-		ImGui.End();
+		Gui.End();
 	}
 
 	/// <summary>
@@ -1450,7 +1469,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		ImGui.SetNextWindowSize(new System.Numerics.Vector2(450, 0), ImGuiCond.Appearing);
 
 		bool open = true;
-		if (ImGui.BeginPopupModal(popupId, ref open, ImGuiWindowFlags.AlwaysAutoResize))
+		if (Gui.BeginPopupModal(popupId, ref open, ImGuiWindowFlags.AlwaysAutoResize))
 		{
 			// Determine the action context from popup ID
 			string actionContext = "continuing";
@@ -1505,7 +1524,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 			ImGui.SetCursorPosX(centerStart);
 
-			if (ImGui.Button("Save", new System.Numerics.Vector2(buttonWidth, 0)))
+			if (Gui.Button("Save", new System.Numerics.Vector2(buttonWidth, 0)))
 			{
 				Core.Schedule(0.1f, false, this, async _ =>
 				{
@@ -1517,7 +1536,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Don't Save", new System.Numerics.Vector2(buttonWidth, 0)))
+			if (Gui.Button("Don't Save", new System.Numerics.Vector2(buttonWidth, 0)))
 			{
 				// Re-read from disk: clearing the dirty mark alone leaves the edits in the shared cache instance.
 				DataAssetWindow?.DiscardChanges();
@@ -1528,7 +1547,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Cancel", new System.Numerics.Vector2(buttonWidth, 0)))
+			if (Gui.Button("Cancel", new System.Numerics.Vector2(buttonWidth, 0)))
 			{
 				_requestedSceneName = null;
 				_requestedSceneType = null;
@@ -1537,7 +1556,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 	}
 
@@ -1719,7 +1738,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		ImGui.SetNextWindowSize(new System.Numerics.Vector2(460, 0), ImGuiCond.Appearing);
 
 		bool open = true;
-		if (!ImGui.BeginPopupModal("Restart Editor?##Relaunch", ref open, ImGuiWindowFlags.AlwaysAutoResize))
+		if (!Gui.BeginPopupModal("Restart Editor?##Relaunch", ref open, ImGuiWindowFlags.AlwaysAutoResize))
 			return;
 
 		ImGui.Text("Restart the editor?");
@@ -1738,7 +1757,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		var totalButtonWidth = (buttonWidth * 2) + 10f;
 		ImGui.SetCursorPosX((ImGui.GetWindowSize().X - totalButtonWidth) * 0.5f);
 
-		if (ImGui.Button("Restart", new System.Numerics.Vector2(buttonWidth, 0)))
+		if (Gui.Button("Restart", new System.Numerics.Vector2(buttonWidth, 0)))
 		{
 			ImGui.CloseCurrentPopup();
 			RelaunchEditor();
@@ -1746,10 +1765,10 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 		ImGui.SameLine();
 
-		if (ImGui.Button("Cancel", new System.Numerics.Vector2(buttonWidth, 0)))
+		if (Gui.Button("Cancel", new System.Numerics.Vector2(buttonWidth, 0)))
 			ImGui.CloseCurrentPopup();
 
-		ImGui.EndPopup();
+		Gui.EndPopup();
 	}
 
 	public void RequestResetScene()

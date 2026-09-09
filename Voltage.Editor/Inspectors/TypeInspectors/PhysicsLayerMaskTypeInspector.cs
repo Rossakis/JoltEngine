@@ -58,7 +58,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
 			VoltageEditorUtils.SmallVerticalSpace();
 
-			if (ImGui.TreeNode($"{_name}: {summary}"))
+			if (Gui.TreeNode($"{_name}: {summary}"))
 			{
 				for (var i = 0; i < _layerNames.Length; i++)
 				{
@@ -68,12 +68,12 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 					{
 						// Disable only the checkboxes - tree remains interactive
 						ImGui.BeginDisabled();
-						ImGui.Checkbox(_layerNames[i], ref isChecked);
+						Gui.Checkbox(_layerNames[i], ref isChecked);
 						ImGui.EndDisabled();
 					}
 					else
 					{
-						if (ImGui.Checkbox(_layerNames[i], ref isChecked))
+						if (Gui.Checkbox(_layerNames[i], ref isChecked))
 						{
 							if (isChecked)
 								newMask |= _layerBitValues[i];

@@ -143,13 +143,13 @@ namespace Voltage.Editor.Windows
 			if (_closePending && !ImGui.IsPopupOpen(UnsavedPopupId))
 				ImGui.OpenPopup(UnsavedPopupId);
 
-			if (!ImGui.BeginPopupModal(UnsavedPopupId))
+			if (!Gui.BeginPopupModal(UnsavedPopupId))
 				return;
 
 			ImGuiSafe.TextWrappedSafe($"'{UnsavedAssetName}' has unsaved changes.");
 			ImGui.Spacing();
 
-			if (ImGui.Button("Save", new Num.Vector2(110, 0)))
+			if (Gui.Button("Save", new Num.Vector2(110, 0)))
 			{
 				Save();
 
@@ -163,7 +163,7 @@ namespace Voltage.Editor.Windows
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Don't Save", new Num.Vector2(110, 0)))
+			if (Gui.Button("Don't Save", new Num.Vector2(110, 0)))
 			{
 				DiscardChanges();
 				CompleteClose();
@@ -172,7 +172,7 @@ namespace Voltage.Editor.Windows
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Cancel", new Num.Vector2(110, 0)))
+			if (Gui.Button("Cancel", new Num.Vector2(110, 0)))
 			{
 				_closePending = false;
 				_pendingOpenPath = null;
@@ -180,7 +180,7 @@ namespace Voltage.Editor.Windows
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		/// <summary>True when that path is the asset currently being edited.</summary>
@@ -215,7 +215,7 @@ namespace Voltage.Editor.Windows
 			ImGui.SetNextWindowSize(new Num.Vector2(460, 520), ImGuiCond.FirstUseEver);
 
 			var open = IsOpen;
-			var beginResult = ImGui.Begin("Data Asset", ref open, ImGuiWindowFlags.MenuBar);
+			var beginResult = Gui.Begin("Data Asset", ref open, ImGuiWindowFlags.MenuBar);
 
 			// The title-bar X routes through the same prompt as the menu item.
 			if (!open && IsOpen)
@@ -225,7 +225,7 @@ namespace Voltage.Editor.Windows
 
 			if (!beginResult)
 			{
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
@@ -237,7 +237,7 @@ namespace Voltage.Editor.Windows
 					"No data asset open.\n\nDouble-click a .vasset in the Asset Browser, or create one with\n" +
 					"right-click ▸ Create ▸ Data Asset.");
 				DrawStatus();
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
@@ -280,7 +280,7 @@ namespace Voltage.Editor.Windows
 			}
 
 			DrawStatus();
-			ImGui.End();
+			Gui.End();
 		}
 
 		private void DrawMenuBar()
@@ -288,13 +288,13 @@ namespace Voltage.Editor.Windows
 			if (!ImGui.BeginMenuBar())
 				return;
 
-			if (ImGui.MenuItem("Save", "Cmd/Ctrl+S", false, _asset != null))
+			if (Gui.MenuItem("Save", "Cmd/Ctrl+S", false, _asset != null))
 				Save();
 
-			if (ImGui.MenuItem("Reveal", null, false, _path != null))
+			if (Gui.MenuItem("Reveal", null, false, _path != null))
 				AssetBrowserWindow.PingAsset(_path);
 
-			if (ImGui.MenuItem("Reload", null, false, _path != null))
+			if (Gui.MenuItem("Reload", null, false, _path != null))
 			{
 				DataAssetCache.ReloadPath(_path);
 				RefreshFromDisk();

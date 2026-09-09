@@ -8,6 +8,8 @@ using Microsoft.Xna.Framework;
 using Voltage.Editor.Assets;
 using Voltage.Editor.Builders;
 using Voltage.Editor.ProjectFile;
+using Voltage.Gateway;
+using static Voltage.Editor.Gateway.GatewayValues;
 
 namespace Voltage.Editor.Gateway.Commands;
 
@@ -15,11 +17,12 @@ namespace Voltage.Editor.Gateway.Commands;
 internal static class WorkflowCommands
 {
 	private static readonly TimeSpan BuildTimeout = TimeSpan.FromMinutes(30);
+	private static readonly TimeSpan GameGatewayTimeout = TimeSpan.FromSeconds(30);
 	private static bool _building;
 
 	public static void Register(GatewayCommandTable table)
 	{
-		table.Add("asset.list", "Indexed project assets. params: filter (substring of the path), kind (Texture|Prefab|Scene|Script|Effect|Tiled|Audio|Timeline|Tileset|...)", (args, _) =>
+		table.Add("asset.list", "Indexed project assets.", (args, _) =>
 		{
 			var db = RequireAssets();
 			var filter = args.String("filter");
@@ -30,14 +33,14 @@ internal static class WorkflowCommands
 				.Where(i => string.IsNullOrEmpty(kind) || i.Descriptor.Kind.ToString().Equals(kind, StringComparison.OrdinalIgnoreCase))
 				.Select(i => Describe(db, i))
 				.ToList();
-		});
+		}, P.Str("filter", "Substring of the absolute path"), P.Str("kind", "Asset kind from asset.kinds, such as Texture, Prefab, Scene, Script, Effect, Tiled, Audio, Timeline or Tileset")).ReadOnly();
 
-		table.Add("asset.get", "One asset by GUID or path. params: asset", (args, _) =>
+		table.Add("asset.get", "One asset by GUID or path.", (args, _) =>
 		{
 			var db = RequireAssets();
 			var item = GatewayValues.ResolveAsset(args.Require("asset"));
 			return Describe(db, item);
-		});
+		}, AssetParam).ReadOnly();
 
 		table.Add("asset.refresh", "Re-index the project's asset folders.", (_, _) =>
 		{
@@ -51,9 +54,9 @@ internal static class WorkflowCommands
 				.Distinct()
 				.Select(d => new { kind = d.Kind.ToString(), extensions = d.Extensions, droppable = d.DropFactory != null })
 				.OrderBy(d => d.kind)
-				.ToList());
+				.ToList()).ReadOnly();
 
-		table.Add("asset.drop", "Drop an asset into the scene as the asset browser would: a prefab instantiates, a texture or Aseprite file becomes a sprite entity. params: asset (GUID or path), x=0, y=0", (args, ctx) =>
+		table.Add("asset.drop", "Drop an asset into the scene as the asset browser would: a prefab instantiates, a texture or Aseprite file becomes a sprite entity.", (args, ctx) =>
 		{
 			var db = RequireAssets();
 			var item = GatewayValues.ResolveAsset(args.Require("asset"));
@@ -61,18 +64,18 @@ internal static class WorkflowCommands
 			if (Core.Scene == null)
 				throw new GatewayException("no scene loaded");
 
-			var pane = ctx.ImGui.SceneGraphWindow?.EntityPane;
+			var pane = ctx.ImGui().SceneGraphWindow?.EntityPane;
 			var before = pane != null ? new HashSet<Entity>(pane.SelectedEntities) : null;
 			drop(db.GetReference(item.AbsolutePath), new Vector2(args.Float("x"), args.Float("y")));
 
 			var created = pane?.SelectedEntities.Where(e => !before.Contains(e)).Select(e => new { id = e.Id, guid = e.PersistentId, name = e.Name }).ToList();
 			return new { dropped = item.FileName, selected = created };
-		});
+		}, AssetParam, P.Float("x", "World position", 0f), P.Float("y", "World position", 0f));
 
 		table.Add("build.platforms", "Game build targets and whether this machine can build them.", (_, _) =>
-			BuildPlatform.All.Select(p => new { name = p.DisplayName, rid = p.RuntimeIdentifier, available = p.IsAvailable, reason = p.UnavailableReason }).ToList());
+			BuildPlatform.All.Select(p => new { name = p.DisplayName, rid = p.RuntimeIdentifier, available = p.IsAvailable, reason = p.UnavailableReason }).ToList()).ReadOnly();
 
-		table.Add("build.game", "Publish the game; answers when the build finishes. params: platform (display name or RID, default first available), debug=false, compileAssets=true, linuxContainer=false", (args, _) =>
+		table.Add("build.game", "Publish the game; answers when the build finishes.", (args, _) =>
 		{
 			var project = ProjectManager.Instance.CurrentProject ?? throw new GatewayException("no project loaded");
 			if (_building)
@@ -137,36 +140,35 @@ internal static class WorkflowCommands
 			});
 
 			return GatewayTasks.WithTimeout(tcs.Task, BuildTimeout, "build timed out");
-		});
+		}, PlatformParam, DebugParam, P.Bool("compileAssets", "Compile content before publishing", true), P.Bool("linuxContainer", "Build Linux targets inside a container", false)).Unsafe();
 
-		table.Add("build.run", "Launch the last built game executable, detached from the editor. params: platform (default first available), debug=false", (args, _) =>
+		table.Add("build.run", "Launch the last built game executable, detached from the editor. With gateway=true the game starts its own gateway on a free port and the answer carries its gateway.json path once it is listening.", (args, ctx) =>
 		{
 			var project = ProjectManager.Instance.CurrentProject ?? throw new GatewayException("no project loaded");
 			var platform = ResolvePlatform(args.String("platform"));
 
-			var exe = GameBuilder.FindGameExecutable(project, platform, args.Bool("debug"))
-				?? throw new GatewayException("no built executable found; run build.game first");
-			var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(exe)
+			var exe = GameBuilder.FindGameExecutable(project, platform, args.Bool("debug"));
+			if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe))
+				throw new GatewayException("no built executable found; run build.game first");
+
+			var startInfo = new System.Diagnostics.ProcessStartInfo(exe)
 			{
 				WorkingDirectory = Path.GetDirectoryName(exe) ?? ".",
 				UseShellExecute = true
-			}) ?? throw new GatewayException($"could not start {exe}");
-			return new { pid = process.Id, executable = exe };
-		});
+			};
+			var gateway = args.Bool("gateway");
+			var infoPath = GatewayStorage.RuntimeInfoPath;
+			if (gateway)
+				foreach (var arg in new[] { "--gateway", "--gateway-port", "0", "--gateway-info", infoPath })
+					startInfo.ArgumentList.Add(arg);
 
-		table.Add("events.subscribe", "Stream editor lifecycle events (scene, project, play mode, compile) to this connection as 'editor' events.", (_, ctx) =>
-		{
-			ctx.Client.EventsSubscribed = true;
-			return new { subscribed = true };
-		});
+			var process = System.Diagnostics.Process.Start(startInfo) ?? throw new GatewayException($"could not start {exe}");
+			if (!gateway)
+				return new { pid = process.Id, executable = exe };
+			return WaitForGameGateway(process, exe, infoPath);
+		}, PlatformParam, DebugParam, P.Bool("gateway", "Start the game's own gateway and wait for it", false)).Unsafe();
 
-		table.Add("events.unsubscribe", "Stop streaming editor lifecycle events.", (_, ctx) =>
-		{
-			ctx.Client.EventsSubscribed = false;
-			return new { subscribed = false };
-		});
-
-		table.Add("debug.crash", "Kill the editor with an unhandled exception, to test crash logging and relaunch. params: confirm=true", (args, _) =>
+		table.Add("debug.crash", "Kill the editor with an unhandled exception, to test crash logging and relaunch.", (args, _) =>
 		{
 			if (!args.Bool("confirm"))
 				throw new GatewayException("pass confirm=true to crash the editor on purpose");
@@ -179,7 +181,43 @@ internal static class WorkflowCommands
 			}) { IsBackground = true, Name = "Gateway deliberate crash" };
 			thread.Start();
 			return new { crashing = true };
-		});
+		}, P.Bool("confirm", "Must be true", required: true)).Destructive().Unsafe();
+	}
+
+	private static readonly GatewayParam AssetParam = P.Str("asset", "Asset GUID or path", required: true);
+	private static readonly GatewayParam PlatformParam = P.Str("platform", "Display name or RID from build.platforms; the first available when omitted");
+	private static readonly GatewayParam DebugParam = P.Bool("debug", "Debug build instead of release", false);
+
+	/// <summary>Polls for the runtime gateway.json the launched game writes, matched by pid so a stale file cannot answer.</summary>
+	private static Task<object> WaitForGameGateway(System.Diagnostics.Process process, string exe, string infoPath)
+	{
+		return GatewayTasks.WhenReady(() => process.HasExited || TryReadPort(out _), () =>
+		{
+			if (process.HasExited)
+				throw new GatewayException($"the game exited during startup with code {process.ExitCode}");
+			if (!TryReadPort(out var port))
+				throw new GatewayException($"the game (pid {process.Id}) did not write {infoPath} within {GameGatewayTimeout.TotalSeconds:0}s");
+			return new { pid = process.Id, executable = exe, gatewayInfo = infoPath, port };
+		}, (float)GameGatewayTimeout.TotalSeconds);
+
+		bool TryReadPort(out int port)
+		{
+			port = 0;
+			try
+			{
+				if (!File.Exists(infoPath))
+					return false;
+				using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(infoPath));
+				if (!doc.RootElement.TryGetProperty("pid", out var pid) || pid.GetInt32() != process.Id)
+					return false;
+				port = doc.RootElement.GetProperty("port").GetInt32();
+				return true;
+			}
+			catch (Exception)
+			{
+				return false;
+			}
+		}
 	}
 
 	/// <summary>Display name or RID; the first buildable platform when none is given.</summary>
@@ -190,9 +228,6 @@ internal static class WorkflowCommands
 		return BuildPlatform.All.FirstOrDefault(p => p.DisplayName.Equals(wanted, StringComparison.OrdinalIgnoreCase) || p.RuntimeIdentifier.Equals(wanted, StringComparison.OrdinalIgnoreCase))
 			?? throw new GatewayException($"unknown platform '{wanted}'; see build.platforms");
 	}
-
-	private static AssetDatabase RequireAssets() =>
-		AssetDatabase.Instance ?? throw new GatewayException("no project loaded; the asset database is empty");
 
 	private static object Describe(AssetDatabase db, AssetItem item) => new
 	{

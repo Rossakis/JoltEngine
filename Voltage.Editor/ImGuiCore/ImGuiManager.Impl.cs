@@ -171,7 +171,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			| ImGuiWindowFlags.NoBringToFrontOnFocus; // keep in background
 
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, new Num.Vector2(0, 0));
-		ImGui.Begin($"Game: {gameWindowState}###GameWindow", gameWindowFlags);
+		Gui.Begin($"Game: {gameWindowState}###GameWindow", gameWindowFlags);
 
 		IsGameWindowFocused = ImGui.IsWindowFocused();
 
@@ -252,7 +252,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 				var zoomPadding = new Num.Vector2(16, 8) * ImGui.GetIO().FontGlobalScale;
 				var zoomButtonSize = zoomTextSize + zoomPadding;
 
-				if (ImGui.Button(zoomButtonText, zoomButtonSize))
+				if (Gui.Button(zoomButtonText, zoomButtonSize))
 				{
 					camera.Zoom = Camera.DefaultZoom;
 				}
@@ -270,7 +270,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 				var speedPadding = new Num.Vector2(16, 8) * ImGui.GetIO().FontGlobalScale;
 				var speedButtonSize = speedTextSize + speedPadding;
 
-				if (ImGui.Button(speedButtonText, speedButtonSize))
+				if (Gui.Button(speedButtonText, speedButtonSize))
 				{
 					ResetDynamicCameraSpeed();
 				}
@@ -340,7 +340,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			}
 		}
 
-		ImGui.End();
+		Gui.End();
 		ImGui.PopStyleVar();
 	}
 
@@ -504,6 +504,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 		// we have to do our layout in update so that if the game window is not focused or being displayed we can wipe
 		// the Input, essentially letting ImGui consume it
+		Gateway.UiRegistry.BeginFrame();
 		_renderer.BeforeLayout(Time.DeltaTime);
 
 		// Exit prompt drawing and management
@@ -540,7 +541,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			return;
 		}
 
-		if (ImGui.BeginPopupModal("Unsaved Changes", ref pendingValue, ImGuiWindowFlags.AlwaysAutoResize))
+		if (Gui.BeginPopupModal("Unsaved Changes", ref pendingValue, ImGuiWindowFlags.AlwaysAutoResize))
 		{
 			ImGui.TextWrapped("You have unsaved changes for:");
 
@@ -557,7 +558,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 			ImGui.Separator();
 			VoltageEditorUtils.MediumVerticalSpace();
 
-			if (ImGui.Button("Save", new Num.Vector2(120, 0)))
+			if (Gui.Button("Save", new Num.Vector2(120, 0)))
 			{
 				_pendingActionAfterSave = exitPromptType;
 				_pendingSaveTask = SaveSceneAsyncAndThenAct();
@@ -566,7 +567,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Discard", new Num.Vector2(120, 0))
+			if (Gui.Button("Discard", new Num.Vector2(120, 0))
 			   )
 			{
 				EditorChangeTracker.Revert();
@@ -591,14 +592,14 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Cancel", new Num.Vector2(120, 0)))
+			if (Gui.Button("Cancel", new Num.Vector2(120, 0)))
 			{
 				pendingValue = false;
 				_requestedSceneType = null;
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 	}
@@ -641,7 +642,7 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		if (ShowSeparateGameWindow)
 		{
 			// SAFETY CHECK: Don't bind texture on first frame or during layout reload
-			if (_isFirstFrame || _layoutManager.HasPendingReload)
+			if (_isFirstFrame || _layoutManager.HasPendingReload || ImGui.GetFrameCount() != _dockspaceFrame)
 			{
 				// Just render normally without separate game window
 				Core.GraphicsDevice.SetRenderTarget(finalRenderTarget);

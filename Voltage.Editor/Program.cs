@@ -12,6 +12,7 @@ public class Program
 	public static void Main(string[] args)
 	{
 		CommandLineArgs = args;
+		EditorRunMode.Apply(Voltage.Gateway.GatewayOptions.FromArgs(args, true));
 
 		// First, so nothing writes to the pre-migration locations on the way up.
 		Persistence.EditorStorage.Initialize();

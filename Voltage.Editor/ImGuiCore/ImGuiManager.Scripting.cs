@@ -115,7 +115,7 @@ public partial class ImGuiManager
 		ImGui.SetNextWindowSize(new Num.Vector2(600, 400), ImGuiCond.FirstUseEver);
 		
 		bool open = _showScriptingWindow;
-		if (ImGui.Begin("Scripting", ref open))
+		if (Gui.Begin("Scripting", ref open))
 		{
 			_showScriptingWindow = open;
 
@@ -123,7 +123,7 @@ public partial class ImGuiManager
 			{
 				ImGui.TextColored(new Num.Vector4(1.0f, 0.6f, 0.2f, 1.0f), "No active project loaded.");
 				ImGui.TextWrapped("Please create or load a project to use the scripting system.");
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
@@ -131,12 +131,12 @@ public partial class ImGuiManager
 			{
 				ImGui.TextColored(new Num.Vector4(1.0f, 0.6f, 0.2f, 1.0f), "Script manager not initialized.");
 				
-				if (ImGui.Button("Initialize Script Manager"))
+				if (Gui.Button("Initialize Script Manager"))
 				{
 					InitializeScriptManager();
 				}
 				
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
@@ -151,7 +151,7 @@ public partial class ImGuiManager
 			ImGui.Separator();
 
 			bool enableHotReload = _scriptManager.EnableHotReload;
-			if (ImGui.Checkbox("Enable Hot Reload", ref enableHotReload))
+			if (Gui.Checkbox("Enable Hot Reload", ref enableHotReload))
 			{
 				_scriptManager.EnableHotReload = enableHotReload;
 			}
@@ -161,7 +161,7 @@ public partial class ImGuiManager
 			}
 
 			bool autoReloadScene = _scriptManager.AutoReloadSceneOnChange;
-			if (ImGui.Checkbox("Auto Reload Scene", ref autoReloadScene))
+			if (Gui.Checkbox("Auto Reload Scene", ref autoReloadScene))
 			{
 				_scriptManager.AutoReloadSceneOnChange = autoReloadScene;
 			}
@@ -175,7 +175,7 @@ public partial class ImGuiManager
 			ImGui.TextColored(new Num.Vector4(0.2f, 0.8f, 1.0f, 1.0f), "Manual Actions");
 			ImGui.Separator();
 
-			if (ImGui.Button("Compile Scripts", new Num.Vector2(150, 0)))
+			if (Gui.Button("Compile Scripts", new Num.Vector2(150, 0)))
 			{
 				_scriptManager.CompileScripts(EditorSettingsWindow.AutoReloadSceneAfterScriptCompile);
 			}
@@ -186,7 +186,7 @@ public partial class ImGuiManager
 			
 			ImGui.SameLine();
 
-			if (ImGui.Button("Compile & Reload", new Num.Vector2(150, 0)))
+			if (Gui.Button("Compile & Reload", new Num.Vector2(150, 0)))
 			{
 				_scriptManager.CompileScripts(reloadSceneOnSuccess: true);
 			}
@@ -197,7 +197,7 @@ public partial class ImGuiManager
 			
 			ImGui.SameLine();
 
-			if (ImGui.Button("Reload Scene", new Num.Vector2(150, 0)))
+			if (Gui.Button("Reload Scene", new Num.Vector2(150, 0)))
 			{
 				_scriptManager.ReloadScene();
 			}
@@ -208,7 +208,7 @@ public partial class ImGuiManager
 
 			VoltageEditorUtils.SmallVerticalSpace();
 
-			if (ImGui.Button("Open Scripts Folder", new Num.Vector2(150, 0)))
+			if (Gui.Button("Open Scripts Folder", new Num.Vector2(150, 0)))
 			{
 				var scriptsPath = _projectManager.CurrentProject.ScriptsFolder;
 				if (Directory.Exists(scriptsPath))
@@ -236,7 +236,7 @@ public partial class ImGuiManager
 			ImGuiSafe.TextSafe("Components: " + componentTypes.Length);
 			ImGuiSafe.TextSafe("Entities: " + entityTypes.Length);
 
-			if (ImGui.TreeNode("Component Types"))
+			if (Gui.TreeNode("Component Types"))
 			{
 				foreach (var type in componentTypes)
 				{
@@ -245,7 +245,7 @@ public partial class ImGuiManager
 				ImGui.TreePop();
 			}
 
-			if (ImGui.TreeNode("Entity Types"))
+			if (Gui.TreeNode("Entity Types"))
 			{
 				foreach (var type in entityTypes)
 				{
@@ -265,7 +265,7 @@ public partial class ImGuiManager
 				ImGui.EndChild();
 			}
 
-			ImGui.End();
+			Gui.End();
 		}
 	}
 

@@ -160,7 +160,7 @@ namespace Voltage.Editor.Inspectors.ObjectInspectors
 				ImGui.PushStyleColor(ImGuiCol.HeaderActive, new Num.Vector4(0.3f, 0.55f, 0.3f, 0.8f));
 			}
 
-			var isHeaderOpen = ImGui.CollapsingHeader(isRuntimeOnly ? $"{_name}  [Runtime Only]" : _name);
+			var isHeaderOpen = Gui.CollapsingHeader(isRuntimeOnly ? $"{_name}  [Runtime Only]" : _name);
 
 			if (isRuntimeOnly)
 				ImGui.PopStyleColor(3);
@@ -185,9 +185,9 @@ namespace Voltage.Editor.Inspectors.ObjectInspectors
 			}
 
 			// context menu has to be outside the isHeaderOpen block so it works open or closed
-			if (ImGui.BeginPopupContextItem())
+			if (Gui.BeginPopupContextItem())
 			{
-				if (ImGui.Selectable("Copy Component")) 
+				if (Gui.Selectable("Copy Component")) 
 				{
 					try
 					{
@@ -243,7 +243,7 @@ namespace Voltage.Editor.Inspectors.ObjectInspectors
 				var pasteText = canPaste ? "Paste Component Values" : 
 									   (copiedComponent != null ? $"Can't paste {copiedComponent.GetType().Name} into {_component.GetType().Name}" : "No component copied");
 				
-				if (ImGui.Selectable(pasteText) && canPaste)
+				if (Gui.Selectable(pasteText) && canPaste)
 				{
 					PasteComponentValues(copiedComponent, _component);
 				}
@@ -256,12 +256,12 @@ namespace Voltage.Editor.Inspectors.ObjectInspectors
 				ImGui.Separator();
 				VoltageEditorUtils.SmallVerticalSpace();
 
-				if (ImGui.Selectable("Remove Component"))
+				if (Gui.Selectable("Remove Component"))
 				{
 					_component.RemoveComponent();
 				}
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 
 			if (isHeaderOpen)
@@ -292,7 +292,7 @@ namespace Voltage.Editor.Inspectors.ObjectInspectors
 					ImGui.PushStyleColor(ImGuiCol.HeaderActive, new Num.Vector4(0.4f, 0.4f, 0.5f, 0.8f));
 					
 					// Collapsing header that starts closed by default
-					_isReadOnlyStructsOpen = ImGui.CollapsingHeader(
+					_isReadOnlyStructsOpen = Gui.CollapsingHeader(
 						"Read Only", 
 						_isReadOnlyStructsOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None
 					);
@@ -335,7 +335,7 @@ namespace Voltage.Editor.Inspectors.ObjectInspectors
 			bool oldEnabled = _component.Enabled;
 			bool enabled = oldEnabled;
 
-			if (ImGui.Checkbox("Enabled", ref enabled) && enabled != oldEnabled)
+			if (Gui.Checkbox("Enabled", ref enabled) && enabled != oldEnabled)
 			{
 				// Block enabling a component on a disabled entity
 				if (enabled && _component.Entity != null && !_component.Entity.Enabled)

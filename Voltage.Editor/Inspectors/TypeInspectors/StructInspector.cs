@@ -84,7 +84,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
             ImGui.Indent();
             VoltageEditorUtils.BeginBorderedGroup();
 
-            _isHeaderOpen = ImGui.CollapsingHeader($"{_name}");
+            _isHeaderOpen = Gui.CollapsingHeader($"{_name}");
             if (_isHeaderOpen)
             {
                 // Reset immediate change flag and capture struct at frame start

@@ -64,7 +64,7 @@ public partial class ImGuiManager
 			| ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize
 			| ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoDocking;
 
-		if (ImGui.Begin("##ProjectLoadOverlay", flags))
+		if (Gui.Begin("##ProjectLoadOverlay", flags))
 		{
 			ImGui.TextUnformatted($"Loading {ProjectLoadProgress.Title}");
 			ImGui.Spacing();
@@ -82,7 +82,7 @@ public partial class ImGuiManager
 			ImGui.PopStyleColor();
 		}
 
-		ImGui.End();
+		Gui.End();
 	}
 
 	/// <summary>Keeps a long path on one line by dropping the middle, which is the least useful part.</summary>

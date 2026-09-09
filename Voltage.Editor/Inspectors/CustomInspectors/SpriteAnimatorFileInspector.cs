@@ -46,7 +46,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
 			if(imGuiManager == null)
 				imGuiManager = Core.GetGlobalManager<ImGuiManager>();
 
-			if (ImGui.Button("Manage Animation Events", new Num.Vector2(-1, 0)))
+			if (Gui.Button("Manage Animation Events", new Num.Vector2(-1, 0)))
 			{
 				imGuiManager.OpenAnimationEventInspector(animator);
 			}
@@ -80,7 +80,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                 ImGui.Spacing();
             }
 
-            if (ImGui.Button("Load Aseprite Animation"))
+            if (Gui.Button("Load Aseprite Animation"))
             {
                 _errorMessage = "";
                 ImGui.OpenPopup("aseprite-anim-file-picker");
@@ -90,7 +90,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
             if (!string.IsNullOrEmpty(animator.TextureFilePath))
             {
                 ImGui.Spacing();
-                if (ImGui.Button("Clear Animation", new Num.Vector2(-1, 0)))
+                if (Gui.Button("Clear Animation", new Num.Vector2(-1, 0)))
                 {
                     ClearAnimationWithUndo(animator);
                     _errorMessage = "";
@@ -131,12 +131,12 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
             if (current < 0) current = 0;
 
             ImGui.SetNextItemWidth(-1);
-            if (ImGui.BeginCombo("##DefaultAnim", _defaultAnimNames[current]))
+            if (Gui.BeginCombo("##DefaultAnim", _defaultAnimNames[current]))
             {
                 for (int i = 0; i < _defaultAnimNames.Count; i++)
                 {
                     bool selected = i == current;
-                    if (ImGui.Selectable(_defaultAnimNames[i], selected) && _defaultAnimNames[i] != animator.LoadedTag)
+                    if (Gui.Selectable(_defaultAnimNames[i], selected) && _defaultAnimNames[i] != animator.LoadedTag)
                         SetDefaultAnimationWithUndo(animator, _defaultAnimNames[i]);
 
                     if (selected)
@@ -221,7 +221,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
         private void DrawAsepriteAnimationFilePickerPopup(SpriteAnimator animator)
         {
             bool isOpen = true;
-            if (ImGui.BeginPopupModal("aseprite-anim-file-picker", ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
+            if (Gui.BeginPopupModal("aseprite-anim-file-picker", ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
             {
                 var picker = FilePicker.GetFilePicker(this, ProjectManager.Instance.CurrentProject.ContentsFolder, ".ase|.aseprite");
                 picker.DontAllowTraverselBeyondRootFolder = true;
@@ -235,7 +235,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                     ImGui.Separator();
                     float buttonWidth = 100f;
 
-                    if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
+                    if (Gui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
                     {
                         ImGui.CloseCurrentPopup();
                         FilePicker.RemoveFilePicker(this);
@@ -251,7 +251,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                     // Tag selection box
                     DrawTagSelectionBox(picker);
 
-                    ImGui.DragInt("Frame Number", ref _frameNumber, 1, 0, 999);
+                    Gui.DragInt("Frame Number", ref _frameNumber, 1, 0, 999);
                     _frameNumber = Math.Max(0, _frameNumber);
 
                     ImGui.TextColored(new Num.Vector4(0.7f, 0.7f, 0.7f, 1), "Select an animation tag and layers below.");
@@ -266,7 +266,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                     float totalWidth = ImGui.GetContentRegionAvail().X;
                     float rightButtonStart = totalWidth - buttonWidth;
 
-                    if (ImGui.Button("Back", new Num.Vector2(buttonWidth, 0)))
+                    if (Gui.Button("Back", new Num.Vector2(buttonWidth, 0)))
                     {
                         // Clear selected file and tags/layers, return to file picker
                         picker.SelectedFile = null;
@@ -280,7 +280,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                     }
 
                     ImGui.SameLine();
-                    if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
+                    if (Gui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
                     {
                         ImGui.CloseCurrentPopup();
                         FilePicker.RemoveFilePicker(this);
@@ -297,7 +297,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                         ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.5f);
                     }
 
-                    if (ImGui.Button("Load", new Num.Vector2(buttonWidth, 0)) && canConfirm)
+                    if (Gui.Button("Load", new Num.Vector2(buttonWidth, 0)) && canConfirm)
                     {
                         string contentRoot = ProjectManager.Instance.CurrentProject.ContentsFolder;
                         if (CrossPlatformPath.IsPathUnder(contentRoot, picker.SelectedFile))
@@ -323,7 +323,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                     }
                 }
 
-                ImGui.EndPopup();
+                Gui.EndPopup();
             }
         }
 
@@ -361,7 +361,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
             // "Select All" button
             if (_availableLayers.Count > 0)
             {
-                if (ImGui.Button("Select All", new Num.Vector2(220, 0)))
+                if (Gui.Button("Select All", new Num.Vector2(220, 0)))
                 {
                     _selectedLayerIndices.Clear();
                     for (int i = 0; i < _availableLayers.Count; i++)
@@ -373,7 +373,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                 for (int i = 0; i < _availableLayers.Count; i++)
                 {
                     bool selected = _selectedLayerIndices.Contains(i);
-                    if (ImGui.Selectable(_availableLayers[i], selected, ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.DontClosePopups))
+                    if (Gui.Selectable(_availableLayers[i], selected, ImGuiSelectableFlags.AllowDoubleClick | ImGuiSelectableFlags.DontClosePopups))
                     {
                         // Toggle selection on click
                         if (selected)
@@ -430,7 +430,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                 for (int i = 0; i < _availableTags.Count; i++)
                 {
                     bool selected = _selectedTagIndex == i;
-                    if (ImGui.Selectable(_availableTags[i], selected, ImGuiSelectableFlags.DontClosePopups))
+                    if (Gui.Selectable(_availableTags[i], selected, ImGuiSelectableFlags.DontClosePopups))
                     {
                         _selectedTagIndex = i;
                     }

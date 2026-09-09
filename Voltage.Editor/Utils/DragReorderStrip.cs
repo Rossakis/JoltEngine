@@ -235,7 +235,7 @@ namespace Voltage.Editor.Utils
 			ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Num.Vector2(ImGui.GetStyle().ItemSpacing.X, 0f));
 
 			var flags = inTable ? ImGuiSelectableFlags.SpanAllColumns : ImGuiSelectableFlags.None;
-			ImGui.Selectable($"##dragstrip_{_payloadId}_{slot}", true, flags, new Num.Vector2(0f, height));
+			Gui.Selectable($"##dragstrip_{_payloadId}_{slot}", true, flags, new Num.Vector2(0f, height));
 
 			ImGui.PopStyleVar();
 			ImGui.PopStyleColor(3);

@@ -8,6 +8,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -44,3 +47,71 @@ jobs:
           echo "VoltageVersion.Engine = $VERSION"
           echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$' \
             || { echo "::error::VoltageVersion.Engine ('$VERSION') is not semver"; exit 1; }
+
+  # Starts a headless editor on a generated project and drives it over the gateway. The editor needs a
+  # GL 2+ context even without a window: Linux gets it from Mesa under Xvfb; Windows runners only offer
+  # the 1.1 GDI renderer, so a software Mesa opengl32.dll is dropped beside the editor executable.
+  gateway-tests:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux
+          - os: windows-latest
+            name: windows
+    name: gateway tests (${{ matrix.name }}, unverified on hosted runners)
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install Xvfb and Mesa
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgl1-mesa-dri mesa-utils libsdl2-2.0-0 libopenal1
+
+      - name: Build the solution
+        run: dotnet build VoltageEngine.sln -c Editor-Release
+
+      # mesa-dist-win ships llvmpipe as a drop-in opengl32.dll; SDL loads it before the system one.
+      # Pinned to a release and its published SHA-256 so a replaced asset fails the job instead of running.
+      - name: Provide a software OpenGL driver
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          MESA_URL: https://github.com/pal1000/mesa-dist-win/releases/download/26.2.0/mesa3d-26.2.0-release-msvc.7z
+          MESA_SHA256: dcb2719ef346dab5b609fcb193a5f13cfc4b0502e3f4de1ad43d349477402f47
+        run: |
+          Invoke-WebRequest $env:MESA_URL -OutFile mesa.7z
+          $actual = (Get-FileHash mesa.7z -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $env:MESA_SHA256) { Write-Host "::error::mesa-dist-win checksum mismatch: $actual"; exit 1 }
+          7z x mesa.7z -omesa | Out-Null
+          $editorDir = Get-ChildItem Voltage.Editor/bin/Editor-Release -Directory | Where-Object { Test-Path (Join-Path $_.FullName 'Voltage.Editor.exe') } | Select-Object -First 1
+          Copy-Item mesa/x64/opengl32.dll $editorDir.FullName
+          Write-Host "opengl32.dll placed in $($editorDir.FullName)"
+
+      - name: Run the gateway tests (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a dotnet test Voltage.Editor.Tests/Voltage.Editor.Tests.csproj -c Editor-Release --no-build --logger "trx;LogFileName=gateway-tests.trx" --results-directory TestResults
+
+      - name: Run the gateway tests (Windows)
+        if: runner.os == 'Windows'
+        run: dotnet test Voltage.Editor.Tests/Voltage.Editor.Tests.csproj -c Editor-Release --no-build --logger "trx;LogFileName=gateway-tests.trx" --results-directory TestResults
+
+      - name: Keep the results and any crash logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gateway-tests-${{ matrix.name }}
+          if-no-files-found: ignore
+          path: |
+            TestResults/**
+            ${{ runner.temp }}/voltage-gateway-tests/**/Logs/**

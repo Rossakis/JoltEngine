@@ -49,7 +49,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
 		public override void DrawMutable()
 		{
-			var isOpen = ImGui.CollapsingHeader($"{_name}", ImGuiTreeNodeFlags.FramePadding);
+			var isOpen = Gui.CollapsingHeader($"{_name}", ImGuiTreeNodeFlags.FramePadding);
 
 			if (GetValue() == null)
 			{
@@ -60,19 +60,19 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
 			VoltageEditorUtils.ShowContextMenuTooltip();
 
-			if (ImGui.BeginPopupContextItem())
+			if (Gui.BeginPopupContextItem())
 			{
-				if (AllowsMaterialRemoval && ImGui.Selectable("Remove Material"))
+				if (AllowsMaterialRemoval && Gui.Selectable("Remove Material"))
 				{
 					SetValue(null);
 					_inspectors.Clear();
 					ImGui.CloseCurrentPopup();
 				}
 
-				if (ImGui.Selectable("Set Effect", false, ImGuiSelectableFlags.DontClosePopups))
+				if (Gui.Selectable("Set Effect", false, ImGuiSelectableFlags.DontClosePopups))
 					ImGui.OpenPopup("effect-chooser");
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 
 			if (isOpen)
@@ -116,11 +116,11 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 		bool DrawEffectChooserPopup()
 		{
 			var createdEffect = false;
-			if (ImGui.BeginPopup("effect-chooser"))
+			if (Gui.BeginPopup("effect-chooser"))
 			{
 				foreach (var subclassType in InspectorCache.GetAllEffectSubclassTypes())
 				{
-					if (ImGui.Selectable(subclassType.Name))
+					if (Gui.Selectable(subclassType.Name))
 					{
 						// create the Effect, remove the existing EffectInspector and create a new one
 						var effect = Activator.CreateInstance(subclassType) as Effect;
@@ -142,7 +142,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 					}
 				}
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 
 			return createdEffect;

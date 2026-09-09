@@ -29,20 +29,20 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
 		public override void DrawMutable()
 		{
-			var isOpen = ImGui.CollapsingHeader($"{_name}", ImGuiTreeNodeFlags.FramePadding);
+			var isOpen = Gui.CollapsingHeader($"{_name}", ImGuiTreeNodeFlags.FramePadding);
 
 			if (AllowsEffectRemoval)
 				VoltageEditorUtils.ShowContextMenuTooltip();
 
-			if (AllowsEffectRemoval && ImGui.BeginPopupContextItem())
+			if (AllowsEffectRemoval && Gui.BeginPopupContextItem())
 			{
-				if (ImGui.Selectable("Remove Effect"))
+				if (Gui.Selectable("Remove Effect"))
 				{
 					SetValue(null);
 					_isTargetDestroyed = true;
 				}
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 
 			if (isOpen && !_isTargetDestroyed)

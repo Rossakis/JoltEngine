@@ -96,12 +96,12 @@ public class SceneComponentInspector
 
 		ImGui.PushID(_scopeId);
 
-		var isHeaderOpen = ImGui.CollapsingHeader(_displayName);
+		var isHeaderOpen = Gui.CollapsingHeader(_displayName);
 
 		// Context menu: remove component
-		if (ImGui.BeginPopupContextItem())
+		if (Gui.BeginPopupContextItem())
 		{
-			if (ImGui.Selectable("Remove Scene Component"))
+			if (Gui.Selectable("Remove Scene Component"))
 			{
 				EditorChangeTracker.PushUndo(
 					new SceneComponentRemovedUndoAction(Core.Scene, _component,
@@ -112,7 +112,7 @@ public class SceneComponentInspector
 				Core.Scene.RemoveSceneComponent(_component);
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		if (isHeaderOpen)
@@ -120,7 +120,7 @@ public class SceneComponentInspector
 			// Enabled toggle
 			bool oldEnabled = _component.Enabled;
 			bool enabled = oldEnabled;
-			if (ImGui.Checkbox("Enabled##SC", ref enabled) && enabled != oldEnabled)
+			if (Gui.Checkbox("Enabled##SC", ref enabled) && enabled != oldEnabled)
 			{
 				EditorChangeTracker.PushUndo(
 					new SceneComponentEnabledChangeAction(_component, oldEnabled, enabled),
@@ -150,7 +150,7 @@ public class SceneComponentInspector
 				ImGui.PushStyleColor(ImGuiCol.HeaderHovered, new Num.Vector4(0.35f, 0.35f, 0.45f, 0.7f));
 				ImGui.PushStyleColor(ImGuiCol.HeaderActive, new Num.Vector4(0.4f, 0.4f, 0.5f, 0.8f));
 
-				_isReadOnlyStructsOpen = ImGui.CollapsingHeader(
+				_isReadOnlyStructsOpen = Gui.CollapsingHeader(
 					"Read Only",
 					_isReadOnlyStructsOpen ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None
 				);

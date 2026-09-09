@@ -1,98 +1,69 @@
 import React from 'react';
 import clsx from 'clsx';
-import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
+import Layout from '@theme/Layout';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-import useBaseUrl from '@docusaurus/useBaseUrl';
-import styles from './styles.module.css';
+import styles from './index.module.css';
 
 const features = [
-  // {
-  //   title: 'Easy to Use',
-  //   imageUrl: 'img/undraw_docusaurus_mountain.svg',
-  //   description: (
-  //     <>
-  //       Docusaurus was designed from the ground up to be easily installed and
-  //       used to get your website up and running quickly.
-  //     </>
-  //   ),
-  // },
-  // {
-  //   title: 'Focus on What Matters',
-  //   imageUrl: 'img/undraw_docusaurus_tree.svg',
-  //   description: (
-  //     <>
-  //       Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-  //       ahead and move your docs into the <code>docs</code> directory.
-  //     </>
-  //   ),
-  // },
-  // {
-  //   title: 'Powered by React',
-  //   imageUrl: 'img/undraw_docusaurus_react.svg',
-  //   description: (
-  //     <>
-  //       Extend or customize your website layout by reusing React. Docusaurus can
-  //       be extended while reusing the same header and footer.
-  //     </>
-  //   ),
-  // },
+  {
+    title: 'An editor, not a framework',
+    body: 'Scene graph, inspector, asset browser, prefabs, tile painting and a timeline in one dockable ImGui window, in front of the live game.',
+  },
+  {
+    title: 'C# with hot reload',
+    body: 'Write Components and SceneComponents in your own project. Save a file and the editor recompiles and reloads the scene.',
+  },
+  {
+    title: 'Ships as one binary',
+    body: 'Publish with NativeAOT and trimming from inside the editor. Source-generated serialization means no runtime reflection.',
+  },
+  {
+    title: 'Built for automation',
+    body: 'A loopback gateway, the voltage CLI and an MCP server let scripts and AI agents drive the editor like a person would.',
+  },
 ];
 
-function Feature({imageUrl, title, description}) {
-  const imgUrl = useBaseUrl(imageUrl);
+function Feature({title, body}) {
   return (
-    <div className={clsx('col col--4', styles.feature)}>
-      {imgUrl && (
-        <div className="text--center">
-          <img className={styles.featureImage} src={imgUrl} alt={title} />
-        </div>
-      )}
-      <h3>{title}</h3>
-      <p>{description}</p>
+    <div className={clsx('col col--6', styles.feature)}>
+      <div className={styles.card}>
+        <h3>{title}</h3>
+        <p>{body}</p>
+      </div>
     </div>
   );
 }
 
-function Home() {
-  const context = useDocusaurusContext();
-  const {siteConfig = {}} = context;
+export default function Home() {
+  const {siteConfig} = useDocusaurusContext();
   return (
-    <Layout
-      title={`Hello from ${siteConfig.title}`}
-      description="Description will go into a meta tag in <head />">
-      <header className={clsx('hero hero--primary', styles.heroBanner)}>
+    <Layout title="Voltage Engine" description={siteConfig.tagline}>
+      <header className={clsx('hero', styles.hero)}>
         <div className="container">
-          <h1 className="hero__title">{siteConfig.title}</h1>
-          <p className="hero__subtitle">{siteConfig.tagline}</p>
+          <h1 className={styles.title}>{siteConfig.title}</h1>
+          <p className={styles.subtitle}>{siteConfig.tagline}</p>
           <div className={styles.buttons}>
-            <Link
-              className={clsx(
-                'button button--outline button--secondary button--lg',
-                styles.getStarted,
-              )}
-              to={useBaseUrl('docs/')}>
-              Get Started
+            <Link className="button button--primary button--lg" to="/docs/intro">
+              Read the docs
             </Link>
-            <a class="button button--outline button--secondary button--lg" href="https://abanjo12.github.io/NezDocs" target="_blank">API Docs (External)</a>
+            <Link className="button button--secondary button--outline button--lg" to="/docs/getting-started/installation">
+              Build the editor
+            </Link>
           </div>
         </div>
       </header>
       <main>
-        {features && features.length > 0 && (
-          <section className={styles.features}>
-            <div className="container">
-              <div className="row">
-                {features.map((props, idx) => (
-                  <Feature key={idx} {...props} />
-                ))}
-              </div>
+        <section className={styles.features}>
+          <div className="container">
+            <div className="row">
+              {features.map((props) => (
+                <Feature key={props.title} {...props} />
+              ))}
             </div>
-          </section>
-        )}
+          </div>
+        </section>
       </main>
     </Layout>
   );
 }
-
-export default Home;

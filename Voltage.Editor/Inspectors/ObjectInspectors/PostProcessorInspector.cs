@@ -53,20 +53,20 @@ namespace Voltage.Editor.Inspectors.ObjectInspectors
 		public void Draw()
 		{
 			ImGui.PushID(_scopeId);
-			var isOpen = ImGui.CollapsingHeader(_postProcessor.GetType().Name.Replace("PostProcessor", string.Empty));
+			var isOpen = Gui.CollapsingHeader(_postProcessor.GetType().Name.Replace("PostProcessor", string.Empty));
 
 			VoltageEditorUtils.ShowContextMenuTooltip();
 
-			if (ImGui.BeginPopupContextItem())
+			if (Gui.BeginPopupContextItem())
 			{
-				if (ImGui.Selectable("Remove PostProcessor"))
+				if (Gui.Selectable("Remove PostProcessor"))
 				{
 					isOpen = false;
 					Core.Scene.RemovePostProcessor(_postProcessor);
 					ImGui.CloseCurrentPopup();
 				}
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 
 			if (isOpen)

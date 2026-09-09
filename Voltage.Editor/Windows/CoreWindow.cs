@@ -29,10 +29,10 @@ namespace Voltage.Editor.Windows
 			if (_imguiManager == null)
 				_imguiManager = Core.GetGlobalManager<ImGuiManager>();
 
-			ImGui.Begin("Core Settings###CoreWindow", ref isOpen, ImGuiWindowFlags.None);
+			Gui.Begin("Core Settings###CoreWindow", ref isOpen, ImGuiWindowFlags.None);
 
 			DrawSettings();
-			ImGui.End();
+			Gui.End();
 
 			return isOpen;
 		}
@@ -47,21 +47,21 @@ namespace Voltage.Editor.Windows
 
 			VoltageEditorUtils.SmallVerticalSpace();
 
-			if (ImGui.CollapsingHeader("Core Settings", ImGuiTreeNodeFlags.DefaultOpen))
+			if (Gui.CollapsingHeader("Core Settings", ImGuiTreeNodeFlags.DefaultOpen))
 			{
-				ImGui.Checkbox("ResetSceneAutomatically", ref Core.ResetSceneAutomatically);
-				ImGui.Checkbox("exitOnEscapeKeypress", ref Core.ExitOnEscapeKeypress);
-				ImGui.Checkbox("pauseOnFocusLost", ref Core.PauseOnFocusLost);
-				ImGui.Checkbox("debugRenderEnabled", ref Core.DebugRenderEnabled);
+				Gui.Checkbox("ResetSceneAutomatically", ref Core.ResetSceneAutomatically);
+				Gui.Checkbox("exitOnEscapeKeypress", ref Core.ExitOnEscapeKeypress);
+				Gui.Checkbox("pauseOnFocusLost", ref Core.PauseOnFocusLost);
+				Gui.Checkbox("debugRenderEnabled", ref Core.DebugRenderEnabled);
 			}
 
-			if (ImGui.CollapsingHeader("Core.defaultSamplerState", ImGuiTreeNodeFlags.DefaultOpen))
+			if (Gui.CollapsingHeader("Core.defaultSamplerState", ImGuiTreeNodeFlags.DefaultOpen))
 			{
 				ImGui.PushStyleVar(ImGuiStyleVar.Alpha, ImGui.GetStyle().Alpha * 0.5f);
 				VoltageEditorUtils.DisableNextWidget();
 
 				var currentTextureFilter = (int) Core.DefaultSamplerState.Filter;
-				if (ImGui.Combo("Filter", ref currentTextureFilter, _textureFilters, _textureFilters.Length))
+				if (Gui.Combo("Filter", ref currentTextureFilter, _textureFilters, _textureFilters.Length))
 					Core.DefaultSamplerState.Filter = (TextureFilter) Enum.Parse(typeof(TextureFilter),
 						_textureFilters[currentTextureFilter]);
 

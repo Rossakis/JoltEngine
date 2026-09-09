@@ -96,7 +96,7 @@ namespace Voltage.Editor.Utils
 			            ImGuiWindowFlags.NoCollapse |
 			            ImGuiWindowFlags.NoTitleBar;
 
-			if (ImGui.Begin("CompilationProgress", flags))
+			if (Gui.Begin("CompilationProgress", flags))
 			{
 				DrawTitle();
 				ImGui.Separator();
@@ -124,7 +124,7 @@ namespace Voltage.Editor.Utils
 					DrawCancelButton();
 				}
 
-				ImGui.End();
+				Gui.End();
 			}
 		}
 
@@ -135,7 +135,7 @@ namespace Voltage.Editor.Utils
 			var windowWidth = ImGui.GetWindowSize().X;
 			ImGui.SetCursorPosX((windowWidth - buttonWidth) * 0.5f);
 			
-			if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
+			if (Gui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
 			{
 				_onCancel?.Invoke();
 				Hide();

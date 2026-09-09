@@ -22,10 +22,10 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			ImGui.Separator();
 
 			ImGui.SetNextItemWidth(-1);
-			ImGui.InputTextWithHint("##refsearch", "Search...", ref search, 128);
+			Gui.InputTextWithHint("##refsearch", "Search...", ref search, 128);
 			ImGui.Separator();
 
-			if (ImGui.Selectable($"  None ({valueType.Name})", current == null))
+			if (Gui.Selectable($"  None ({valueType.Name})", current == null))
 			{
 				cleared = true;
 				return true;
@@ -48,7 +48,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 						continue;
 
 					ImGui.PushID((int)entity.Id);
-					bool chosen = ImGui.Selectable($"  {entity.Name}", entity == current);
+					bool chosen = Gui.Selectable($"  {entity.Name}", entity == current);
 					ImGui.PopID();
 
 					if (chosen)
@@ -87,7 +87,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
 			if (hasChildren)
 			{
-				bool nodeOpen = ImGui.TreeNodeEx(entity.Name,
+				bool nodeOpen = Gui.TreeNodeEx(entity.Name,
 					ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.SpanAvailWidth
 					| (isSelected ? ImGuiTreeNodeFlags.Selected : 0));
 
@@ -118,7 +118,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			}
 			else
 			{
-				ImGui.TreeNodeEx(entity.Name,
+				Gui.TreeNodeEx(entity.Name,
 					ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.NoTreePushOnOpen
 					| ImGuiTreeNodeFlags.SpanAvailWidth
 					| (isSelected ? ImGuiTreeNodeFlags.Selected : 0));

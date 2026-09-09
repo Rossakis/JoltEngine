@@ -66,7 +66,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
 		public override void DrawMutable()
 		{
-			if (ImGui.Button(_name))
+			if (Gui.Button(_name))
 				OnButtonClicked();
 
 			if (_parameterType != null)
@@ -74,17 +74,17 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
 			ImGui.PushItemWidth(-ImGui.CalcTextSize(_parameterName).X); // spacing on the right for the label
 			if (_parameterType == typeof(float))
-				ImGui.DragFloat($"{_parameterName}##", ref _floatParam);
+				Gui.DragFloat($"{_parameterName}##", ref _floatParam);
 			else if (_parameterType == typeof(int))
-				ImGui.DragInt($"{_parameterName}##", ref _intParam);
+				Gui.DragInt($"{_parameterName}##", ref _intParam);
 			else if (_parameterType == typeof(bool))
-				ImGui.Checkbox($"{_parameterName}##", ref _boolParam);
+				Gui.Checkbox($"{_parameterName}##", ref _boolParam);
 			else if (_parameterType == typeof(string))
-				ImGui.InputText($"{_parameterName}##", ref _stringParam, 100);
+				Gui.InputText($"{_parameterName}##", ref _stringParam, 100);
 			else if (_parameterType == typeof(Vector2))
-				ImGui.DragFloat2($"{_parameterName}##", ref _vec2Param);
+				Gui.DragFloat2($"{_parameterName}##", ref _vec2Param);
 			else if (_parameterType == typeof(Vector3))
-				ImGui.DragFloat3($"{_parameterName}##", ref _vec3Param);
+				Gui.DragFloat3($"{_parameterName}##", ref _vec3Param);
 			ImGui.PopItemWidth();
 
 			HandleTooltip();

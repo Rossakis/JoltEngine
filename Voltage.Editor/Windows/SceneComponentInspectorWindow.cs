@@ -60,7 +60,7 @@ public class SceneComponentInspectorWindow
 			? $"{Component.Name ?? Component.GetType().Name} (Scene Component)###SceneComponentInspector_{_id}"
 			: $"Scene Component Inspector###SceneComponentInspector_{_id}";
 
-		ImGui.Begin(title, ref open);
+		Gui.Begin(title, ref open);
 
 		if (_shouldFocusWindow)
 		{
@@ -86,6 +86,6 @@ public class SceneComponentInspectorWindow
 		}
 
 		IsOpen = open;
-		ImGui.End();
+		Gui.End();
 	}
 }

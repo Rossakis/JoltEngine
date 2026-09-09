@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Voltage.Data;
@@ -114,11 +115,54 @@ public class EditorChangeTracker
     /// </summary>
     public static void PushUndo(IEditorAction action, object changedObj = null, string description = null)
     {
-        // Always allow undo - remove the ShouldAllowUndo check entirely
-        _undoStack.Push(new Entry(action, changedObj));
-        _redoStack.Clear();
+        if (_group != null)
+        {
+            _group.Add(action);
+            _groupTarget ??= changedObj;
+        }
+        else
+        {
+            _undoStack.Push(new Entry(action, changedObj));
+            _redoStack.Clear();
+        }
         if (changedObj != null && description != null)
             MarkChanged(changedObj, description);
+    }
+
+    private static List<IEditorAction> _group;
+    private static string _groupDescription;
+    private static object _groupTarget;
+
+    /// <summary>True while <see cref="BeginGroup"/> is collecting actions.</summary>
+    public static bool InGroup => _group != null;
+
+    /// <summary>Collects every PushUndo until <see cref="EndGroup"/> into one undo step.</summary>
+    public static void BeginGroup(string description)
+    {
+        if (_group != null)
+            throw new InvalidOperationException("an undo group is already open");
+        _group = new List<IEditorAction>();
+        _groupDescription = description;
+        _groupTarget = null;
+    }
+
+    /// <summary>Closes the group; returns how many actions it folded, or -1 when none was open. An empty group pushes nothing.</summary>
+    public static int EndGroup()
+    {
+        if (_group == null)
+            return -1;
+
+        var actions = _group;
+        var target = _groupTarget;
+        var description = _groupDescription;
+        _group = null;
+        _groupTarget = null;
+        if (actions.Count > 0)
+        {
+            _undoStack.Push(new Entry(new CompositeUndoAction(actions, description ?? $"{actions.Count} changes"), target));
+            _redoStack.Clear();
+        }
+        return actions.Count;
     }
 
     /// <summary>

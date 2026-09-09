@@ -66,7 +66,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
                 return;
             }
 
-            if (ImGui.Checkbox(_name, ref value))
+            if (Gui.Checkbox(_name, ref value))
                 SetValueWithUndo(value, _name);
         }
 
@@ -80,14 +80,14 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
         void InspectColor()
         {
             var value = GetValue<Color>().ToNumerics();
-            if (ImGui.ColorEdit4(_name, ref value))
+            if (Gui.ColorEdit4(_name, ref value))
                 SetValueWithUndo(value.ToXNAColor(), _name);
         }
 
         void InspectString()
         {
             var value = GetValue<string>() ?? string.Empty;
-            if (ImGui.InputText(_name, ref value, 100))
+            if (Gui.InputText(_name, ref value, 100))
                 SetValueWithUndo(value, _name);
         }
 
@@ -106,20 +106,20 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
                 if (_rangeAttribute.UseDragVersion)
                 {
                     // DragInt: batch undo/redo
-                    changed = ImGui.DragInt(_name, ref value, 1, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+                    changed = Gui.DragInt(_name, ref value, 1, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
                     HandleEditSession(fieldKey, value, changed);
                 }
                 else
                 {
                     // SliderInt: batch undo/redo
-                    changed = ImGui.SliderInt(_name, ref value, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+                    changed = Gui.SliderInt(_name, ref value, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
                     HandleEditSession(fieldKey, value, changed);
                 }
             }
             else
             {
                 // InputInt: immediate undo/redo
-                changed = ImGui.InputInt(_name, ref value);
+                changed = Gui.InputInt(_name, ref value);
                 if (changed)
                     SetValueWithUndo(value, _name);
             }
@@ -142,18 +142,18 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
                 string fieldKey = _name;
                 if (_rangeAttribute.UseDragVersion)
                 {
-                    changed = ImGui.DragInt(_name, ref value, 1, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+                    changed = Gui.DragInt(_name, ref value, 1, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
                     HandleEditSession(fieldKey, value, changed, v => Convert.ToUInt32(v));
                 }
                 else
                 {
-                    changed = ImGui.SliderInt(_name, ref value, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+                    changed = Gui.SliderInt(_name, ref value, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
                     HandleEditSession(fieldKey, value, changed, v => Convert.ToUInt32(v));
                 }
             }
             else
             {
-                if (ImGui.InputInt(_name, ref value))
+                if (Gui.InputInt(_name, ref value))
                     SetValueWithUndo(Convert.ToUInt32(value), _name);
             }
         }
@@ -167,18 +167,18 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
                 string fieldKey = _name;
                 if (_rangeAttribute.UseDragVersion)
                 {
-                    changed = ImGui.DragInt(_name, ref value, 1, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+                    changed = Gui.DragInt(_name, ref value, 1, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
                     HandleEditSession(fieldKey, value, changed, v => Convert.ToInt64(v));
                 }
                 else
                 {
-                    changed = ImGui.SliderInt(_name, ref value, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+                    changed = Gui.SliderInt(_name, ref value, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
                     HandleEditSession(fieldKey, value, changed, v => Convert.ToInt64(v));
                 }
             }
             else
             {
-                if (ImGui.InputInt(_name, ref value))
+                if (Gui.InputInt(_name, ref value))
                     SetValueWithUndo(Convert.ToInt64(value), _name);
             }
         }
@@ -192,18 +192,18 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
                 string fieldKey = _name;
                 if (_rangeAttribute.UseDragVersion)
                 {
-                    changed = ImGui.DragInt(_name, ref value, 1, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+                    changed = Gui.DragInt(_name, ref value, 1, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
                     HandleEditSession(fieldKey, value, changed, v => Convert.ToUInt64(v));
                 }
                 else
                 {
-                    changed = ImGui.SliderInt(_name, ref value, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
+                    changed = Gui.SliderInt(_name, ref value, (int)_rangeAttribute.MinValue, (int)_rangeAttribute.MaxValue);
                     HandleEditSession(fieldKey, value, changed, v => Convert.ToUInt64(v));
                 }
             }
             else
             {
-                if (ImGui.InputInt(_name, ref value))
+                if (Gui.InputInt(_name, ref value))
                     SetValueWithUndo(Convert.ToUInt64(value), _name);
             }
         }
@@ -218,18 +218,18 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
             {
                 if (_rangeAttribute.UseDragVersion)
                 {
-                    changed = ImGui.DragFloat(_name, ref value, 1, _rangeAttribute.MinValue, _rangeAttribute.MaxValue);
+                    changed = Gui.DragFloat(_name, ref value, 1, _rangeAttribute.MinValue, _rangeAttribute.MaxValue);
                     HandleEditSession(fieldKey, value, changed);
                 }
                 else
                 {
-                    changed = ImGui.SliderFloat(_name, ref value, _rangeAttribute.MinValue, _rangeAttribute.MaxValue);
+                    changed = Gui.SliderFloat(_name, ref value, _rangeAttribute.MinValue, _rangeAttribute.MaxValue);
                     HandleEditSession(fieldKey, value, changed);
                 }
             }
             else
             {
-                changed = ImGui.DragFloat(_name, ref value);
+                changed = Gui.DragFloat(_name, ref value);
                 HandleEditSession(fieldKey, value, changed);
             }
         }
@@ -238,7 +238,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
         {
             var value = GetValue<Vector2>().ToNumerics();
             string fieldKey = _name;
-            bool changed = ImGui.DragFloat2(_name, ref value);
+            bool changed = Gui.DragFloat2(_name, ref value);
             HandleEditSession(fieldKey, value.ToXNA(), changed);
         }
 
@@ -246,7 +246,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
         {
             var value = GetValue<Vector3>().ToNumerics();
             string fieldKey = _name;
-            bool changed = ImGui.DragFloat3(_name, ref value);
+            bool changed = Gui.DragFloat3(_name, ref value);
             HandleEditSession(fieldKey, value.ToXNA(), changed);
         }
 

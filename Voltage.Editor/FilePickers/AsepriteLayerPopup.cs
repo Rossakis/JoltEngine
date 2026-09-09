@@ -136,13 +136,13 @@ namespace Voltage.Editor.FilePickers
 			ImGui.SetNextWindowSize(new Num.Vector2(440, 560), ImGuiCond.Appearing);
 
 			var open = true;
-			if (!ImGui.BeginPopupModal(_popupId, ref open, ImGuiWindowFlags.NoResize))
+			if (!Gui.BeginPopupModal(_popupId, ref open, ImGuiWindowFlags.NoResize))
 				return false;
 
 			ImGui.TextUnformatted(Path.GetFileName(_filePath ?? string.Empty));
 			ImGui.Separator();
 
-			ImGui.Checkbox("Create as animated tile", ref _animate);
+			Gui.Checkbox("Create as animated tile", ref _animate);
 			if (ImGui.IsItemHovered())
 				ImGui.SetTooltip("Packs a frame range into an animated tile instead of flattening one frame.");
 
@@ -157,7 +157,7 @@ namespace Voltage.Editor.FilePickers
 			ImGui.Separator();
 
 			var confirmed = false;
-			if (ImGui.Button("Use this", new Num.Vector2(120, 0)))
+			if (Gui.Button("Use this", new Num.Vector2(120, 0)))
 			{
 				CaptureLayers();
 
@@ -179,13 +179,13 @@ namespace Voltage.Editor.FilePickers
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Cancel", new Num.Vector2(120, 0)))
+			if (Gui.Button("Cancel", new Num.Vector2(120, 0)))
 			{
 				FreePreviews();
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 
 			// Dismissed by the X or a click outside.
 			if (!open)
@@ -200,7 +200,7 @@ namespace Voltage.Editor.FilePickers
 			ImGui.SetNextItemWidth(-1);
 
 			var frame = _frame;
-			if (ImGui.SliderInt("##frame", ref frame, 0, _frameCount - 1, $"%d / {_frameCount - 1}"))
+			if (Gui.SliderInt("##frame", ref frame, 0, _frameCount - 1, $"%d / {_frameCount - 1}"))
 				_frame = Math.Clamp(frame, 0, _frameCount - 1);
 		}
 
@@ -211,11 +211,11 @@ namespace Voltage.Editor.FilePickers
 
 			ImGui.TextUnformatted("Start / end frame");
 			ImGui.SetNextItemWidth(-1);
-			if (ImGui.SliderInt("##animstart", ref start, 0, _frameCount - 1, $"start %d / {_frameCount - 1}"))
+			if (Gui.SliderInt("##animstart", ref start, 0, _frameCount - 1, $"start %d / {_frameCount - 1}"))
 				_animStart = Math.Clamp(start, 0, _frameCount - 1);
 
 			ImGui.SetNextItemWidth(-1);
-			if (ImGui.SliderInt("##animend", ref end, 0, _frameCount - 1, $"end %d / {_frameCount - 1}"))
+			if (Gui.SliderInt("##animend", ref end, 0, _frameCount - 1, $"end %d / {_frameCount - 1}"))
 				_animEnd = Math.Clamp(end, 0, _frameCount - 1);
 
 			var lo = Math.Min(_animStart, _animEnd);
@@ -282,7 +282,7 @@ namespace Voltage.Editor.FilePickers
 
 			if (AllowSyncNewLayers)
 			{
-				ImGui.Checkbox("Sync layers added later", ref _syncNewLayers);
+				Gui.Checkbox("Sync layers added later", ref _syncNewLayers);
 
 				if (ImGui.IsItemHovered())
 				{
@@ -313,7 +313,7 @@ namespace Voltage.Editor.FilePickers
 			{
 				var layer = _layers[i];
 				var ticked = _selected.Contains(layer);
-				if (ImGui.Checkbox($"{layer}##layer{i}", ref ticked))
+				if (Gui.Checkbox($"{layer}##layer{i}", ref ticked))
 				{
 					if (ticked)
 						_selected.Add(layer);
@@ -330,7 +330,7 @@ namespace Voltage.Editor.FilePickers
 
 			ImGui.EndChild();
 
-			if (ImGui.Button("Select all"))
+			if (Gui.Button("Select all"))
 			{
 				foreach (var layer in _layers)
 					_selected.Add(layer);
@@ -339,7 +339,7 @@ namespace Voltage.Editor.FilePickers
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Clear"))
+			if (Gui.Button("Clear"))
 			{
 				_selected.Clear();
 				_previewKey = "";

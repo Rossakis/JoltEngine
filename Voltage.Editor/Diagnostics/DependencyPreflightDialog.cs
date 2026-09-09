@@ -121,7 +121,7 @@ namespace Voltage.Editor.Diagnostics
 			ImGui.SetNextWindowSize(new Num.Vector2(640, 0), ImGuiCond.Appearing);
 
 			bool keepOpen = true;
-			if (ImGui.BeginPopupModal(PopupId, ref keepOpen, ImGuiWindowFlags.AlwaysAutoResize))
+			if (Gui.BeginPopupModal(PopupId, ref keepOpen, ImGuiWindowFlags.AlwaysAutoResize))
 			{
 				ImGuiSafe.TextColoredSafe(_result.AnyCriticalMissing ? Colors.Bad : Colors.Warn, _title);
 				ImGui.Separator();
@@ -165,7 +165,7 @@ namespace Voltage.Editor.Diagnostics
 				{
 					ImGui.Spacing();
 					var suppress = _suppressChecked;
-					if (ImGui.Checkbox("Don't show this check again before building", ref suppress))
+					if (Gui.Checkbox("Don't show this check again before building", ref suppress))
 						_suppressChecked = suppress;
 					if (ImGui.IsItemHovered())
 						ImGuiSafe.SetTooltipSafe(
@@ -179,7 +179,7 @@ namespace Voltage.Editor.Diagnostics
 
 				DrawActionButtons();
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 			else if (_open)
 			{
@@ -302,12 +302,12 @@ namespace Voltage.Editor.Diagnostics
 			ImGui.PushID(url);
 			var editable = url;
 			ImGui.SetNextItemWidth(420);
-			ImGui.InputText("##url", ref editable, (uint)url.Length + 1, ImGuiInputTextFlags.ReadOnly);
+			Gui.InputText("##url", ref editable, (uint)url.Length + 1, ImGuiInputTextFlags.ReadOnly);
 			ImGui.SameLine();
-			if (ImGui.SmallButton("Copy"))
+			if (Gui.SmallButton("Copy"))
 				Voltage.Clipboard.SetContents(url);
 			ImGui.SameLine();
-			if (ImGui.SmallButton("Open"))
+			if (Gui.SmallButton("Open"))
 				OpenUrl(url);
 			ImGui.PopID();
 		}
@@ -338,9 +338,9 @@ namespace Voltage.Editor.Diagnostics
 
 			// A read-only selectable so the user can drag-select; plus an explicit Copy button.
 			ImGui.PushID(command);
-			ImGui.InputText("##cmd", ref command, (uint)command.Length + 1, ImGuiInputTextFlags.ReadOnly);
+			Gui.InputText("##cmd", ref command, (uint)command.Length + 1, ImGuiInputTextFlags.ReadOnly);
 			ImGui.SameLine();
-			if (ImGui.SmallButton("Copy"))
+			if (Gui.SmallButton("Copy"))
 				Voltage.Clipboard.SetContents(command);
 			ImGui.PopID();
 
@@ -360,7 +360,7 @@ namespace Voltage.Editor.Diagnostics
 			{
 				ImGui.PushStyleColor(ImGuiCol.Button, new Num.Vector4(0.15f, 0.5f, 0.2f, 1.0f));
 				ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Num.Vector4(0.2f, 0.65f, 0.3f, 1.0f));
-				if (ImGui.Button("Install automatically", new Num.Vector2(180, buttonHeight)))
+				if (Gui.Button("Install automatically", new Num.Vector2(180, buttonHeight)))
 					RunAutoInstall();
 				ImGui.PopStyleColor(2);
 
@@ -373,7 +373,7 @@ namespace Voltage.Editor.Diagnostics
 				ImGui.SameLine();
 			}
 
-			if (ImGui.Button("Recheck", new Num.Vector2(120, buttonHeight)))
+			if (Gui.Button("Recheck", new Num.Vector2(120, buttonHeight)))
 			{
 				_result = NativeDependencyChecker.ReCheck(_dependencySet);
 				if (_result.AllPresent)
@@ -398,7 +398,7 @@ namespace Voltage.Editor.Diagnostics
 					: new Num.Vector4(0.7f, 0.5f, 0.15f, 1.0f);   // amber
 
 				ImGui.PushStyleColor(ImGuiCol.Button, color);
-				bool clicked = ImGui.Button(label, new Num.Vector2(120, buttonHeight));
+				bool clicked = Gui.Button(label, new Num.Vector2(120, buttonHeight));
 				ImGui.PopStyleColor();
 
 				if (!present && ImGui.IsItemHovered())
@@ -417,7 +417,7 @@ namespace Voltage.Editor.Diagnostics
 				ImGui.SameLine();
 			}
 
-			if (ImGui.Button("Cancel", new Num.Vector2(120, buttonHeight)))
+			if (Gui.Button("Cancel", new Num.Vector2(120, buttonHeight)))
 			{
 				if (busy) ImGui.EndDisabled();
 				Close();

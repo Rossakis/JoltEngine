@@ -120,7 +120,7 @@ namespace Voltage.Editor.Assets
                 Extensions: new[] { ".aseprite", ".ase" },
                 IconPath: IconTexture,
                 Kind: AssetKind.Texture,
-                DropFactory: DropHandlers.DropAsepriteAnimated
+                DropFactory: (reference, position) => DropHandlers.DropAsepriteAnimated(reference, position)
             ));
 
             Register(new AssetTypeDescriptor(
@@ -298,16 +298,16 @@ namespace Voltage.Editor.Assets
         /// Spawns an entity with a <see cref="SpriteAnimator"/> bound to the dropped Aseprite. Every tag loads as
         /// its own animation; the first tag becomes the serialized default that plays on scene load.
         /// </summary>
-        internal static void DropAsepriteAnimated(AssetReference reference, Microsoft.Xna.Framework.Vector2? worldPosition = null)
+        internal static Entity DropAsepriteAnimated(AssetReference reference, Microsoft.Xna.Framework.Vector2? worldPosition = null)
         {
             var absolutePath = ResolveOrLog(reference, "DropAsepriteAnimated");
-            if (absolutePath == null) return;
+            if (absolutePath == null) return null;
 
             var scene = Core.Scene;
             if (scene == null)
             {
                 EditorDebug.Log("DropAsepriteAnimated: no active scene.", "AssetBrowser");
-                return;
+                return null;
             }
 
             var relativePath = ToProjectRelativePath(absolutePath);
@@ -363,6 +363,7 @@ namespace Voltage.Editor.Assets
             var imgr = Core.GetGlobalManager<ImGuiManager>();
             imgr?.SceneGraphWindow.EntityPane.SetSelectedEntity(entity, false);
             imgr?.MainEntityInspectorWindow.DelayedSetEntity(entity);
+            return entity;
         }
 
         internal static void DropAudio(AssetReference reference, Microsoft.Xna.Framework.Vector2? worldPosition = null)

@@ -46,7 +46,7 @@ namespace Voltage.Editor.SceneFile
 			ImGui.SetNextWindowSize(new Num.Vector2(400, 200), ImGuiCond.Appearing);
 			
 			bool open = true;
-			if (ImGui.BeginPopupModal("create-scene-popup", ref open, ImGuiWindowFlags.NoResize))
+			if (Gui.BeginPopupModal("create-scene-popup", ref open, ImGuiWindowFlags.NoResize))
 			{
 				ImGui.TextColored(new Num.Vector4(0.2f, 0.8f, 1.0f, 1.0f), "Create New Scene");
 				ImGui.Separator();
@@ -58,7 +58,7 @@ namespace Voltage.Editor.SceneFile
 				
 				DrawActionButtons();
 				
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 		}
 		
@@ -67,7 +67,7 @@ namespace Voltage.Editor.SceneFile
 			ImGui.Text("Scene Name:");
 			ImGui.SetNextItemWidth(-1);
 			
-			if (ImGui.InputText("##SceneName", ref _sceneName, 100))
+			if (Gui.InputText("##SceneName", ref _sceneName, 100))
 			{
 				ValidateSceneName();
 			}
@@ -87,7 +87,7 @@ namespace Voltage.Editor.SceneFile
 			
 			VoltageEditorUtils.SmallVerticalSpace();
 			
-			ImGui.Checkbox("Create and load scene", ref _createAndLoad);
+			Gui.Checkbox("Create and load scene", ref _createAndLoad);
 			if (ImGui.IsItemHovered())
 			{
 				ImGui.SetTooltip("If checked, the newly created scene will be loaded immediately");
@@ -137,7 +137,7 @@ namespace Voltage.Editor.SceneFile
 			
 			ImGui.SetCursorPosX(centerStart);
 			
-			if (ImGui.Button("Create Scene", new Num.Vector2(buttonWidth, 30)))
+			if (Gui.Button("Create Scene", new Num.Vector2(buttonWidth, 30)))
 			{
 				if (canCreate)
 				{
@@ -152,7 +152,7 @@ namespace Voltage.Editor.SceneFile
 			
 			ImGui.SameLine();
 			
-			if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 30)))
+			if (Gui.Button("Cancel", new Num.Vector2(buttonWidth, 30)))
 			{
 				ImGui.CloseCurrentPopup();
 				ResetFields();

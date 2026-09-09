@@ -234,6 +234,19 @@ namespace Voltage.Editor.ImGuiCore
 			io.DeltaTime = deltaTime;
 			_input.UpdateInput();
 			ImGui.NewFrame();
+			FrameOpen = true;
+		}
+
+		/// <summary>True between NewFrame and Render.</summary>
+		public bool FrameOpen { get; private set; }
+
+		/// <summary>Ends a frame nothing will render, so a skipped Draw does not leave ImGui mid-frame.</summary>
+		public void DiscardFrame()
+		{
+			if (!FrameOpen)
+				return;
+			ImGui.EndFrame();
+			FrameOpen = false;
 		}
 
 
@@ -254,6 +267,7 @@ namespace Voltage.Editor.ImGuiCore
 		public void AfterLayout()
 		{
 			ImGui.Render();
+			FrameOpen = false;
 
 			unsafe
 			{

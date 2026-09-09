@@ -42,12 +42,6 @@ namespace Voltage.Editor.ProjectFile
 		private int _minorVersion = 0;
 		private int _buildVersion = 0;
 		
-		private const string ScriptsFolder = "Scripts";
-		private const string EffectsFolder = "Effects";
-		private const string ContentsFolder = "Content";
-		private const string DataFolder = "Data";
-		private const string ScenesFolder = "Scenes";
-		private const string PrefabsFolder = "Prefabs";
 
 		public class ProjectMetadata
 		{
@@ -103,7 +97,7 @@ namespace Voltage.Editor.ProjectFile
 			ImGui.SetNextWindowSize(new Num.Vector2(600, 700), ImGuiCond.Appearing);
 			
 			bool open = true;
-			if (ImGui.BeginPopupModal("create-project-popup", ref open, ImGuiWindowFlags.NoResize))
+			if (Gui.BeginPopupModal("create-project-popup", ref open, ImGuiWindowFlags.NoResize))
 			{
 				ImGui.TextColored(new Num.Vector4(0.2f, 0.8f, 1.0f, 1.0f), "Create New Game Project");
 				ImGui.Separator();
@@ -127,7 +121,7 @@ namespace Voltage.Editor.ProjectFile
 				
 				DrawActionButtons();
 				
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 		}
 		
@@ -140,7 +134,7 @@ namespace Voltage.Editor.ProjectFile
 			ImGui.SetNextItemWidth(-1);
 			
 			// Check for project name conflicts in real-time
-			if (ImGui.InputText("##ProjectName", ref _projectName, 100))
+			if (Gui.InputText("##ProjectName", ref _projectName, 100))
 			{
 				ValidateProjectName();
 			}
@@ -162,11 +156,11 @@ namespace Voltage.Editor.ProjectFile
 			
 			ImGui.Text("Project Path:");
 			ImGui.SetNextItemWidth(-250);
-			ImGui.InputText("##ProjectPath", ref _projectPath, 500);
+			Gui.InputText("##ProjectPath", ref _projectPath, 500);
 			
 			ImGui.SameLine();
 			
-			if (ImGui.Button("Browse...", new Num.Vector2(100, 0)))
+			if (Gui.Button("Browse...", new Num.Vector2(100, 0)))
 			{
 				OpenFolderPicker();
 			}
@@ -250,7 +244,7 @@ namespace Voltage.Editor.ProjectFile
 			ImGui.SetNextWindowSize(new Num.Vector2(600, 500), ImGuiCond.Appearing);
 			
 			bool open = true;
-			if (ImGui.BeginPopupModal("folder-picker-popup", ref open, ImGuiWindowFlags.NoResize))
+			if (Gui.BeginPopupModal("folder-picker-popup", ref open, ImGuiWindowFlags.NoResize))
 			{
 				ImGui.TextColored(new Num.Vector4(0.2f, 0.8f, 1.0f, 1.0f), "Select Project Directory");
 				ImGui.Separator();
@@ -269,7 +263,7 @@ namespace Voltage.Editor.ProjectFile
 					_reopenCreateProjectPopup = true;
 				}
 				
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 			
 			// Handle cancel/close via X button
@@ -285,21 +279,21 @@ namespace Voltage.Editor.ProjectFile
 		
 		private void DrawDisplaySettings()
 		{
-			if (ImGui.CollapsingHeader("Display Settings", ImGuiTreeNodeFlags.DefaultOpen))
+			if (Gui.CollapsingHeader("Display Settings", ImGuiTreeNodeFlags.DefaultOpen))
 			{
 				ImGui.Indent();
 				
 				ImGui.Text("Screen Resolution:");
 				ImGui.SetNextItemWidth(150);
-				ImGui.InputInt("Width##ScreenWidth", ref _screenWidth);
+				Gui.InputInt("Width##ScreenWidth", ref _screenWidth);
 				ImGui.SameLine();
 				ImGui.SetNextItemWidth(150);
-				ImGui.InputInt("Height##ScreenHeight", ref _screenHeight);
+				Gui.InputInt("Height##ScreenHeight", ref _screenHeight);
 				
 				VoltageEditorUtils.SmallVerticalSpace();
 				
-				ImGui.Checkbox("Fullscreen", ref _isFullscreen);
-				ImGui.Checkbox("Enable VSync", ref _enableVSync);
+				Gui.Checkbox("Fullscreen", ref _isFullscreen);
+				Gui.Checkbox("Enable VSync", ref _enableVSync);
 				
 				ImGui.Unindent();
 			}
@@ -307,25 +301,25 @@ namespace Voltage.Editor.ProjectFile
 		
 		private void DrawAudioSettings()
 		{
-			if (ImGui.CollapsingHeader("Audio Settings", ImGuiTreeNodeFlags.DefaultOpen))
+			if (Gui.CollapsingHeader("Audio Settings", ImGuiTreeNodeFlags.DefaultOpen))
 			{
 				ImGui.Indent();
 				
 				ImGui.Text("Master Volume:");
 				ImGui.SetNextItemWidth(-1);
-				ImGui.SliderFloat("##MasterVolume", ref _masterVolume, 0.0f, 1.0f, "%.2f");
+				Gui.SliderFloat("##MasterVolume", ref _masterVolume, 0.0f, 1.0f, "%.2f");
 				
 				VoltageEditorUtils.SmallVerticalSpace();
 				
 				ImGui.Text("Music Volume:");
 				ImGui.SetNextItemWidth(-1);
-				ImGui.SliderFloat("##MusicVolume", ref _musicVolume, 0.0f, 1.0f, "%.2f");
+				Gui.SliderFloat("##MusicVolume", ref _musicVolume, 0.0f, 1.0f, "%.2f");
 				
 				VoltageEditorUtils.SmallVerticalSpace();
 				
 				ImGui.Text("SFX Volume:");
 				ImGui.SetNextItemWidth(-1);
-				ImGui.SliderFloat("##SFXVolume", ref _sfxVolume, 0.0f, 1.0f, "%.2f");
+				Gui.SliderFloat("##SFXVolume", ref _sfxVolume, 0.0f, 1.0f, "%.2f");
 				
 				ImGui.Unindent();
 			}
@@ -333,22 +327,22 @@ namespace Voltage.Editor.ProjectFile
 		
 		private void DrawVersionInfo()
 		{
-			if (ImGui.CollapsingHeader("Version", ImGuiTreeNodeFlags.DefaultOpen))
+			if (Gui.CollapsingHeader("Version", ImGuiTreeNodeFlags.DefaultOpen))
 			{
 				ImGui.Indent();
 				
 				ImGui.SetNextItemWidth(100);
-				ImGui.InputInt("Major", ref _majorVersion);
+				Gui.InputInt("Major", ref _majorVersion);
 				_majorVersion = Math.Max(0, _majorVersion);
 				
 				ImGui.SameLine();
 				ImGui.SetNextItemWidth(100);
-				ImGui.InputInt("Minor", ref _minorVersion);
+				Gui.InputInt("Minor", ref _minorVersion);
 				_minorVersion = Math.Max(0, _minorVersion);
 				
 				ImGui.SameLine();
 				ImGui.SetNextItemWidth(100);
-				ImGui.InputInt("Build", ref _buildVersion);
+				Gui.InputInt("Build", ref _buildVersion);
 				_buildVersion = Math.Max(0, _buildVersion);
 				
 				ImGuiSafe.TextColoredSafe(new Num.Vector4(0.7f, 0.7f, 0.7f, 1.0f),
@@ -360,18 +354,18 @@ namespace Voltage.Editor.ProjectFile
 		
 		private void DrawFolderInfo()
 		{
-			if (ImGui.CollapsingHeader("Project Structure", ImGuiTreeNodeFlags.DefaultOpen))
+			if (Gui.CollapsingHeader("Project Structure", ImGuiTreeNodeFlags.DefaultOpen))
 			{
 				ImGui.Indent();
 				
 				ImGui.TextColored(new Num.Vector4(0.7f, 1.0f, 0.7f, 1.0f), "Standard folders that will be created:");
 				
-				ImGuiSafe.BulletTextSafe($"{ScriptsFolder}/ - For game scripts and logic");
-				ImGuiSafe.BulletTextSafe($"{EffectsFolder}/ - For shader effects");
-				ImGuiSafe.BulletTextSafe($"{ContentsFolder}/ - For game assets");
-				ImGuiSafe.BulletTextSafe($"{DataFolder}/ - For game data and serialization");
-				ImGuiSafe.BulletTextSafe($"{DataFolder}/{ScenesFolder}/ - For scene files");
-				ImGuiSafe.BulletTextSafe($"{DataFolder}/{PrefabsFolder}/ - For entity prefabs");
+				ImGuiSafe.BulletTextSafe($"{ProjectCreator.ScriptsFolder}/ - For game scripts and logic");
+				ImGuiSafe.BulletTextSafe($"{ProjectCreator.EffectsFolder}/ - For shader effects");
+				ImGuiSafe.BulletTextSafe($"{ProjectCreator.ContentsFolder}/ - For game assets");
+				ImGuiSafe.BulletTextSafe($"{ProjectCreator.DataFolder}/ - For game data and serialization");
+				ImGuiSafe.BulletTextSafe($"{ProjectCreator.DataFolder}/{ProjectCreator.ScenesFolder}/ - For scene files");
+				ImGuiSafe.BulletTextSafe($"{ProjectCreator.DataFolder}/{ProjectCreator.PrefabsFolder}/ - For entity prefabs");
 				
 				ImGui.Unindent();
 			}
@@ -400,7 +394,7 @@ namespace Voltage.Editor.ProjectFile
 			
 			ImGui.SetCursorPosX(centerStart);
 			
-			if (ImGui.Button("Create Project", new Num.Vector2(buttonWidth, 30)))
+			if (Gui.Button("Create Project", new Num.Vector2(buttonWidth, 30)))
 			{
 				if (canCreate)
 				{
@@ -415,7 +409,7 @@ namespace Voltage.Editor.ProjectFile
 			
 			ImGui.SameLine();
 			
-			if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 30)))
+			if (Gui.Button("Cancel", new Num.Vector2(buttonWidth, 30)))
 			{
 				ImGui.CloseCurrentPopup();
 				ResetFields();
@@ -425,105 +419,14 @@ namespace Voltage.Editor.ProjectFile
 		#region Actual Project Creation
 		private void CreateProject()
 		{
-			EditorDebug.Log("=== Starting Project Creation ===", "ProjectCreation");
-			
 			try
 			{
-				if (string.IsNullOrWhiteSpace(_projectName))
-				{
-					_projectNameError = "Error: Project name cannot be empty.";
-					EditorDebug.Error("Project name is empty", "ProjectCreation");
-					return;
-				}
-				
-				var fullProjectPath = Path.Combine(_projectPath, _projectName);
-				
-				if (Directory.Exists(fullProjectPath))
-				{
-					_projectNameError = $"Error: A project with the name '{_projectName}' already exists at this location.";
-					EditorDebug.Error($"Project directory already exists: {fullProjectPath}", "ProjectCreation");
-					return;
-				}
-				
-				Directory.CreateDirectory(fullProjectPath);
-				
-				// Create folder structure
-				var scriptsPath = Path.Combine(fullProjectPath, ScriptsFolder);
-				var effectsPath = Path.Combine(fullProjectPath, EffectsFolder);
-				var contentsPath = Path.Combine(fullProjectPath, ContentsFolder);
-				var dataPath = Path.Combine(fullProjectPath, DataFolder);
-				var scenesPath = Path.Combine(dataPath, ScenesFolder);
-				var prefabsPath = Path.Combine(dataPath, PrefabsFolder);
-				
-				Directory.CreateDirectory(scriptsPath);
-				Directory.CreateDirectory(effectsPath);
-				Directory.CreateDirectory(contentsPath);
-				Directory.CreateDirectory(dataPath);
-				Directory.CreateDirectory(scenesPath);
-				Directory.CreateDirectory(prefabsPath);
-
-				var settings = CreateDefaultSettings();
-				var version = new Version(_majorVersion, _minorVersion, _buildVersion);
-				
-				// Generate project structure (solution, csproj, folders, etc.)
-				bool structureCreated = ProjectStructureGenerator.CreateProjectStructure(
-					_projectName,
-					fullProjectPath,
-					version
-				);
-				
-				if (!structureCreated)
-				{
-					EditorDebug.Error("Failed to create project structure", "ProjectCreation");
-					return;
-				}
-				
-				var projectMetadata = new ProjectMetadata
-				{
-					ProjectName = _projectName,
-					ProjectPath = fullProjectPath,
-					ScriptsFolder = ScriptsFolder,
-					EffectsFolder = EffectsFolder,
-					ContentsFolder = ContentsFolder,
-					DataFolder = DataFolder,
-					// Always use forward slashes for cross-platform portability in the stored .voltage file
-					ScenesFolder = DataFolder + "/" + ScenesFolder,
-					PrefabsFolder = DataFolder + "/" + PrefabsFolder,
-					CreatedDate = DateTime.Now,
-					EngineVersion = VoltageVersion.Engine,
-				};
-				
-				var metadataPath = Path.Combine(fullProjectPath, $"{projectMetadata.ProjectName}.voltage");
-				
-				var metadataJson = Voltage.Persistence.Json.ToJson(projectMetadata, new Voltage.Persistence.JsonSettings
-				{
-					PrettyPrint = true
-				});
-				
-				File.WriteAllText(metadataPath, metadataJson, new System.Text.UTF8Encoding(false));
-				var localPathKey = $"LocalProjectPath_{_projectName}";
-				EditorSettingsLoader.SaveSetting(localPathKey, fullProjectPath);
-				var settingsPath = Path.Combine(fullProjectPath, "ProjectSettings.json");
-				var settingsJson = Voltage.Persistence.Json.ToJson(settings, new Voltage.Persistence.JsonSettings { PrettyPrint = true });
-				File.WriteAllText(settingsPath, settingsJson, new System.Text.UTF8Encoding(false));
-				
-				CreateDefaultScene(scenesPath);
-				var projectManager = ProjectManager.Instance;
-				ImGuiCore.ImGuiManager.RequestProjectLoad(metadataPath);
-				bool projectLoaded = true;
-				
-				if (projectLoaded)
-				{
-					EditorDebug.Log($"Project '{_projectName}' created successfully!");
-				}
-				else
-				{
-					EditorDebug.Error($"Project created but failed to load from: {metadataPath}", "ProjectCreation");
-				}
+				var result = ProjectCreator.Create(_projectName, _projectPath, CreateDefaultSettings(), new Version(_majorVersion, _minorVersion, _buildVersion));
+				EditorDebug.Log($"Project '{_projectName}' created at {result.ProjectPath}", "ProjectCreation");
 
 				if (EditorSettingsWindow.AutoOpenSolutionUponCreation)
 				{
-					var solutionPath = Path.Combine(fullProjectPath, $"{_projectName}.sln");
+					var solutionPath = Path.Combine(result.ProjectPath, $"{_projectName}.sln");
 					if (File.Exists(solutionPath))
 					{
 						System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -539,23 +442,9 @@ namespace Voltage.Editor.ProjectFile
 			}
 			catch (Exception ex)
 			{
-				EditorDebug.Error($"Exception during project creation: {ex.Message}", "ProjectCreation");
-				EditorDebug.Error($"Stack trace: {ex.StackTrace}", "ProjectCreation");
+				EditorDebug.Error($"Project creation failed: {ex.Message}", "ProjectCreation");
 				_projectNameError = $"Error: {ex.Message}";
 			}
-		}
-		
-		private void CreateDefaultScene(string scenesPath)
-		{
-			var defaultScenePath = Path.Combine(scenesPath, "MainScene.vscene");
-			var defaultSceneData = new SceneData();
-			
-			var sceneJson = Voltage.Persistence.Json.ToJson(defaultSceneData, new Voltage.Persistence.JsonSettings
-			{
-				PrettyPrint = true
-			});
-			
-			File.WriteAllText(defaultScenePath, sceneJson, new System.Text.UTF8Encoding(false));
 		}
 		#endregion
 
@@ -582,27 +471,31 @@ namespace Voltage.Editor.ProjectFile
 			}
 		}
 		
-		public ProjectSettings CreateDefaultSettings()
+		public ProjectSettings CreateDefaultSettings() =>
+			CreateSettings(_screenWidth, _screenHeight, _isFullscreen, _enableVSync, _masterVolume, _musicVolume, _sfxVolume);
+
+		/// <summary>The settings a new project starts from; the design resolution follows the screen size.</summary>
+		public static ProjectSettings CreateSettings(int screenWidth = 1280, int screenHeight = 720, bool fullscreen = false, bool vsync = true, float masterVolume = 1f, float musicVolume = 1f, float sfxVolume = 1f)
 		{
 			return new ProjectSettings
 			{
 				Display = new ProjectSettings.DisplaySettings
 				{
-					ScreenWidth = _screenWidth,
-					ScreenHeight = _screenHeight,
-					IsFullscreen = _isFullscreen,
-					EnableVSync = _enableVSync
+					ScreenWidth = screenWidth,
+					ScreenHeight = screenHeight,
+					IsFullscreen = fullscreen,
+					EnableVSync = vsync
 				},
 				Audio = new ProjectSettings.AudioSettings
 				{
-					MasterVolume = _masterVolume,
-					MusicVolume = _musicVolume,
-					SFXVolume = _sfxVolume
+					MasterVolume = masterVolume,
+					MusicVolume = musicVolume,
+					SFXVolume = sfxVolume
 				},
 				DesignResolution = new ProjectSettings.DesignResolutionSettings
 				{
-					Width = _screenWidth,  // Use screen width as default design width
-					Height = _screenHeight, // Use screen height as default design height
+					Width = screenWidth,
+					Height = screenHeight,
 					ResolutionPolicy = Scene.SceneResolutionPolicy.BestFit,
 					HorizontalBleed = 0,
 					VerticalBleed = 0

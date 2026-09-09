@@ -119,7 +119,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
 		public override void DrawMutable()
 		{
-			if (ImGui.CollapsingHeader(_name))
+			if (Gui.CollapsingHeader(_name))
 			{
 				// this is the amount of space the labels on the right require. The rest goes to the widgets
 				ImGui.PushItemWidth(-125);

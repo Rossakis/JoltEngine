@@ -37,7 +37,7 @@ namespace Voltage.Editor.Hotkeys
 			ImGui.SetNextWindowSize(new Num.Vector2(420, 0), ImGuiCond.Appearing);
 
 			bool open = true;
-			if (!ImGui.BeginPopupModal(PopupId, ref open, ImGuiWindowFlags.AlwaysAutoResize))
+			if (!Gui.BeginPopupModal(PopupId, ref open, ImGuiWindowFlags.AlwaysAutoResize))
 			{
 				_message = null;
 				return;
@@ -55,7 +55,7 @@ namespace Voltage.Editor.Hotkeys
 			VoltageEditorUtils.MediumVerticalSpace();
 
 			var seconds = _timer > 0f ? (int)_timer + 1 : 0;
-			var dismissed = ImGui.Button($"OK ({seconds})", new Num.Vector2(120, 0)) || _timer <= 0f;
+			var dismissed = Gui.Button($"OK ({seconds})", new Num.Vector2(120, 0)) || _timer <= 0f;
 
 			if (dismissed)
 			{
@@ -63,7 +63,7 @@ namespace Voltage.Editor.Hotkeys
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 	}
 }

@@ -39,7 +39,7 @@ public class PrefabReferenceTypeInspector : AbstractTypeInspector
         ImGui.PushStyleColor(ImGuiCol.ButtonHovered, buttonColor with { W = 1f });
 
         // Single click reveals the prefab in the Asset Browser; double click opens the picker.
-        var pressed = ImGui.Button($"{label}##prefabref_{_scopeId}", new Num.Vector2(-1, 0));
+        var pressed = Gui.Button($"{label}##prefabref_{_scopeId}", new Num.Vector2(-1, 0));
         var doubleClicked = ImGui.IsItemHovered() && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left);
 
         if (doubleClicked || (pressed && !current.IsValid))
@@ -62,12 +62,12 @@ public class PrefabReferenceTypeInspector : AbstractTypeInspector
             HandleTooltip();
         }
 
-        if (current.IsValid && ImGui.BeginPopupContextItem($"prefabref_ctx_{_scopeId}"))
+        if (current.IsValid && Gui.BeginPopupContextItem($"prefabref_ctx_{_scopeId}"))
         {
-            if (ImGui.Selectable("Clear"))
+            if (Gui.Selectable("Clear"))
                 SetValueWithUndo(default(PrefabReference), $"Clear {_name}");
 
-            ImGui.EndPopup();
+            Gui.EndPopup();
         }
 
         if (_showPicker)
@@ -111,17 +111,17 @@ public class PrefabReferenceTypeInspector : AbstractTypeInspector
         ImGui.SetNextWindowSize(new Num.Vector2(420, 460), ImGuiCond.Appearing);
 
         bool open = true;
-        if (!ImGui.BeginPopupModal($"prefabref_picker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
+        if (!Gui.BeginPopupModal($"prefabref_picker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
             return;
 
         ImGuiSafe.TextColoredSafe(new Num.Vector4(0.8f, 0.5f, 1f, 1f), $"{_name}  (PrefabReference)");
         ImGui.Separator();
 
         ImGui.SetNextItemWidth(-1);
-        ImGui.InputTextWithHint("##prefabsearch", "Search...", ref _pickerSearch, 128);
+        Gui.InputTextWithHint("##prefabsearch", "Search...", ref _pickerSearch, 128);
         ImGui.Separator();
 
-        if (ImGui.Selectable("  None (PrefabReference)", !current.IsValid))
+        if (Gui.Selectable("  None (PrefabReference)", !current.IsValid))
         {
             SetValueWithUndo(default(PrefabReference), $"Clear {_name}");
             ImGui.CloseCurrentPopup();
@@ -152,7 +152,7 @@ public class PrefabReferenceTypeInspector : AbstractTypeInspector
                 string.Equals(current.PrefabName, entry.Name, StringComparison.OrdinalIgnoreCase);
 
             ImGui.PushID(i);
-            if (ImGui.Selectable($"  {entry.Name}", isCurrent))
+            if (Gui.Selectable($"  {entry.Name}", isCurrent))
             {
                 AssignPrefab(entry);
                 ImGui.CloseCurrentPopup();
@@ -173,7 +173,7 @@ public class PrefabReferenceTypeInspector : AbstractTypeInspector
         if (VoltageEditorUtils.CenteredButton("Cancel", 0.5f))
             ImGui.CloseCurrentPopup();
 
-        ImGui.EndPopup();
+        Gui.EndPopup();
     }
 
     private void AssignPrefab(PrefabEntry entry)

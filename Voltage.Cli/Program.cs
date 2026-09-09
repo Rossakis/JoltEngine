@@ -3,15 +3,20 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 namespace Voltage.Cli;
 
-/// <summary>Command-line front end for the editor gateway: one process per call, or a long-lived pipe for agents.</summary>
+/// <summary>Command-line front end for the editor and game gateways: one process per call, or a long-lived pipe for agents.</summary>
 public static class Program
 {
 	private static readonly JsonSerializerOptions Pretty = new() { WriteIndented = true };
+
+	/// <summary>How results print: JSON by default, one line with --compact, a table with --table, one value with --field.</summary>
+	private sealed record Output(bool Compact, bool Table, string Field);
 
 	public static int Main(string[] args)
 	{
@@ -34,11 +39,14 @@ public static class Program
 	private static int Run(string[] argv)
 	{
 		var args = new List<string>(argv);
-		var infoPath = TakeOption(args, "--config") ?? GatewayInfo.DefaultInfoPath();
+		var game = TakeFlag(args, "--game") || string.Equals(Environment.GetEnvironmentVariable("VOLTAGE_TARGET"), "game", StringComparison.OrdinalIgnoreCase);
+		var host = game ? "game" : "editor";
+		var configOverride = TakeOption(args, "--config");
+		var infoPath = configOverride ?? GatewayInfo.DefaultInfoPath(host);
 		var portText = TakeOption(args, "--port");
 		var token = TakeOption(args, "--token");
 		var timeoutText = TakeOption(args, "--timeout");
-		var compact = TakeFlag(args, "--compact");
+		var output = new Output(TakeFlag(args, "--compact"), TakeFlag(args, "--table"), TakeOption(args, "--field"));
 
 		if (args.Count == 0 || args[0] is "-h" or "--help")
 		{
@@ -46,21 +54,33 @@ public static class Program
 			return 0;
 		}
 
-		if (args[0] == "mcp")
-			return new McpServer(infoPath).Run();
-
-		if (args[0] == "start")
+		switch (args[0])
 		{
-			args.RemoveAt(0);
-			var exe = TakeOption(args, "--exe");
-			var wait = TakeOption(args, "--wait") ?? "120";
-			var started = GatewayInfo.Start(infoPath, exe, args.FirstOrDefault(), TimeSpan.FromSeconds(double.Parse(wait, CultureInfo.InvariantCulture)));
-			Console.WriteLine(JsonSerializer.Serialize(new { pid = started.Pid, port = started.Port, exe = started.Exe }, Pretty));
-			return 0;
+			case "mcp":
+				return new McpServer(infoPath).Run();
+			case "doctor":
+				args.RemoveAt(0);
+				return Doctor.Run(game ? GatewayInfo.DefaultInfoPath("editor") : infoPath, game ? infoPath : GatewayInfo.DefaultInfoPath("game"), TakeFlag(args, "--json"));
+			case "completion":
+				return Completion.Script(args.Count > 1 ? args[1] : null, configOverride);
+			case "__complete":
+				args.RemoveAt(0);
+				return Completion.Complete(args, infoPath);
+			case "start":
+			{
+				args.RemoveAt(0);
+				var exe = TakeOption(args, "--exe");
+				var wait = TimeSpan.FromSeconds(double.Parse(TakeOption(args, "--wait") ?? "120", CultureInfo.InvariantCulture));
+				var started = game
+					? GatewayInfo.StartGame(infoPath, exe ?? args.FirstOrDefault(), wait)
+					: GatewayInfo.Start(infoPath, exe, args.FirstOrDefault(), wait);
+				Console.WriteLine(JsonSerializer.Serialize(new { pid = started.Pid, port = started.Port, exe = started.Exe, host = started.Host, game = started.Game, info = infoPath }, Pretty));
+				return 0;
+			}
 		}
 
 		var info = portText != null && token != null
-			? new GatewayInfo(int.Parse(portText, CultureInfo.InvariantCulture), token, 0, DateTime.MinValue, null, Array.Empty<string>(), null)
+			? new GatewayInfo(int.Parse(portText, CultureInfo.InvariantCulture), token, 0, DateTime.MinValue, null, Array.Empty<string>(), null, host, null)
 			: GatewayInfo.Load(infoPath);
 		if (portText != null)
 			info = info with { Port = int.Parse(portText, CultureInfo.InvariantCulture) };
@@ -76,29 +96,39 @@ public static class Program
 		switch (command)
 		{
 			case "help":
-				return Help(connection, args.FirstOrDefault(), compact);
+				return Help(connection, args.FirstOrDefault());
 			case "logs":
-				return Logs(connection, args, compact);
+				return Logs(connection, args);
 			case "watch":
 				return Watch(connection, args);
 			case "pipe":
 				return Pipe(connection);
+			case "run":
+			{
+				var batch = TakeFlag(args, "--batch");
+				var stopOnError = !TakeFlag(args, "--continue");
+				return ScriptRunner.Run(connection, args.FirstOrDefault(), batch, stopOnError, r =>
+				{
+					try { Print(r, output); }
+					catch (CliException ex) { Console.WriteLine($"({ex.Message})"); }
+				});
+			}
 			case "--json":
 			case "json":
-				return SendJson(connection, args.Count > 0 ? args[0] : Console.In.ReadToEnd(), compact);
+				return SendJson(connection, args.Count > 0 ? args[0] : Console.In.ReadToEnd(), output);
 			default:
-				Print(connection.Call(command, BuildParams(args)), compact);
+				Print(connection.Call(command, BuildParams(args)), output);
 				return 0;
 		}
 	}
 
-	private static int Help(GatewayConnection connection, string method, bool compact)
+	private static int Help(GatewayConnection connection, string method)
 	{
 		var commands = connection.Call("commands", null);
 		if (method == null)
 		{
 			foreach (var c in commands.EnumerateArray())
-				Console.WriteLine($"{c.GetProperty("name").GetString(),-22} {c.GetProperty("help").GetString()}");
+				Console.WriteLine($"{c.GetProperty("name").GetString(),-24} {Flags(c)}{c.GetProperty("help").GetString()}");
 			return 0;
 		}
 
@@ -106,13 +136,38 @@ public static class Program
 			if (string.Equals(c.GetProperty("name").GetString(), method, StringComparison.OrdinalIgnoreCase))
 			{
 				Console.WriteLine(c.GetProperty("help").GetString());
+				if (c.TryGetProperty("params", out var parameters) && parameters.ValueKind == JsonValueKind.Array && parameters.GetArrayLength() > 0)
+				{
+					Console.WriteLine();
+					foreach (var p in parameters.EnumerateArray())
+					{
+						var name = p.GetProperty("name").GetString();
+						var type = p.TryGetProperty("type", out var t) ? t.GetString() : "any";
+						var required = p.TryGetProperty("required", out var r) && r.ValueKind == JsonValueKind.True ? " (required)" : "";
+						var fallback = p.TryGetProperty("default", out var d) && d.ValueKind != JsonValueKind.Null ? $" = {TableWriter.Cell(d)}" : "";
+						var description = p.TryGetProperty("description", out var desc) && desc.ValueKind == JsonValueKind.String ? "  " + desc.GetString() : "";
+						Console.WriteLine($"  {name,-16} {type}{fallback}{required}{description}");
+					}
+				}
+				var flags = Flags(c);
+				if (flags.Length > 0)
+					Console.WriteLine($"\n  flags: {flags.Trim()}");
 				return 0;
 			}
 
 		throw new CliException($"unknown command '{method}'");
 	}
 
-	private static int Logs(GatewayConnection connection, List<string> args, bool compact)
+	private static string Flags(JsonElement command)
+	{
+		var flags = new List<string>();
+		if (command.TryGetProperty("readOnly", out var ro) && ro.ValueKind == JsonValueKind.True) flags.Add("read-only");
+		if (command.TryGetProperty("destructive", out var d) && d.ValueKind == JsonValueKind.True) flags.Add("destructive");
+		if (command.TryGetProperty("unsafe", out var u) && u.ValueKind == JsonValueKind.True) flags.Add("unsafe");
+		return flags.Count == 0 ? "" : $"[{string.Join(", ", flags)}] ";
+	}
+
+	private static int Logs(GatewayConnection connection, List<string> args)
 	{
 		var follow = TakeFlag(args, "--follow") || TakeFlag(args, "-f");
 		var level = TakeOption(args, "--level");
@@ -139,10 +194,13 @@ public static class Program
 		return 0;
 	}
 
-	/// <summary>Prints editor lifecycle events, and log entries too with --logs, until the socket closes.</summary>
+	/// <summary>Prints lifecycle events (and log entries with --logs) until the socket closes; --filter narrows event names, --json prints raw lines.</summary>
 	private static int Watch(GatewayConnection connection, List<string> args)
 	{
 		var logs = TakeFlag(args, "--logs");
+		var raw = TakeFlag(args, "--json");
+		var filter = Glob(TakeOption(args, "--filter"));
+
 		connection.Call("events.subscribe", null);
 		if (logs)
 			connection.Call("log.subscribe", null);
@@ -153,14 +211,35 @@ public static class Program
 			if (kind == "editor")
 			{
 				var data = evt.GetProperty("data");
+				var name = data.GetProperty("name").GetString() ?? "";
+				if (filter != null && !filter.IsMatch(name))
+					return;
+				if (raw)
+				{
+					Console.WriteLine(evt.GetRawText());
+					return;
+				}
 				var payload = data.TryGetProperty("data", out var p) && p.ValueKind != JsonValueKind.Null ? " " + p.GetRawText() : "";
-				Console.WriteLine($"{DateTime.Now:HH:mm:ss.fff} {data.GetProperty("name").GetString()}{payload}");
+				Console.WriteLine($"{DateTime.Now:HH:mm:ss.fff} {name}{payload}");
 			}
 			else if (kind == "log")
-				PrintLog(evt.GetProperty("data"), null);
+			{
+				if (raw)
+					Console.WriteLine(evt.GetRawText());
+				else
+					PrintLog(evt.GetProperty("data"), null);
+			}
 		};
 		connection.PumpEvents();
 		return 0;
+	}
+
+	/// <summary>"scene.*" style pattern to a regex; null passes everything.</summary>
+	private static Regex Glob(string pattern)
+	{
+		if (string.IsNullOrEmpty(pattern))
+			return null;
+		return new Regex("^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$", RegexOptions.IgnoreCase);
 	}
 
 	/// <summary>Reads one request per stdin line and writes one response per stdout line, for agents that keep the socket warm.</summary>
@@ -192,13 +271,13 @@ public static class Program
 		return 0;
 	}
 
-	private static int SendJson(GatewayConnection connection, string json, bool compact)
+	private static int SendJson(GatewayConnection connection, string json, Output output)
 	{
 		using var doc = JsonDocument.Parse(json);
 		var root = doc.RootElement;
 		var method = root.GetProperty("method").GetString();
 		var parameters = root.TryGetProperty("params", out var p) ? p.Clone() : (JsonElement?)null;
-		Print(connection.Call(method, parameters), compact);
+		Print(connection.Call(method, parameters), output);
 		return 0;
 	}
 
@@ -241,12 +320,32 @@ public static class Program
 		return raw;
 	}
 
-	private static void Print(JsonElement result, bool compact)
+	private static void Print(JsonElement result, Output output)
 	{
 		if (result.ValueKind == JsonValueKind.Undefined)
 			return;
-		Console.WriteLine(compact ? result.GetRawText() : JsonSerializer.Serialize(result, Pretty));
+
+		if (output.Field != null)
+		{
+			var picked = TableWriter.Select(result, output.Field) ?? throw new CliException($"no value at '{output.Field}'");
+			Console.WriteLine(picked.ValueKind == JsonValueKind.String ? picked.GetString() : Serialize(picked, output.Compact));
+			return;
+		}
+
+		if (output.Table)
+		{
+			var text = new StringBuilder();
+			if (TableWriter.TryWrite(result, text))
+			{
+				Console.Write(text.ToString());
+				return;
+			}
+		}
+
+		Console.WriteLine(Serialize(result, output.Compact));
 	}
+
+	private static string Serialize(JsonElement value, bool compact) => compact ? value.GetRawText() : JsonSerializer.Serialize(value, Pretty);
 
 	private static void PrintLog(JsonElement entry, string levelFilter)
 	{
@@ -285,35 +384,47 @@ public static class Program
 	private static void PrintUsage()
 	{
 		Console.WriteLine(
-@"voltage - talk to a running Voltage Editor
+@"voltage - talk to a running Voltage Editor, or to a built game started with --gateway
 
 usage:
   voltage <method> [key=value ...]     call a gateway method (values may be JSON)
-  voltage help [method]                list methods, or describe one
+  voltage help [method]                list methods with their flags, or describe one with its parameters
+  voltage doctor [--json]              check gateway.json, the editor/game process, the port, the build and the SDK
   voltage logs [--follow] [--level L] [--count N]
-  voltage watch [--logs]               print scene/project/play/compile events as they happen
+  voltage watch [--logs] [--filter scene.*] [--json]
+                                       print lifecycle events (and logs) as they happen
+  voltage run <script.json> [--batch] [--continue]
+                                       replay {""steps"":[...]} through input.script, or a list of {method, params} calls
   voltage json '{""method"":""..."",""params"":{...}}'
   voltage pipe                         one JSON request per stdin line, one response per stdout line
   voltage mcp                          Model Context Protocol server over stdio (claude mcp add voltage -- voltage mcp)
   voltage start [project.voltage] [--exe <editor exe>] [--wait <sec>]
                                        launch the editor recorded in gateway.json and wait for its gateway
+  voltage start --game <game exe>      launch a built game with its gateway on and wait for it
+  voltage completion bash|zsh|pwsh     print a shell completion script (methods and key= names complete live)
   voltage editor.exit force=true       ask the running editor to quit (force skips the unsaved-changes prompt)
+  voltage --game app.exit              ask the running game to quit
 
 options:
-  --config <path>   gateway.json to read (default: the editor's data folder)
+  --game            talk to the game gateway (runtime gateway.json) instead of the editor; VOLTAGE_TARGET=game does the same
+  --config <path>   gateway.json to read (default: the editor's or game's data folder)
   --port <n> --token <t>   connect without gateway.json
   --timeout <sec>   per-request timeout (default 30)
   --compact         print results on one line
+  --table           print lists of objects as an aligned table
+  --field <a.b.0>   print one value out of the result
 
 examples:
   voltage status
+  voltage entity.list --table
+  voltage status --field scene.name
   voltage entity.create name=Player x=100 y=50
   voltage component.add entity=Player type=SpriteRenderer
   voltage component.set entity=Player type=SpriteRenderer member=Color value='{""r"":255,""g"":0,""b"":0,""a"":255}'
   voltage scripts.compile reloadScene=true
   voltage screenshot scale=0.5
   voltage input.click x=40 y=12
-  voltage input.type text=Hello
-  voltage hotkey.press id=Global.SaveScene");
+  voltage hotkey.press id=Global.SaveScene
+  voltage build.run gateway=true && voltage --game screenshot");
 	}
 }

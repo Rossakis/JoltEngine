@@ -74,7 +74,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
 
             if (spriteRenderer.Sprite?.Texture2D != null)
             {
-                if (ImGui.CollapsingHeader("Image Info", ImGuiTreeNodeFlags.DefaultOpen))
+                if (Gui.CollapsingHeader("Image Info", ImGuiTreeNodeFlags.DefaultOpen))
                 {
                     ImGuiSafe.TextSafe($"Path: {spriteRenderer.Sprite.Texture2D.Name ?? "Unknown"}");
 
@@ -112,9 +112,9 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                     if (cursorX > 0)
                         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + cursorX);
 
-                    bool loadImagePressed = ImGui.Button("Load Image", new Num.Vector2(buttonLoadWidth, 0));
+                    bool loadImagePressed = Gui.Button("Load Image", new Num.Vector2(buttonLoadWidth, 0));
                     ImGui.SameLine();
-                    bool clearImagePressed = ImGui.Button("Clear Sprite Image", new Num.Vector2(buttonClearWidth, 0));
+                    bool clearImagePressed = Gui.Button("Clear Sprite Image", new Num.Vector2(buttonClearWidth, 0));
 
                     if (loadImagePressed)
                     {
@@ -140,7 +140,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                 if (cursorX > 0)
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + cursorX);
 
-                if (ImGui.Button("Load Image", new Num.Vector2(buttonLoadWidth, 0)))
+                if (Gui.Button("Load Image", new Num.Vector2(buttonLoadWidth, 0)))
                 {
                     _nextImageLoadMode = ImageLoadMode.MainImage;
                     ImGui.OpenPopup("image-type-popup");
@@ -149,7 +149,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
 
             if (spriteRenderer.NormalMap != null)
             {
-                if (ImGui.CollapsingHeader("Normal Map Info", ImGuiTreeNodeFlags.DefaultOpen))
+                if (Gui.CollapsingHeader("Normal Map Info", ImGuiTreeNodeFlags.DefaultOpen))
                 {
                     ImGuiSafe.TextSafe($"Path: {spriteRenderer.NormalMap.Texture2D.Name ?? "Unknown"}");
                     ImGui.Spacing();
@@ -162,9 +162,9 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                     if (cursorX > 0)
                         ImGui.SetCursorPosX(ImGui.GetCursorPosX() + cursorX);
 
-                    bool loadNormalPressed = ImGui.Button("Load Normal Map", new Num.Vector2(buttonLoadWidth, 0));
+                    bool loadNormalPressed = Gui.Button("Load Normal Map", new Num.Vector2(buttonLoadWidth, 0));
                     ImGui.SameLine();
-                    bool clearNormalPressed = ImGui.Button("Clear Normal Map", new Num.Vector2(buttonClearWidth, 0));
+                    bool clearNormalPressed = Gui.Button("Clear Normal Map", new Num.Vector2(buttonClearWidth, 0));
 
                     if (loadNormalPressed)
                     {
@@ -190,7 +190,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                 if (cursorX > 0)
                     ImGui.SetCursorPosX(ImGui.GetCursorPosX() + cursorX);
 
-                if (ImGui.Button("Load Normal Map", new Num.Vector2(buttonLoadWidth, 0)))
+                if (Gui.Button("Load Normal Map", new Num.Vector2(buttonLoadWidth, 0)))
                 {
                     _nextImageLoadMode = ImageLoadMode.NormalMap;
                     ImGui.OpenPopup("image-type-popup");
@@ -208,14 +208,14 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                 ImGui.Spacing();
             }
 
-            if (ImGui.BeginPopup("image-type-popup"))
+            if (Gui.BeginPopup("image-type-popup"))
             {
-                if (ImGui.Selectable("PNG"))
+                if (Gui.Selectable("PNG"))
                 {
                     _pendingFilePickerPopup = ("file-picker-png", _nextImageLoadMode);
                     ImGui.CloseCurrentPopup();
                 }
-                if (ImGui.Selectable("Aseprite"))
+                if (Gui.Selectable("Aseprite"))
                 {
                     _asepriteLoadMode = _nextImageLoadMode;
                     _asepriteBrowser.Open("Select an Aseprite file",
@@ -223,12 +223,12 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
 
                     ImGui.CloseCurrentPopup();
                 }
-                if (ImGui.Selectable("TMX"))
+                if (Gui.Selectable("TMX"))
                 {
                     _pendingFilePickerPopup = ("file-picker-tmx", _nextImageLoadMode);
                     ImGui.CloseCurrentPopup();
                 }
-                ImGui.EndPopup();
+                Gui.EndPopup();
             }
 
             // File picker popups (shared for both image and normal map)
@@ -374,7 +374,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
 		private void DrawFilePickerPopup(Action<SpriteRenderer, string> loadAction)
         {
             bool isOpen = true;
-            if (ImGui.BeginPopupModal("file-picker-png", ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
+            if (Gui.BeginPopupModal("file-picker-png", ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
             {
                 var picker = FilePicker.GetFilePicker(this, ProjectManager.Instance.CurrentProject.ContentsFolder, ".png");
                 picker.DontAllowTraverselBeyondRootFolder = true;
@@ -400,7 +400,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                     }
                 }
 
-                ImGui.EndPopup();
+                Gui.EndPopup();
             }
 
             if (!isOpen)
@@ -413,7 +413,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
         private void DrawTmxFilePickerPopup(SpriteRenderer spriteRenderer, ImageLoadMode mode)
         {
             bool isOpen = true;
-            if (ImGui.BeginPopupModal("file-picker-tmx", ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
+            if (Gui.BeginPopupModal("file-picker-tmx", ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
             {
                 var picker = FilePicker.GetFilePicker(this, ProjectManager.Instance.CurrentProject.ContentsFolder, ".tmx");
                 picker.DontAllowTraverselBeyondRootFolder = true;
@@ -460,7 +460,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                                     bool isSelected = (i == 0 && string.IsNullOrEmpty(_imageLayerName)) ||
                                                       (i > 0 && _imageLayerName == _currentImageLayers[i - 1]);
 
-                                    if (ImGui.Selectable(layerOptions[i], isSelected))
+                                    if (Gui.Selectable(layerOptions[i], isSelected))
                                     {
                                         tmxLayerIndex = i;
                                         _imageLayerName = i == 0 ? "" : _currentImageLayers[i - 1];
@@ -515,7 +515,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
 
                 ImGui.SetCursorPosX(buttonStartX);
 
-                if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
+                if (Gui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
                 {
                     ImGui.CloseCurrentPopup();
                     FilePicker.RemoveFilePicker(picker);
@@ -532,7 +532,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                     ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.5f);
                 }
 
-                if (ImGui.Button("Load TMX", new Num.Vector2(buttonWidth, 0)) && fileSelected)
+                if (Gui.Button("Load TMX", new Num.Vector2(buttonWidth, 0)) && fileSelected)
                 {
                     string contentRoot = ProjectManager.Instance.CurrentProject.ContentsFolder;
                     if (CrossPlatformPath.IsPathUnder(contentRoot, picker.SelectedFile))
@@ -559,7 +559,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                     ImGui.PopStyleVar();
                 }
 
-                ImGui.EndPopup();
+                Gui.EndPopup();
             }
 
             if (!isOpen)
@@ -577,7 +577,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
             float totalWidth = ImGui.GetContentRegionAvail().X;
             float rightButtonStart = totalWidth - buttonWidth;
 
-            if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
+            if (Gui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
             {
                 ImGui.CloseCurrentPopup();
                 FilePicker.RemoveFilePicker(this);
@@ -591,7 +591,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                 ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.5f);
             }
 
-            if (ImGui.Button(confirmText, new Num.Vector2(buttonWidth, 0)) && canConfirm)
+            if (Gui.Button(confirmText, new Num.Vector2(buttonWidth, 0)) && canConfirm)
             {
                 shouldLoad = true;
             }

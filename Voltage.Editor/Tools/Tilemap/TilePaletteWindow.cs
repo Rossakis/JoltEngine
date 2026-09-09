@@ -135,11 +135,11 @@ namespace Voltage.Editor.Tools.Tilemap
 			// "###TilePaletteWindow" pins the ImGui ID independently of the label; it keys the docking entry in the
 			// layout .ini. Without it the docked position is not restored.
 			var open = IsOpen;
-			if (!ImGui.Begin("Tile Palette ###TilePaletteWindow", ref open, windowFlags))
+			if (!Gui.Begin("Tile Palette ###TilePaletteWindow", ref open, windowFlags))
 			{
 				IsOpen = open;
 				IsFocused = false;
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
@@ -178,7 +178,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			else
 				DrawAtlas(tool);
 
-			ImGui.End();
+			Gui.End();
 
 			// Must be outside Begin/End to be modal.
 			DrawNewLayerPopup(tool);
@@ -200,7 +200,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			ImGui.SetNextWindowSize(new Num.Vector2(420, 190), ImGuiCond.Always);
 
 			var open = true;
-			if (!ImGui.BeginPopupModal("new-tilemap-layer", ref open, ImGuiWindowFlags.NoResize))
+			if (!Gui.BeginPopupModal("new-tilemap-layer", ref open, ImGuiWindowFlags.NoResize))
 				return;
 
 			ImGui.TextUnformatted("New tilemap layer");
@@ -209,7 +209,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			ImGui.TextUnformatted("Name:");
 			ImGui.SetNextItemWidth(-1);
 
-			var entered = ImGui.InputText("##newlayername", ref _newLayerName, 128,
+			var entered = Gui.InputText("##newlayername", ref _newLayerName, 128,
 				ImGuiInputTextFlags.EnterReturnsTrue);
 
 			var nameValid = !string.IsNullOrWhiteSpace(_newLayerName);
@@ -221,12 +221,12 @@ namespace Voltage.Editor.Tools.Tilemap
 			ImGui.Separator();
 
 			ImGui.BeginDisabled(!nameValid);
-			var confirm = ImGui.Button("Create", new Num.Vector2(120, 0)) || (entered && nameValid);
+			var confirm = Gui.Button("Create", new Num.Vector2(120, 0)) || (entered && nameValid);
 			ImGui.EndDisabled();
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Cancel", new Num.Vector2(120, 0)))
+			if (Gui.Button("Cancel", new Num.Vector2(120, 0)))
 				ImGui.CloseCurrentPopup();
 
 			if (confirm && nameValid)
@@ -245,7 +245,7 @@ namespace Voltage.Editor.Tools.Tilemap
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		private void DrawModeBanner(GizmoSelectionManager cursor)
@@ -259,7 +259,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			ImGui.TextColored(new Num.Vector4(0.9f, 0.75f, 0.35f, 1f), "Tile cursor is not active.");
 			ImGui.SameLine();
 
-			if (ImGui.SmallButton("Activate (B)"))
+			if (Gui.SmallButton("Activate (B)"))
 				cursor.SelectionMode = CursorSelectionMode.TilePaint;
 		}
 
@@ -283,7 +283,7 @@ namespace Voltage.Editor.Tools.Tilemap
 				? tool.Target.Entity.Name
 				: "(no layer selected)";
 
-			if (ImGui.BeginCombo("Layer", label))
+			if (Gui.BeginCombo("Layer", label))
 			{
 				foreach (var map in maps)
 				{
@@ -291,7 +291,7 @@ namespace Voltage.Editor.Tools.Tilemap
 						continue;
 
 					var selected = ReferenceEquals(map, tool.Target);
-					if (ImGui.Selectable(map.Entity.Name, selected))
+					if (Gui.Selectable(map.Entity.Name, selected))
 						SelectLayer(tool, map);
 
 					if (selected)
@@ -306,7 +306,7 @@ namespace Voltage.Editor.Tools.Tilemap
 
 			DrawLayerSearch(tool, maps);
 
-			if (ImGui.Button("New Layer"))
+			if (Gui.Button("New Layer"))
 			{
 				_newLayerName = string.IsNullOrEmpty(_tileset?.Asset?.Name)
 					? "Tilemap"
@@ -334,7 +334,7 @@ namespace Voltage.Editor.Tools.Tilemap
 				ImGui.GetContentRegionAvail().X - clearWidth - ImGui.GetStyle().ItemSpacing.X);
 
 			ImGui.SetNextItemWidth(inputWidth);
-			var entered = ImGui.InputTextWithHint("##layersearch", "Search layers...", ref _layerSearch, 128,
+			var entered = Gui.InputTextWithHint("##layersearch", "Search layers...", ref _layerSearch, 128,
 				ImGuiInputTextFlags.EnterReturnsTrue);
 
 			ImGui.SameLine();
@@ -342,7 +342,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			var filtering = !string.IsNullOrWhiteSpace(_layerSearch);
 
 			ImGui.BeginDisabled(!filtering);
-			if (ImGui.Button("x##clearlayersearch", new Num.Vector2(clearWidth, 0)))
+			if (Gui.Button("x##clearlayersearch", new Num.Vector2(clearWidth, 0)))
 				_layerSearch = string.Empty;
 			ImGui.EndDisabled();
 
@@ -377,7 +377,7 @@ namespace Voltage.Editor.Tools.Tilemap
 				var map = matches[i];
 
 				ImGui.PushID(i);
-				if (ImGui.Selectable(map.Entity.Name, ReferenceEquals(map, tool.Target)))
+				if (Gui.Selectable(map.Entity.Name, ReferenceEquals(map, tool.Target)))
 					SelectLayer(tool, map);
 				ImGui.PopID();
 			}
@@ -486,7 +486,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			var allOn = on == total;
 			var value = allOn;
 
-			if (ImGui.Checkbox("Debug Render", ref value))
+			if (Gui.Checkbox("Debug Render", ref value))
 			{
 				foreach (var map in maps)
 					SetDebugRender(map, value);
@@ -551,14 +551,14 @@ namespace Voltage.Editor.Tools.Tilemap
 			if (TileAssetUtils.DrawAssetSlot("Tileset", ref reference, TilesetExtensions))
 				AssignTileset(tool, reference);
 
-			if (ImGui.Button("New Tileset..."))
+			if (Gui.Button("New Tileset..."))
 				tilesetEditor.NewTileset();
 
 			ImGui.SameLine();
 
 			var canEdit = _tilesetPath != null;
 			ImGui.BeginDisabled(!canEdit);
-			if (ImGui.Button("Edit Tileset") && canEdit)
+			if (Gui.Button("Edit Tileset") && canEdit)
 				tilesetEditor.Open(_tilesetPath);
 			ImGui.EndDisabled();
 
@@ -566,7 +566,7 @@ namespace Voltage.Editor.Tools.Tilemap
 
 			var canSync = _tileset?.Asset != null && _tilesetPath != null;
 			ImGui.BeginDisabled(!canSync);
-			if (ImGui.Button("Sync Changes") && canSync)
+			if (Gui.Button("Sync Changes") && canSync)
 				SyncTilesetSource(tool);
 			ImGui.EndDisabled();
 
@@ -593,7 +593,7 @@ namespace Voltage.Editor.Tools.Tilemap
 		{
 			var maps = SortedFrontToBack();
 
-			if (!ImGui.CollapsingHeader($"Layer order ({maps.Count})"))
+			if (!Gui.CollapsingHeader($"Layer order ({maps.Count})"))
 				return;
 
 			if (maps.Count == 0)
@@ -656,7 +656,7 @@ namespace Voltage.Editor.Tools.Tilemap
 					ImGui.PushStyleVar(ImGuiStyleVar.SelectableTextAlign, new Num.Vector2(0f, 0.5f));
 
 					var picked = _selectedLayers.Contains(map);
-					var rowClicked = ImGui.Selectable($"{i + 1}##layerrow", picked,
+					var rowClicked = Gui.Selectable($"{i + 1}##layerrow", picked,
 						ImGuiSelectableFlags.SpanAllColumns | ImGuiSelectableFlags.AllowItemOverlap,
 						new Num.Vector2(0f, ImGui.GetFrameHeight()));
 
@@ -712,7 +712,7 @@ namespace Voltage.Editor.Tools.Tilemap
 
 					// The column header names it, so the checkbox itself carries no label.
 					var debug = map.Entity.DebugRenderEnabled;
-					if (ImGui.Checkbox("##dbg", ref debug))
+					if (Gui.Checkbox("##dbg", ref debug))
 						SetDebugRender(map, debug);
 
 					if (ImGui.IsItemHovered())
@@ -725,7 +725,7 @@ namespace Voltage.Editor.Tools.Tilemap
 						layerIndex = 0;
 
 					ImGui.SetNextItemWidth(-1);
-					if (ImGui.Combo("##renderlayer", ref layerIndex, layerNames, layerNames.Length))
+					if (Gui.Combo("##renderlayer", ref layerIndex, layerNames, layerNames.Length))
 						SetRenderLayer(map, layerValues[layerIndex]);
 
 					if (ImGui.IsItemHovered())
@@ -925,7 +925,7 @@ namespace Voltage.Editor.Tools.Tilemap
 		/// <summary>Right-click menu for the picked rows: send them to an order number, to the front or to the back.</summary>
 		private void DrawLayerOrderMenu(List<TilemapRenderer> maps)
 		{
-			if (!ImGui.BeginPopup("layer-order-menu"))
+			if (!Gui.BeginPopup("layer-order-menu"))
 				return;
 
 			var count = _selectedLayers.Count;
@@ -936,7 +936,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			var lastStart = Math.Max(1, maps.Count - count + 1);
 
 			ImGui.SetNextItemWidth(120f);
-			var entered = ImGui.InputInt("Move to order", ref _moveToOrder, 1, 1,
+			var entered = Gui.InputInt("Move to order", ref _moveToOrder, 1, 1,
 				ImGuiInputTextFlags.EnterReturnsTrue);
 
 			_moveToOrder = Math.Clamp(_moveToOrder, 1, Math.Max(1, maps.Count));
@@ -944,7 +944,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			if (ImGui.IsItemHovered())
 				ImGui.SetTooltip($"1 draws in front, {lastStart} is as far back as this block still fits.");
 
-			var confirm = ImGui.Button("Move", new Num.Vector2(90f, 0)) || entered;
+			var confirm = Gui.Button("Move", new Num.Vector2(90f, 0)) || entered;
 
 			if (ImGui.IsItemHovered())
 			{
@@ -958,7 +958,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			}
 
 			ImGui.SameLine();
-			var cancel = ImGui.Button("Cancel", new Num.Vector2(90f, 0));
+			var cancel = Gui.Button("Cancel", new Num.Vector2(90f, 0));
 
 			if (confirm)
 			{
@@ -972,20 +972,20 @@ namespace Voltage.Editor.Tools.Tilemap
 
 			ImGui.Separator();
 
-			if (ImGui.Selectable("Select all layers", false, ImGuiSelectableFlags.DontClosePopups))
+			if (Gui.Selectable("Select all layers", false, ImGuiSelectableFlags.DontClosePopups))
 			{
 				_selectedLayers.Clear();
 				foreach (var other in maps)
 					_selectedLayers.Add(other);
 			}
 
-			if (ImGui.Selectable("Clear pick", false, ImGuiSelectableFlags.DontClosePopups))
+			if (Gui.Selectable("Clear pick", false, ImGuiSelectableFlags.DontClosePopups))
 			{
 				_selectedLayers.Clear();
 				_layerRangeAnchor = null;
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		/// <summary>Reinserts the picked layers as one block starting at targetOrder (1 = front), keeping their relative order while the rest close the gap.</summary>
@@ -1167,7 +1167,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			if (tool.Tool == TileTool.Select)
 				DrawSelectionControls(tool);
 
-			ImGui.Checkbox("Stack while dragging", ref tool.StackWhileDragging);
+			Gui.Checkbox("Stack while dragging", ref tool.StackWhileDragging);
 
 			if (ImGui.IsItemHovered())
 			{
@@ -1197,7 +1197,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			ImGui.TextDisabled($"{tool.SelectedCellCount} cells selected");
 			ImGui.SameLine();
 
-			if (ImGui.SmallButton("Rot -##seltiles"))
+			if (Gui.SmallButton("Rot -##seltiles"))
 				tool.RotateSelection(-1);
 
 			if (ImGui.IsItemHovered())
@@ -1205,7 +1205,7 @@ namespace Voltage.Editor.Tools.Tilemap
 
 			ImGui.SameLine();
 
-			if (ImGui.SmallButton("Rot +##seltiles"))
+			if (Gui.SmallButton("Rot +##seltiles"))
 				tool.RotateSelection(1);
 
 			if (ImGui.IsItemHovered())
@@ -1213,7 +1213,7 @@ namespace Voltage.Editor.Tools.Tilemap
 
 			ImGui.SameLine();
 
-			if (ImGui.SmallButton("Delete##seltiles"))
+			if (Gui.SmallButton("Delete##seltiles"))
 				tool.DeleteSelection();
 
 			if (ImGui.IsItemHovered())
@@ -1221,7 +1221,7 @@ namespace Voltage.Editor.Tools.Tilemap
 
 			ImGui.SameLine();
 
-			if (ImGui.SmallButton("Deselect##seltiles"))
+			if (Gui.SmallButton("Deselect##seltiles"))
 				tool.ClearTileSelection();
 		}
 
@@ -1324,7 +1324,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			}
 
 			ImGui.SetNextItemWidth(200f);
-			if (ImGui.Combo("Autotile", ref current, labels.ToArray(), labels.Count))
+			if (Gui.Combo("Autotile", ref current, labels.ToArray(), labels.Count))
 				tool.ActiveTerrain = current == 0 ? -1 : terrains[current - 1].Id;
 
 			if (ImGui.IsItemHovered())
@@ -1337,11 +1337,11 @@ namespace Voltage.Editor.Tools.Tilemap
 			ImGui.TextUnformatted("Orient");
 			ImGui.SameLine();
 
-			if (ImGui.SmallButton("Rot -##orient")) tool.RotateBrush(-1);
+			if (Gui.SmallButton("Rot -##orient")) tool.RotateBrush(-1);
 			if (ImGui.IsItemHovered()) ImGui.SetTooltip("Rotate 90° left (Q, palette focused)");
 			ImGui.SameLine();
 
-			if (ImGui.SmallButton("Rot +##orient")) tool.RotateBrush(1);
+			if (Gui.SmallButton("Rot +##orient")) tool.RotateBrush(1);
 			if (ImGui.IsItemHovered()) ImGui.SetTooltip("Rotate 90° right (E, palette focused)");
 			ImGui.SameLine();
 
@@ -1356,7 +1356,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			ImGui.SameLine();
 
 			ImGui.BeginDisabled(tool.CurrentOrientation == 0);
-			if (ImGui.SmallButton("Reset##orient")) tool.ResetOrientation();
+			if (Gui.SmallButton("Reset##orient")) tool.ResetOrientation();
 			ImGui.EndDisabled();
 
 			if (tool.CurrentOrientation != 0)
@@ -1371,7 +1371,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			if (active)
 				ImGui.PushStyleColor(ImGuiCol.Button, new Num.Vector4(0.2f, 0.5f, 1f, 1f));
 
-			var clicked = ImGui.SmallButton(label);
+			var clicked = Gui.SmallButton(label);
 
 			if (active)
 				ImGui.PopStyleColor();
@@ -1386,7 +1386,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			if (active)
 				ImGui.PushStyleColor(ImGuiCol.Button, new Num.Vector4(0.2f, 0.5f, 1f, 1f));
 
-			if (ImGui.Button(label))
+			if (Gui.Button(label))
 				tool.Tool = value;
 
 			if (active)
@@ -1402,7 +1402,7 @@ namespace Voltage.Editor.Tools.Tilemap
 				tool.ShowGrid ? "Grid is shown - click to hide it." : "Grid is hidden - click to show it.",
 				"Grid");
 			ImGui.SameLine();
-			ImGui.Checkbox("Always", ref tool.AlwaysShowGrid);
+			Gui.Checkbox("Always", ref tool.AlwaysShowGrid);
 
 			if (ImGui.IsItemHovered())
 				ImGui.SetTooltip("Keep drawing the grid even when the tile cursor is not active.");
@@ -1411,20 +1411,20 @@ namespace Voltage.Editor.Tools.Tilemap
 				tool.GridColor.R / 255f, tool.GridColor.G / 255f,
 				tool.GridColor.B / 255f, tool.GridColor.A / 255f);
 
-			if (ImGui.ColorEdit4("Grid color", ref color,
+			if (Gui.ColorEdit4("Grid color", ref color,
 				    ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview))
 			{
 				tool.GridColor = new Microsoft.Xna.Framework.Color(color.X, color.Y, color.Z, color.W);
 			}
 
 			ImGui.SetNextItemWidth(140f);
-			ImGui.SliderFloat("Grid thickness", ref tool.GridThickness, 0.25f, 4f, "%.2f px");
+			Gui.SliderFloat("Grid thickness", ref tool.GridThickness, 0.25f, 4f, "%.2f px");
 
 			if (ImGui.IsItemHovered())
 				ImGui.SetTooltip("Line width in screen pixels - stays constant as you zoom.");
 
 			ImGui.SetNextItemWidth(140f);
-			ImGui.SliderFloat("Cursor thickness", ref tool.HighlightThickness, 0.5f, 6f, "%.2f px");
+			Gui.SliderFloat("Cursor thickness", ref tool.HighlightThickness, 0.5f, 6f, "%.2f px");
 		}
 
 		// The tile-grid overlay is skipped past this many tiles per axis (see TilePaletteDrawing.DrawSliceGrid);
@@ -1468,13 +1468,13 @@ namespace Voltage.Editor.Tools.Tilemap
 
 			// Logarithmic + a sub-1x floor so an oversized atlas can be zoomed OUT to fit, not only scrolled.
 			ImGui.SetNextItemWidth(160f);
-			ImGui.SliderFloat("Zoom", ref _zoom, 0.1f, 8f, "%.2fx", ImGuiSliderFlags.Logarithmic);
+			Gui.SliderFloat("Zoom", ref _zoom, 0.1f, 8f, "%.2fx", ImGuiSliderFlags.Logarithmic);
 
 			ImGui.SameLine();
 
 			// "Fit" scales the whole tileset into the space the atlas child is about to occupy - the answer for a
 			// tileset too big to browse at 1x. GetContentRegionAvail here is the remaining window, ~= the child.
-			if (ImGui.Button("Fit"))
+			if (Gui.Button("Fit"))
 			{
 				var avail = ImGui.GetContentRegionAvail();
 				var fitX = avail.X / _tileset.Texture.Width;
@@ -1486,7 +1486,7 @@ namespace Voltage.Editor.Tools.Tilemap
 				ImGui.SetTooltip("Zoom the whole tileset to fit the panel.");
 
 			ImGui.SameLine();
-			if (ImGui.Button("1:1"))
+			if (Gui.Button("1:1"))
 				_zoom = 1f;
 
 			TileAtlasBackground.DrawPicker();
@@ -1504,7 +1504,7 @@ namespace Voltage.Editor.Tools.Tilemap
 				ImGui.TextDisabled(summary);
 
 				ImGui.SameLine();
-				if (ImGui.SmallButton("Clear##sel"))
+				if (Gui.SmallButton("Clear##sel"))
 				{
 					_boxes.Clear();
 					tool.SetSelection(Array.Empty<int>(), 0, 0);

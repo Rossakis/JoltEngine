@@ -94,7 +94,7 @@ namespace Voltage.Editor.Tools
 			ImGui.SetNextWindowSize(new Num.Vector2(600, 400), ImGuiCond.FirstUseEver);
 			
 			bool open = _isOpen;
-			if (ImGui.Begin("Editor Settings", ref open))
+			if (Gui.Begin("Editor Settings", ref open))
 			{
 				_isOpen = open;
 				
@@ -104,13 +104,13 @@ namespace Voltage.Editor.Tools
 				VoltageEditorUtils.MediumVerticalSpace();
 
 				// Project Creation tab
-				if (ImGui.CollapsingHeader("Project Creation", ImGuiTreeNodeFlags.DefaultOpen))
+				if (Gui.CollapsingHeader("Project Creation", ImGuiTreeNodeFlags.DefaultOpen))
 				{
 					ImGui.Indent();
 					VoltageEditorUtils.SmallVerticalSpace();
 
 					bool autoOpenSolution = AutoOpenSolutionUponCreation;
-					if (ImGui.Checkbox("Open 'Visual Studio' solution file upon Project Creation##Editor", ref autoOpenSolution))
+					if (Gui.Checkbox("Open 'Visual Studio' solution file upon Project Creation##Editor", ref autoOpenSolution))
 					{
 						AutoOpenSolutionUponCreation = autoOpenSolution;
 					}
@@ -125,13 +125,13 @@ namespace Voltage.Editor.Tools
 				}
 
 				// Scripts tab
-				if (ImGui.CollapsingHeader("Scripts", ImGuiTreeNodeFlags.DefaultOpen))
+				if (Gui.CollapsingHeader("Scripts", ImGuiTreeNodeFlags.DefaultOpen))
 				{
 					ImGui.Indent();
 					VoltageEditorUtils.SmallVerticalSpace();
 
 					bool compileOnStartup = ScriptManager.CompileOnStartup;
-					if (ImGui.Checkbox("Compile Scripts on Startup", ref compileOnStartup))
+					if (Gui.Checkbox("Compile Scripts on Startup", ref compileOnStartup))
 					{
 						ScriptManager.CompileOnStartup = compileOnStartup;
 					}
@@ -144,7 +144,7 @@ namespace Voltage.Editor.Tools
 					VoltageEditorUtils.SmallVerticalSpace();
 					
 					bool autoCloseScriptProgress = AutoCloseScriptProgress;
-					if (ImGui.Checkbox("Close Progress Bar When Finished##Scripts", ref autoCloseScriptProgress))
+					if (Gui.Checkbox("Close Progress Bar When Finished##Scripts", ref autoCloseScriptProgress))
 					{
 						AutoCloseScriptProgress = autoCloseScriptProgress;
 					}
@@ -157,7 +157,7 @@ namespace Voltage.Editor.Tools
 					VoltageEditorUtils.SmallVerticalSpace();
 
 					bool autoReloadScene = AutoReloadSceneAfterScriptCompile;
-					if (ImGui.Checkbox("Reload The Scene On Script Compilation End##Scripts", ref autoReloadScene))
+					if (Gui.Checkbox("Reload The Scene On Script Compilation End##Scripts", ref autoReloadScene))
 					{
 						AutoReloadSceneAfterScriptCompile = autoReloadScene;
 					}
@@ -167,13 +167,13 @@ namespace Voltage.Editor.Tools
 				}
 				
 				// Effects tab
-				if (ImGui.CollapsingHeader("Effects", ImGuiTreeNodeFlags.DefaultOpen))
+				if (Gui.CollapsingHeader("Effects", ImGuiTreeNodeFlags.DefaultOpen))
 				{
 					ImGui.Indent();
 					VoltageEditorUtils.SmallVerticalSpace();
 
 					bool autoCloseEffectsProgress = AutoCloseEffectsProgress;
-					if (ImGui.Checkbox("Close Progress Bar When Finished##Effects", ref autoCloseEffectsProgress))
+					if (Gui.Checkbox("Close Progress Bar When Finished##Effects", ref autoCloseEffectsProgress))
 					{
 						AutoCloseEffectsProgress = autoCloseEffectsProgress;
 					}
@@ -188,13 +188,13 @@ namespace Voltage.Editor.Tools
 				}
 
 				// Debug
-				if (ImGui.CollapsingHeader("Debug", ImGuiTreeNodeFlags.DefaultOpen))
+				if (Gui.CollapsingHeader("Debug", ImGuiTreeNodeFlags.DefaultOpen))
 				{
 					ImGui.Indent();
 					VoltageEditorUtils.SmallVerticalSpace();
 
 					bool disableDebugInPlayMode = DisableDebugInPlayMode;
-					if (ImGui.Checkbox("Disable Debug Drawing (Lines, Shapes, etc.) In Play Mode##Debug", ref disableDebugInPlayMode))
+					if (Gui.Checkbox("Disable Debug Drawing (Lines, Shapes, etc.) In Play Mode##Debug", ref disableDebugInPlayMode))
 					{
 						DisableDebugInPlayMode = disableDebugInPlayMode;
 					}
@@ -208,13 +208,13 @@ namespace Voltage.Editor.Tools
 					ImGui.Unindent();
 				}
 
-				if (ImGui.CollapsingHeader("Placement Snapping", ImGuiTreeNodeFlags.DefaultOpen))
+				if (Gui.CollapsingHeader("Placement Snapping", ImGuiTreeNodeFlags.DefaultOpen))
 				{
 					ImGui.Indent();
 					VoltageEditorUtils.SmallVerticalSpace();
 
 					bool snap = SnapToGrid;
-					if (ImGui.Checkbox("Snap dragged/dropped entities to a grid##Snap", ref snap))
+					if (Gui.Checkbox("Snap dragged/dropped entities to a grid##Snap", ref snap))
 						SnapToGrid = snap;
 
 					if (ImGui.IsItemHovered())
@@ -222,7 +222,7 @@ namespace Voltage.Editor.Tools
 
 					int gridSize = SnapGridSize;
 					ImGui.SetNextItemWidth(160f);
-					if (ImGui.InputInt("Snap grid size (px)##Snap", ref gridSize))
+					if (Gui.InputInt("Snap grid size (px)##Snap", ref gridSize))
 						SnapGridSize = gridSize;
 
 					VoltageEditorUtils.SmallVerticalSpace();
@@ -231,7 +231,7 @@ namespace Voltage.Editor.Tools
 
 				Hotkeys.HotkeySettingsSection.Draw();
 
-				ImGui.End();
+				Gui.End();
 			}
 			
 			if (!open)

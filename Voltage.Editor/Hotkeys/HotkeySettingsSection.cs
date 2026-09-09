@@ -21,7 +21,7 @@ namespace Voltage.Editor.Hotkeys
 
 		public static void Draw()
 		{
-			if (ImGui.CollapsingHeader("Custom Hotkeys"))
+			if (Gui.CollapsingHeader("Custom Hotkeys"))
 			{
 				ImGui.Indent();
 				VoltageEditorUtils.SmallVerticalSpace();
@@ -29,7 +29,7 @@ namespace Voltage.Editor.Hotkeys
 				ImGui.TextDisabled("Click a shortcut to rebind it, then press the new combination. Esc cancels.");
 				VoltageEditorUtils.SmallVerticalSpace();
 
-				if (ImGui.Button("Reset all to defaults"))
+				if (Gui.Button("Reset all to defaults"))
 					EditorHotkeys.ResetAllToDefaults();
 
 				VoltageEditorUtils.SmallVerticalSpace();
@@ -49,7 +49,7 @@ namespace Voltage.Editor.Hotkeys
 
 		private static void DrawCategory(string category)
 		{
-			if (!ImGui.TreeNodeEx(category, ImGuiTreeNodeFlags.DefaultOpen))
+			if (!Gui.TreeNodeEx(category, ImGuiTreeNodeFlags.DefaultOpen))
 				return;
 
 			if (ImGui.BeginTable($"hotkeys-{category}", 4,
@@ -87,7 +87,7 @@ namespace Voltage.Editor.Hotkeys
 
 			ImGui.TableNextColumn();
 			ImGui.BeginDisabled(action.IsDefault);
-			if (ImGui.SmallButton($"Reset##{action.Id}"))
+			if (Gui.SmallButton($"Reset##{action.Id}"))
 				action.ResetToDefault();
 			ImGui.EndDisabled();
 
@@ -103,7 +103,7 @@ namespace Voltage.Editor.Hotkeys
 			if (capturing)
 				ImGui.PushStyleColor(ImGuiCol.Button, new Num.Vector4(0.2f, 0.5f, 1f, 1f));
 
-			if (ImGui.Button($"{label}##bind{action.Id}{alternate}", new Num.Vector2(-1, 0)))
+			if (Gui.Button($"{label}##bind{action.Id}{alternate}", new Num.Vector2(-1, 0)))
 			{
 				SetCapturing(capturing ? null : action, alternate);
 			}
@@ -195,7 +195,7 @@ namespace Voltage.Editor.Hotkeys
 			ImGui.SetNextWindowPos(center, ImGuiCond.Appearing, new Num.Vector2(0.5f, 0.5f));
 
 			bool open = true;
-			if (!ImGui.BeginPopupModal("HotkeyConflictPopup", ref open, ImGuiWindowFlags.AlwaysAutoResize))
+			if (!Gui.BeginPopupModal("HotkeyConflictPopup", ref open, ImGuiWindowFlags.AlwaysAutoResize))
 			{
 				if (!open)
 					ClearPending();
@@ -218,7 +218,7 @@ namespace Voltage.Editor.Hotkeys
 
 			VoltageEditorUtils.MediumVerticalSpace();
 
-			if (ImGui.Button("Reassign", new Num.Vector2(110, 0)))
+			if (Gui.Button("Reassign", new Num.Vector2(110, 0)))
 			{
 				ClearConflictingBinding();
 				_pendingAction?.Rebind(_pendingBinding, _pendingAlternate);
@@ -228,13 +228,13 @@ namespace Voltage.Editor.Hotkeys
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Cancel", new Num.Vector2(110, 0)))
+			if (Gui.Button("Cancel", new Num.Vector2(110, 0)))
 			{
 				ClearPending();
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		/// <summary>Frees whichever slot of the other action held the combo we are taking over.</summary>

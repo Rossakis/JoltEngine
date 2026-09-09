@@ -121,7 +121,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
             // Our store is the source of truth; CollapsingHeader still returns the post-click value.
             ImGui.SetNextItemOpen(ExpandedState, ImGuiCond.Always);
-            _isHeaderOpen = ImGui.CollapsingHeader(label);
+            _isHeaderOpen = Gui.CollapsingHeader(label);
             ExpandedState = _isHeaderOpen;
             if (_isHeaderOpen)
             {

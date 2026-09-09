@@ -192,7 +192,7 @@ namespace Voltage.Editor.Plugins
 			plugin.AppendLine("\t\t{");
 			plugin.AppendLine("\t\t\tpublic override void Draw()");
 			plugin.AppendLine("\t\t\t{");
-			plugin.AppendLine("\t\t\t\tif (ImGui.Begin(Title, ref IsOpen))");
+			plugin.AppendLine("\t\t\t\tif (Gui.Begin(Title, ref IsOpen))");
 			plugin.AppendLine($"\t\t\t\t\tImGui.Text(\"Hello from {EscapeCs(opt.Name)}!\");");
 			plugin.AppendLine("\t\t\t\tImGui.End();");
 			plugin.AppendLine("\t\t\t}");

@@ -1,4 +1,10 @@
-# Voltage Engine — Plugin System Docs
+---
+title: Plugins
+sidebar_position: 1
+description: Packages, sources, the lockfile, editor versus game loading, external SDKs, and authoring your own plugin.
+---
+
+# Plugins
 
 Documentation for the engine's plugin system (packages, sources, the lockfile, editor vs. game loading,
 external SDKs, and authoring your own).

@@ -70,7 +70,7 @@ public static class NotificationSystem
 		ImGui.SetNextWindowBgAlpha(0.35f);
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 6f);
 
-		if (ImGui.Begin("##NotificationMain",
+		if (Gui.Begin("##NotificationMain",
 			ImGuiWindowFlags.NoDecoration |
 			ImGuiWindowFlags.NoInputs |
 			ImGuiWindowFlags.AlwaysAutoResize |
@@ -82,7 +82,7 @@ public static class NotificationSystem
 			);
 		}
 
-		ImGui.End();
+		Gui.End();
 		ImGui.PopStyleVar();
 	}
 
@@ -103,7 +103,7 @@ public static class NotificationSystem
 		ImGui.SetNextWindowBgAlpha(0.15f);
 		ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 4f);
 
-		if (ImGui.Begin("##NotificationPreview",
+		if (Gui.Begin("##NotificationPreview",
 			ImGuiWindowFlags.NoDecoration |
 			ImGuiWindowFlags.NoInputs |
 			ImGuiWindowFlags.AlwaysAutoResize |
@@ -115,7 +115,7 @@ public static class NotificationSystem
 			);
 		}
 
-		ImGui.End();
+		Gui.End();
 		ImGui.PopStyleVar();
 	}
 }

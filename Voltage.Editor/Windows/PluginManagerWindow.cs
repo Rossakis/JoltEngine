@@ -109,16 +109,16 @@ namespace Voltage.Editor.Windows
 				return;
 
 			ImGui.SetNextWindowSize(new Num.Vector2(720, 460), ImGuiCond.FirstUseEver);
-			if (!ImGui.Begin("Plugin Manager ###PluginManagerWindow", ref IsOpen))
+			if (!Gui.Begin("Plugin Manager ###PluginManagerWindow", ref IsOpen))
 			{
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
 			if (!ProjectManager.Instance.HasActiveProject)
 			{
 				ImGui.TextColored(ColorMuted, "Open a project to manage its plugins.");
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
@@ -128,7 +128,7 @@ namespace Voltage.Editor.Windows
 			DrawMessages(plugins);
 			DrawActiveInstalls(); // Live progress stays outside the dropdown
 
-			if (ImGui.Button("Create New Plugin"))
+			if (Gui.Button("Create New Plugin"))
 			{
 				ResetCreateForm();
 				_showCreatePopup = true;
@@ -141,7 +141,7 @@ namespace Voltage.Editor.Windows
 			if (needsRestart)
 				ImGui.PushStyleColor(ImGuiCol.Text, ColorWarn);
 
-			if (ImGui.Button("Reload Plugins"))
+			if (Gui.Button("Reload Plugins"))
 				Core.GetGlobalManager<ImGuiManager>()?.RequestEditorRelaunch();
 
 			if (needsRestart)
@@ -185,7 +185,7 @@ namespace Voltage.Editor.Windows
 			if (plugins.Count == 0)
 			{
 				ImGui.TextColored(ColorMuted, "This project has no plugins yet. Add one above.");
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
@@ -280,7 +280,7 @@ namespace Voltage.Editor.Windows
 			DrawPublishReadinessSection(plugins);
 			DrawExternalSdkSection(plugins);
 
-			ImGui.End();
+			Gui.End();
 		}
 
 		/// <summary>
@@ -293,7 +293,7 @@ namespace Voltage.Editor.Windows
 		/// <summary>The catalogue: search a registry and install with one click.</summary>
 		private void DrawBrowsePluginsSection()
 		{
-			if (!ImGui.CollapsingHeader("Browse Plugins"))
+			if (!Gui.CollapsingHeader("Browse Plugins"))
 				return;
 
 			ImGui.Indent();
@@ -306,9 +306,9 @@ namespace Voltage.Editor.Windows
 			}
 
 			ImGui.SetNextItemWidth(260);
-			ImGui.InputTextWithHint("##pluginsearch", "Search plugins...", ref _browseSearch, 128);
+			Gui.InputTextWithHint("##pluginsearch", "Search plugins...", ref _browseSearch, 128);
 			ImGui.SameLine();
-			if (ImGui.Button("Refresh"))
+			if (Gui.Button("Refresh"))
 				PluginRegistryIndex.RefreshAsync();
 
 			if (PluginRegistryIndex.IsFetching)
@@ -350,7 +350,7 @@ namespace Voltage.Editor.Windows
 			{
 				ImGui.PushID(listing.Id);
 
-				var expanded = ImGui.TreeNodeEx(listing.Name ?? listing.Id, ImGuiTreeNodeFlags.FramePadding);
+				var expanded = Gui.TreeNodeEx(listing.Name ?? listing.Id, ImGuiTreeNodeFlags.FramePadding);
 
 				ImGui.SameLine();
 				ImGui.TextColored(ColorMuted, listing.VersionLabel);
@@ -375,7 +375,7 @@ namespace Voltage.Editor.Windows
 						ImGui.BeginDisabled();
 
 					var verb = isUpgrade ? "Update to" : "Install";
-					if (ImGui.Button($"{verb} {listing.VersionLabel}##install-{listing.Id}", new Num.Vector2(0, 0)))
+					if (Gui.Button($"{verb} {listing.VersionLabel}##install-{listing.Id}", new Num.Vector2(0, 0)))
 					{
 						if (isUpgrade)
 							StartUpdate(listing.Id, listing.Name ?? listing.Id);
@@ -519,13 +519,13 @@ namespace Voltage.Editor.Windows
 			}
 
 			ImGui.SameLine();
-			if (ImGui.SmallButton($"Cancel##{job.PluginId}"))
+			if (Gui.SmallButton($"Cancel##{job.PluginId}"))
 				job.Cancel();
 		}
 
 private void DrawAddPluginSection()
 		{
-			if (!ImGui.CollapsingHeader("Add Plugin"))
+			if (!Gui.CollapsingHeader("Add Plugin"))
 				return;
 
 			// Scoped: ImGui derives an item id from its label, and the button below hashed to the
@@ -534,7 +534,7 @@ private void DrawAddPluginSection()
 			ImGui.Indent();
 
 			ImGui.SetNextItemWidth(220);
-			ImGui.Combo("Source", ref _addSourceType, SourceTypes, SourceTypes.Length);
+			Gui.Combo("Source", ref _addSourceType, SourceTypes, SourceTypes.Length);
 
 			ProjectPluginEntry entry = null;
 
@@ -542,9 +542,9 @@ private void DrawAddPluginSection()
 			{
 				case 0: // Local folder
 					ImGui.SetNextItemWidth(-100);
-					ImGui.InputText("##addpath", ref _addPath, 1024);
+					Gui.InputText("##addpath", ref _addPath, 1024);
 					ImGui.SameLine();
-					if (ImGui.Button("Browse", new Num.Vector2(85, 0)))
+					if (Gui.Button("Browse", new Num.Vector2(85, 0)))
 						_pluginFolderBrowser.Open("Select plugin folder", _addPath, this);
 					if (!string.IsNullOrWhiteSpace(_addPath))
 					{
@@ -575,9 +575,9 @@ private void DrawAddPluginSection()
 
 				case 1: // Git URL
 					ImGui.SetNextItemWidth(-160);
-					ImGui.InputText("Git URL", ref _addGitUrl, 1024);
+					Gui.InputText("Git URL", ref _addGitUrl, 1024);
 					ImGui.SetNextItemWidth(220);
-					ImGui.InputText("Ref (tag/branch/commit)", ref _addGitRef, 256);
+					Gui.InputText("Ref (tag/branch/commit)", ref _addGitRef, 256);
 					if (ImGui.IsItemHovered())
 						ImGui.SetTooltip("Pinned to a commit SHA in plugins.lock.json. Private repos use your local git credentials.");
 					if (!string.IsNullOrWhiteSpace(_addGitUrl) && !string.IsNullOrWhiteSpace(_addGitRef))
@@ -586,7 +586,7 @@ private void DrawAddPluginSection()
 
 				case 2: // Zip URL
 					ImGui.SetNextItemWidth(-160);
-					ImGui.InputText("Zip URL", ref _addZipUrl, 1024);
+					Gui.InputText("Zip URL", ref _addZipUrl, 1024);
 					if (!string.IsNullOrWhiteSpace(_addZipUrl))
 						entry = new ProjectPluginEntry { Source = new PluginSourceSpec { Zip = _addZipUrl.Trim() } };
 					break;
@@ -598,7 +598,7 @@ private void DrawAddPluginSection()
 			if (!canAdd)
 				ImGui.BeginDisabled();
 
-			if (ImGui.Button("Add Plugin", new Num.Vector2(140, 0)))
+			if (Gui.Button("Add Plugin", new Num.Vector2(140, 0)))
 			{
 				var source = entry.Source?.Describe() ?? "plugin";
 
@@ -677,7 +677,7 @@ private void DrawAddPluginSection()
 			ImGui.SetNextWindowSize(new Num.Vector2(680, 0), ImGuiCond.Appearing);
 
 			var open = true;
-			if (!ImGui.BeginPopupModal("create-plugin", ref open, ImGuiWindowFlags.None))
+			if (!Gui.BeginPopupModal("create-plugin", ref open, ImGuiWindowFlags.None))
 				return;
 
 			ImGui.TextColored(new Num.Vector4(0.2f, 0.8f, 1f, 1f), "Create New Plugin");
@@ -685,39 +685,39 @@ private void DrawAddPluginSection()
 
 			ImGui.TextUnformatted("Name");
 			ImGui.SetNextItemWidth(-1);
-			if (ImGui.InputText("##name", ref _newName, 128) && !_newIdEdited)
+			if (Gui.InputText("##name", ref _newName, 128) && !_newIdEdited)
 				_newId = PluginScaffolder.SuggestId(_newName);
 
 			ImGui.TextUnformatted("Id");
 			ImGui.SetNextItemWidth(-1);
-			if (ImGui.InputText("##id", ref _newId, 128))
+			if (Gui.InputText("##id", ref _newId, 128))
 				_newIdEdited = true;
 			if (ImGui.IsItemHovered())
 				ImGui.SetTooltip("A unique, permanent id in reverse-domain style (e.g. com.you.myplugin). Don't change it later - saved scenes rely on it.");
 
 			ImGui.TextUnformatted("Description");
 			ImGui.SetNextItemWidth(-1);
-			ImGui.InputTextMultiline("##description", ref _newDescription, 512, new Num.Vector2(-1, 54));
+			Gui.InputTextMultiline("##description", ref _newDescription, 512, new Num.Vector2(-1, 54));
 
 			ImGui.TextUnformatted("Author");
 			ImGui.SetNextItemWidth(-1);
-			ImGui.InputText("##author", ref _newAuthor, 128);
+			Gui.InputText("##author", ref _newAuthor, 128);
 
 			ImGui.TextUnformatted("Version");
 			ImGui.SetNextItemWidth(120);
-			ImGui.InputText("##version", ref _newVersion, 32);
+			Gui.InputText("##version", ref _newVersion, 32);
 
 			ImGui.Spacing();
 			ImGui.TextUnformatted("What does this plugin add?");
-			ImGui.Checkbox("Gameplay (components used in the game)", ref _newGameplay);
-			ImGui.Checkbox("Editor tools (windows/menus in this editor)", ref _newEditor);
+			Gui.Checkbox("Gameplay (components used in the game)", ref _newGameplay);
+			Gui.Checkbox("Editor tools (windows/menus in this editor)", ref _newEditor);
 
 			ImGui.Spacing();
 			ImGui.TextUnformatted("Location");
 			ImGui.SetNextItemWidth(-90);
-			ImGui.InputText("##location", ref _newLocation, 1024);
+			Gui.InputText("##location", ref _newLocation, 1024);
 			ImGui.SameLine();
-			if (ImGui.Button("Browse", new Num.Vector2(80, 0)))
+			if (Gui.Button("Browse", new Num.Vector2(80, 0)))
 				_createLocationBrowser.Open("Select where to create the plugin", _newLocation, this);
 			if (ImGui.IsItemHovered())
 				ImGui.SetTooltip("The new plugin folder is created inside this location.");
@@ -727,7 +727,7 @@ private void DrawAddPluginSection()
 			var canAutoAdd = _newGameplay && !_newEditor && ProjectManager.Instance.HasActiveProject;
 			if (!canAutoAdd)
 				ImGui.BeginDisabled();
-			ImGui.Checkbox("Add to this project now (as a live-edit plugin)", ref _newAddToProject);
+			Gui.Checkbox("Add to this project now (as a live-edit plugin)", ref _newAddToProject);
 			if (!canAutoAdd)
 				ImGui.EndDisabled();
 			if (_newEditor && ImGui.IsItemHovered())
@@ -742,14 +742,14 @@ private void DrawAddPluginSection()
 			}
 
 			ImGui.Separator();
-			if (ImGui.Button("Create", new Num.Vector2(120, 0)))
+			if (Gui.Button("Create", new Num.Vector2(120, 0)))
 				DoCreatePlugin(canAutoAdd);
 
 			ImGui.SameLine();
-			if (ImGui.Button("Cancel", new Num.Vector2(120, 0)))
+			if (Gui.Button("Cancel", new Num.Vector2(120, 0)))
 				ImGui.CloseCurrentPopup();
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		private void OpenPublishPopup(PluginInstance plugin)
@@ -828,16 +828,16 @@ private void DrawAddPluginSection()
 			ImGui.SetNextWindowSize(new Num.Vector2(720, 0), ImGuiCond.Appearing);
 
 			var open = true;
-			if (!ImGui.BeginPopupModal("publish-plugin", ref open, ImGuiWindowFlags.None))
+			if (!Gui.BeginPopupModal("publish-plugin", ref open, ImGuiWindowFlags.None))
 				return;
 
 			var plugin = plugins.FirstOrDefault(p => string.Equals(p.Id, _publishPluginId, StringComparison.Ordinal));
 			if (plugin == null)
 			{
 				ImGui.TextColored(ColorError, "That plugin is no longer in this project.");
-				if (ImGui.Button("Close", new Num.Vector2(120, 0)))
+				if (Gui.Button("Close", new Num.Vector2(120, 0)))
 					ImGui.CloseCurrentPopup();
-				ImGui.EndPopup();
+				Gui.EndPopup();
 				return;
 			}
 
@@ -857,20 +857,20 @@ private void DrawAddPluginSection()
 			ImGui.TextUnformatted("New version");
 			ImGui.SameLine(110);
 			ImGui.SetNextItemWidth(120);
-			ImGui.InputText("##newversion", ref _publishNewVersion, 32);
+			Gui.InputText("##newversion", ref _publishNewVersion, 32);
 			if (ImGui.IsItemDeactivatedAfterEdit())
 				SetPublishVersion(plugin, _publishNewVersion);
 
 			ImGui.SameLine();
-			if (ImGui.SmallButton("major"))
+			if (Gui.SmallButton("major"))
 				SetPublishVersion(plugin, BumpVersion(plugin.Manifest?.Version, major: true));
 
 			ImGui.SameLine();
-			if (ImGui.SmallButton("minor"))
+			if (Gui.SmallButton("minor"))
 				SetPublishVersion(plugin, BumpVersion(plugin.Manifest?.Version, minor: true));
 
 			ImGui.SameLine();
-			if (ImGui.SmallButton("patch"))
+			if (Gui.SmallButton("patch"))
 				SetPublishVersion(plugin, BumpVersion(plugin.Manifest?.Version));
 			ImGui.SameLine();
 			ImGui.TextColored(ColorMuted, $"tag: v{_publishNewVersion}");
@@ -878,7 +878,7 @@ private void DrawAddPluginSection()
 			ImGui.TextUnformatted("Commit message");
 			ImGui.SameLine(110);
 			ImGui.SetNextItemWidth(-1);
-			ImGui.InputText("##commitmessage", ref _publishCommitMessage, 512);
+			Gui.InputText("##commitmessage", ref _publishCommitMessage, 512);
 			if (ImGui.IsItemDeactivatedAfterEdit())
 				_publishInputsDirty = true;
 
@@ -889,7 +889,7 @@ private void DrawAddPluginSection()
 			ImGui.SameLine(110);
 			ImGui.SetNextItemWidth(-1);
 
-			ImGui.InputTextMultiline("##changedescription", ref _publishChangeDescription, 4000,
+			Gui.InputTextMultiline("##changedescription", ref _publishChangeDescription, 4000,
 				new Num.Vector2(-1, 90));
 
 			if (ImGui.IsItemDeactivatedAfterEdit())
@@ -903,7 +903,7 @@ private void DrawAddPluginSection()
 					"Optional, and free text - blank lines and bullet lists survive as typed.");
 			}
 
-			if (ImGui.Checkbox("Push the branch and the tag to origin", ref _publishPush))
+			if (Gui.Checkbox("Push the branch and the tag to origin", ref _publishPush))
 				_publishInputsDirty = true;
 			if (ImGui.IsItemHovered())
 			{
@@ -926,7 +926,7 @@ private void DrawAddPluginSection()
 			var plan = _publishPlan;
 			if (plan == null)
 			{
-				ImGui.EndPopup();
+				Gui.EndPopup();
 				return;
 			}
 
@@ -944,7 +944,7 @@ private void DrawAddPluginSection()
 				ImGui.PopStyleColor();
 
 				ImGui.SameLine();
-				if (ImGui.SmallButton("Copy##publish-summary"))
+				if (Gui.SmallButton("Copy##publish-summary"))
 					ImGui.SetClipboardText(plan.Summary);
 			}
 
@@ -957,7 +957,7 @@ private void DrawAddPluginSection()
 				{
 					var gitUrl = $"https://github.com/{plan.Repository}.git";
 
-					if (ImGui.Button("Declare for the team", new Num.Vector2(180, 0)))
+					if (Gui.Button("Declare for the team", new Num.Vector2(180, 0)))
 						SetStatus(PluginManager.Instance.ShareLocalPluginAsGit(plugin.Id, gitUrl, plan.Tag), false);
 
 					if (ImGui.IsItemHovered())
@@ -971,7 +971,7 @@ private void DrawAddPluginSection()
 					ImGui.SameLine();
 				}
 
-				if (ImGui.Button("Done", new Num.Vector2(120, 0)))
+				if (Gui.Button("Done", new Num.Vector2(120, 0)))
 				{
 					SetStatus(plan.Summary, isError: !plan.Succeeded);
 					if (plan.Succeeded)
@@ -979,7 +979,7 @@ private void DrawAddPluginSection()
 					ImGui.CloseCurrentPopup();
 				}
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 				return;
 			}
 
@@ -987,7 +987,7 @@ private void DrawAddPluginSection()
 				ImGui.BeginDisabled();
 
 			var label = plan.Push ? $"Publish v{plan.NewVersion}" : $"Commit and tag v{plan.NewVersion}";
-			if (ImGui.Button(plan.Running ? "Publishing..." : label, new Num.Vector2(180, 0)))
+			if (Gui.Button(plan.Running ? "Publishing..." : label, new Num.Vector2(180, 0)))
 				PluginPublisher.Start(plan);
 
 			if (!plan.CanPublish)
@@ -996,12 +996,12 @@ private void DrawAddPluginSection()
 			ImGui.SameLine();
 			if (plan.Running)
 				ImGui.BeginDisabled();
-			if (ImGui.Button("Cancel", new Num.Vector2(120, 0)))
+			if (Gui.Button("Cancel", new Num.Vector2(120, 0)))
 				ImGui.CloseCurrentPopup();
 			if (plan.Running)
 				ImGui.EndDisabled();
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		private void DrawPublishProblems(PublishPlan plan)
@@ -1038,7 +1038,7 @@ private void DrawAddPluginSection()
 
 			ImGui.TextColored(ColorMuted, problem.Fix);
 			ImGui.SameLine();
-			if (ImGui.SmallButton($"Copy##fix-{problem.Label}"))
+			if (Gui.SmallButton($"Copy##fix-{problem.Label}"))
 				ImGui.SetClipboardText(problem.Fix);
 		}
 
@@ -1136,14 +1136,14 @@ private void DrawAddPluginSection()
 		{
 			var disabled = plugin.State == PluginState.Disabled;
 
-			if (ImGui.SmallButton(disabled ? "Enable" : "Disable"))
+			if (Gui.SmallButton(disabled ? "Enable" : "Disable"))
 				SetStatus(PluginManager.Instance.SetPluginDisabled(plugin.Id, !disabled));
 
 			if (plugin.IsLocalOnly && plugin.State is PluginState.Restored or PluginState.Loaded)
 			{
 				ImGui.SameLine();
 
-				if (ImGui.SmallButton("Vendor"))
+				if (Gui.SmallButton("Vendor"))
 					SetStatus(PluginManager.Instance.VendorPluginIntoProject(plugin.Id), false);
 
 				if (ImGui.IsItemHovered())
@@ -1171,7 +1171,7 @@ private void DrawAddPluginSection()
 				if (newer != null)
 					ImGui.PushStyleColor(ImGuiCol.Text, ColorWarn);
 
-				if (ImGui.SmallButton(newer != null ? $"Update to {newer.VersionLabel}" : "Update"))
+				if (Gui.SmallButton(newer != null ? $"Update to {newer.VersionLabel}" : "Update"))
 					StartUpdate(plugin.Id, plugin.DisplayName);
 
 				if (newer != null)
@@ -1191,21 +1191,21 @@ private void DrawAddPluginSection()
 			}
 
 			ImGui.SameLine();
-			if (ImGui.SmallButton("Remove"))
+			if (Gui.SmallButton("Remove"))
 				ImGui.OpenPopup("ConfirmRemove");
 
-			if (ImGui.BeginPopup("ConfirmRemove"))
+			if (Gui.BeginPopup("ConfirmRemove"))
 			{
 				ImGui.TextWrapped($"Remove plugin '{plugin.DisplayName}' from this project? Scenes using its components will show missing-component entries (data is preserved).");
-				if (ImGui.Button("Remove"))
+				if (Gui.Button("Remove"))
 				{
 					SetStatus(PluginManager.Instance.RemovePlugin(plugin.Id));
 					ImGui.CloseCurrentPopup();
 				}
 				ImGui.SameLine();
-				if (ImGui.Button("Cancel"))
+				if (Gui.Button("Cancel"))
 					ImGui.CloseCurrentPopup();
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 		}
 
@@ -1217,7 +1217,7 @@ private void DrawAddPluginSection()
 				return;
 
 			ImGui.Spacing();
-			if (!ImGui.CollapsingHeader("Publish Readiness"))
+			if (!Gui.CollapsingHeader("Publish Readiness"))
 				return;
 
 			ImGui.Indent();
@@ -1230,7 +1230,7 @@ private void DrawAddPluginSection()
 				ImGui.PushID("publish-" + plugin.Id);
 
 				var report = PluginPublishReadiness.Get(plugin.Id);
-				var expanded = ImGui.TreeNodeEx(plugin.DisplayName ?? plugin.Id, ImGuiTreeNodeFlags.DefaultOpen);
+				var expanded = Gui.TreeNodeEx(plugin.DisplayName ?? plugin.Id, ImGuiTreeNodeFlags.DefaultOpen);
 
 				// Own row, same reason as Install: a button sharing a tree node's row loses the click.
 				ImGui.Indent();
@@ -1238,7 +1238,7 @@ private void DrawAddPluginSection()
 				{
 					ImGui.TextColored(ColorWarn, "checking...");
 				}
-				else if (ImGui.Button($"Check##check-{plugin.Id}", new Num.Vector2(110, 0)))
+				else if (Gui.Button($"Check##check-{plugin.Id}", new Num.Vector2(110, 0)))
 				{
 					PluginPublishReadiness.RefreshAsync(plugin);
 				}
@@ -1249,7 +1249,7 @@ private void DrawAddPluginSection()
 				ImGui.SameLine();
 				if (publishRunning)
 					ImGui.BeginDisabled();
-				if (ImGui.Button($"Publish New Version##publish-{plugin.Id}", new Num.Vector2(0, 0)))
+				if (Gui.Button($"Publish New Version##publish-{plugin.Id}", new Num.Vector2(0, 0)))
 					OpenPublishPopup(plugin);
 				if (publishRunning)
 					ImGui.EndDisabled();
@@ -1306,7 +1306,7 @@ private void DrawAddPluginSection()
 				ImGui.Indent();
 				ImGui.TextColored(ColorMuted, check.Fix);
 				ImGui.SameLine();
-				if (ImGui.SmallButton($"Copy##{check.Label}"))
+				if (Gui.SmallButton($"Copy##{check.Label}"))
 					ImGui.SetClipboardText(check.Fix);
 				ImGui.Unindent();
 			}
@@ -1346,18 +1346,18 @@ private void DrawAddPluginSection()
 					buffer = PluginUserSettings.GetConfiguredSdkPath(sdk.Id);
 
 				ImGui.SetNextItemWidth(-210);
-				if (ImGui.InputText($"##sdkpath_{sdk.Id}", ref buffer, 512))
+				if (Gui.InputText($"##sdkpath_{sdk.Id}", ref buffer, 512))
 					_sdkPathBuffers[sdk.Id] = buffer;
 
 				ImGui.SameLine();
-				if (ImGui.Button("Browse"))
+				if (Gui.Button("Browse"))
 				{
 					_sdkBrowseTargetId = sdk.Id;
 					_sdkFolderBrowser.Open($"Select {sdk.DisplayName ?? sdk.Id} folder", buffer, this);
 				}
 
 				ImGui.SameLine();
-				if (ImGui.Button("Save Path"))
+				if (Gui.Button("Save Path"))
 				{
 					PluginUserSettings.SetSdkPath(sdk.Id, buffer);
 					_sdkPathBuffers.Remove(sdk.Id);
@@ -1418,7 +1418,7 @@ private void DrawAddPluginSection()
 			_lastMessageTotal = total;
 
 			ImGui.PushStyleColor(ImGuiCol.Text, anyError ? ColorError : ColorOk);
-			var open = ImGui.CollapsingHeader($"Messages ({total})###plugin-messages");
+			var open = Gui.CollapsingHeader($"Messages ({total})###plugin-messages");
 			ImGui.PopStyleColor();
 
 			if (!open)
@@ -1429,7 +1429,7 @@ private void DrawAddPluginSection()
 
 			ImGui.Indent();
 
-			if (ImGui.SmallButton("Clear All"))
+			if (Gui.SmallButton("Clear All"))
 			{
 				_messages.Clear();
 				PluginLog.Clear();
@@ -1501,7 +1501,7 @@ private void DrawAddPluginSection()
 
 		private bool DrawDismissableMessage(string text, Num.Vector4 colour)
 		{
-			var dismissed = ImGui.SmallButton("x");
+			var dismissed = Gui.SmallButton("x");
 
 			ImGui.SameLine();
 			ImGui.PushStyleColor(ImGuiCol.Text, colour);

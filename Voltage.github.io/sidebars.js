@@ -1,55 +1,53 @@
-module.exports = {
-  someSidebar: {
-    'Docusaurus': ['about/introduction','about/Samples'],
-    'Getting Started': [
-      'getting-started/installation',
-      'getting-started/FNACompat'
-    ],
-    'Features': [
-      'features/Core',
-      'features/ContentManagement',
-      'features/RuntimeInspector',
-      'features/Tiled',
-      {'Utils': [
-        'features/Utils/Tweening',
-        'features/Utils/Collections',
-        'features/Utils/Pooling',
-      ]},
-      {'Graphics': [
-        {
-          'Lighting': [
-            'features/Graphics/Lighting/DeferredLighting',
-            'features/Graphics/Lighting/SpriteLights',
-          ]
-        },
-        'features/Graphics/Rendering',
-        'features/Graphics/SVG',
-        'features/Graphics/Stencil'
-      ]},
-      {'UI': [
-        'features/UI/NezUI',
-        'features/UI/DearImGui',
-      ]},
-      {
-        "AI":[
-          'features/AI/Behavior',
-          'features/AI/Pathfinding'
-        ]
-      },
-      {
-        "Physics":[
-          'features/Physics/NezPhysics',
-          'features/Physics/Verlet',
-          'features/Physics/FarseerPhysics'
-        ]
-      },
-      {
-        'ECS':[
-          'features/ECS/SceneEntityComponentSystem',
-          'features/ECS/SceneTransitions',
-          'features/ECS/EntitySystems'
-        ]
-      },
-    ]
-  },
+// @ts-check
+
+/** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
+const sidebars = {
+  docs: [
+    'intro',
+    {
+      type: 'category',
+      label: 'Getting Started',
+      items: ['getting-started/installation', 'getting-started/first-game'],
+    },
+    {
+      type: 'category',
+      label: 'Editor',
+      items: [
+        'editor/projects',
+        'editor/windows',
+        'editor/play-mode',
+        'editor/scenes-and-prefabs',
+        'editor/asset-browser',
+        'editor/hot-reload',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Scripting',
+      items: [
+        'scripting/components',
+        'scripting/scene-components',
+        'scripting/content-loading',
+        'scripting/audio',
+        'scripting/rules-and-gotchas',
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Automation',
+      items: ['gateway/README'],
+    },
+    {
+      type: 'category',
+      label: 'Extending',
+      items: ['plugins/README', 'assets/README'],
+    },
+    {
+      type: 'category',
+      label: 'Engine Internals',
+      items: ['engine/serialization-and-aot', 'engine/engineer-notes'],
+    },
+  ],
 };
+
+module.exports = sidebars;

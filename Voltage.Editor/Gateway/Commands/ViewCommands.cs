@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using static Voltage.Editor.Gateway.GatewayValues;
+using Voltage.Gateway;
 
 namespace Voltage.Editor.Gateway.Commands;
 
@@ -8,9 +9,9 @@ internal static class ViewCommands
 {
 	public static void Register(GatewayCommandTable table)
 	{
-		table.Add("view.get", "Camera position and zoom of the game view.", (_, _) => State());
+		table.Add("view.get", "Camera position and zoom of the game view.", (_, _) => State()).ReadOnly();
 
-		table.Add("view.set", "Move or zoom the editor camera. params: x, y, zoom (scale factor, 1 = native pixels)", (args, ctx) =>
+		table.Add("view.set", "Move or zoom the editor camera.", (args, ctx) =>
 		{
 			var camera = RequireCamera();
 			var x = args.OptFloat("x");
@@ -20,9 +21,9 @@ internal static class ViewCommands
 			if (args.Has("zoom"))
 				camera.RawZoom = args.Float("zoom");
 			return State();
-		});
+		}, P.Float("x", "World x; unchanged when omitted"), P.Float("y", "World y; unchanged when omitted"), ZoomParam);
 
-		table.Add("view.focus", "Center the editor camera on an entity. params: entity, zoom (scale factor)", (args, ctx) =>
+		table.Add("view.focus", "Center the editor camera on an entity.", (args, ctx) =>
 		{
 			var camera = RequireCamera();
 			var entity = ResolveEntity(args.Require("entity"));
@@ -30,8 +31,10 @@ internal static class ViewCommands
 			if (args.Has("zoom"))
 				camera.RawZoom = args.Float("zoom");
 			return State();
-		});
+		}, P.Str("entity", "Entity id, GUID or name", required: true), ZoomParam);
 	}
+
+	private static readonly GatewayParam ZoomParam = P.Float("zoom", "Scale factor, 1 = native pixels; unchanged when omitted");
 
 	private static Camera RequireCamera() => Core.Scene?.Camera ?? throw new GatewayException("no scene loaded");
 
@@ -39,7 +42,7 @@ internal static class ViewCommands
 	private static void MoveTo(GatewayContext ctx, Vector2 position)
 	{
 		RequireCamera().Position = position;
-		ctx.ImGui.CameraTargetPosition = position;
+		ctx.ImGui().CameraTargetPosition = position;
 	}
 
 	private static object State()

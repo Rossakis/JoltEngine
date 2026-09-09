@@ -99,10 +99,10 @@ namespace Voltage.Editor.Tools.Tilemap
 			ImGui.SetNextWindowSize(new Num.Vector2(720, 620), ImGuiCond.FirstUseEver);
 
 			var open = IsOpen;
-			if (!ImGui.Begin("Tileset Editor ###TilesetEditorWindow", ref open))
+			if (!Gui.Begin("Tileset Editor ###TilesetEditorWindow", ref open))
 			{
 				IsOpen = open;
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
@@ -116,11 +116,11 @@ namespace Voltage.Editor.Tools.Tilemap
 				ImGui.TextDisabled("No tileset open.");
 				ImGui.Spacing();
 
-				if (ImGui.Button("New Tileset"))
+				if (Gui.Button("New Tileset"))
 					NewTileset();
 
 				ImGui.SameLine();
-				if (ImGui.Button("Load..."))
+				if (Gui.Button("Load..."))
 					_tilesetBrowser.Open("Open a tileset", SaveFolder, this);
 
 				if (ImGui.IsItemHovered())
@@ -129,7 +129,7 @@ namespace Voltage.Editor.Tools.Tilemap
 				ImGui.SameLine();
 				ImGui.TextDisabled("or open a .vtileset from the Asset Browser.");
 
-				ImGui.End();
+				Gui.End();
 				PumpBrowsers();
 				return;
 			}
@@ -138,7 +138,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			ImGui.Separator();
 			DrawPreview();
 
-			ImGui.End();
+			Gui.End();
 
 			// Modals must be driven outside Begin/End.
 			PumpBrowsers();
@@ -146,19 +146,19 @@ namespace Voltage.Editor.Tools.Tilemap
 
 		private void DrawToolbar()
 		{
-			if (ImGui.Button("New"))
+			if (Gui.Button("New"))
 				NewTileset();
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Save") && _asset != null)
+			if (Gui.Button("Save") && _asset != null)
 				Save();
 
 			ImGui.SameLine();
 
 			var canSync = _asset != null && _asset.Texture.IsValid;
 			ImGui.BeginDisabled(!canSync);
-			if (ImGui.Button("Sync Changes"))
+			if (Gui.Button("Sync Changes"))
 				SyncSourceChanges();
 			ImGui.EndDisabled();
 
@@ -186,13 +186,13 @@ namespace Voltage.Editor.Tools.Tilemap
 
 			var folder = SaveFolder;
 			ImGui.SetNextItemWidth(FieldWidth(1));
-			ImGui.InputText("##savefolder", ref folder, 512, ImGuiInputTextFlags.ReadOnly);
+			Gui.InputText("##savefolder", ref folder, 512, ImGuiInputTextFlags.ReadOnly);
 
 			if (ImGui.IsItemHovered() && !string.IsNullOrEmpty(folder))
 				ImGui.SetTooltip(folder);
 
 			ImGui.SameLine();
-			if (ImGui.Button("Browse...##savefolder", new Num.Vector2(ButtonWidth, 0)))
+			if (Gui.Button("Browse...##savefolder", new Num.Vector2(ButtonWidth, 0)))
 				_folderBrowser.Open("Select the folder to save the tileset in", SaveFolder, this);
 
 			if (ImGui.IsItemHovered())
@@ -204,7 +204,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			var changed = false;
 
 			var name = _asset.Name ?? string.Empty;
-			if (ImGui.InputText("Name", ref name, 128))
+			if (Gui.InputText("Name", ref name, 128))
 			{
 				_asset.Name = name;
 				changed = true;
@@ -228,28 +228,28 @@ namespace Voltage.Editor.Tools.Tilemap
 			ImGui.TextUnformatted("Grid");
 
 			var tileWidth = _asset.TileWidth;
-			if (ImGui.InputInt("Tile width", ref tileWidth))
+			if (Gui.InputInt("Tile width", ref tileWidth))
 			{
 				_asset.TileWidth = Math.Max(1, tileWidth);
 				changed = true;
 			}
 
 			var tileHeight = _asset.TileHeight;
-			if (ImGui.InputInt("Tile height", ref tileHeight))
+			if (Gui.InputInt("Tile height", ref tileHeight))
 			{
 				_asset.TileHeight = Math.Max(1, tileHeight);
 				changed = true;
 			}
 
 			var spacing = _asset.Spacing;
-			if (ImGui.InputInt("Spacing", ref spacing))
+			if (Gui.InputInt("Spacing", ref spacing))
 			{
 				_asset.Spacing = Math.Max(0, spacing);
 				changed = true;
 			}
 
 			var margin = _asset.Margin;
-			if (ImGui.InputInt("Margin", ref margin))
+			if (Gui.InputInt("Margin", ref margin))
 			{
 				_asset.Margin = Math.Max(0, margin);
 				changed = true;
@@ -280,13 +280,13 @@ namespace Voltage.Editor.Tools.Tilemap
 
 			var buttons = reference.IsValid ? 2 : 1;
 			ImGui.SetNextItemWidth(FieldWidth(buttons));
-			ImGui.InputText($"##slot{label}", ref display, 256, ImGuiInputTextFlags.ReadOnly);
+			Gui.InputText($"##slot{label}", ref display, 256, ImGuiInputTextFlags.ReadOnly);
 
 			if (ImGui.IsItemHovered() && reference.IsValid)
 				ImGui.SetTooltip(reference.AssetPath ?? display);
 
 			ImGui.SameLine();
-			if (ImGui.Button($"Browse...##{label}", new Num.Vector2(ButtonWidth, 0)))
+			if (Gui.Button($"Browse...##{label}", new Num.Vector2(ButtonWidth, 0)))
 			{
 				_browsingNormalMap = isNormalMap;
 				_imageBrowser.Open($"Select the {label.ToLowerInvariant()}", ImageBrowseStart(reference), this);
@@ -297,7 +297,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			if (reference.IsValid)
 			{
 				ImGui.SameLine();
-				if (ImGui.Button($"Clear##{label}", new Num.Vector2(ButtonWidth, 0)))
+				if (Gui.Button($"Clear##{label}", new Num.Vector2(ButtonWidth, 0)))
 				{
 					SetImage(isNormalMap, default, TilesetImageSource.Png, null, 0);
 					changed = true;
@@ -317,7 +317,7 @@ namespace Voltage.Editor.Tools.Tilemap
 
 				ImGui.SetCursorPosX(ImGui.GetCursorPosX() + LabelWidth);
 
-				if (ImGui.SmallButton($"Layers...##{label}"))
+				if (Gui.SmallButton($"Layers...##{label}"))
 				{
 					var path = reference.ResolvePath();
 					if (path != null && _asepritePopup.Open(path, layers, frame, syncsNewLayers))
@@ -535,10 +535,10 @@ namespace Voltage.Editor.Tools.Tilemap
 			                      $"({_preview.Texture.Width}x{_preview.Texture.Height} px)");
 
 			ImGui.SetNextItemWidth(160f);
-			ImGui.SliderFloat("Zoom", ref _zoom, 0.1f, 8f, "%.2fx", ImGuiSliderFlags.Logarithmic);
+			Gui.SliderFloat("Zoom", ref _zoom, 0.1f, 8f, "%.2fx", ImGuiSliderFlags.Logarithmic);
 
 			ImGui.SameLine();
-			if (ImGui.Button("Fit"))
+			if (Gui.Button("Fit"))
 			{
 				var avail = ImGui.GetContentRegionAvail();
 				var fitX = avail.X / _preview.Texture.Width;
@@ -550,7 +550,7 @@ namespace Voltage.Editor.Tools.Tilemap
 				ImGui.SetTooltip("Zoom the whole tileset to fit the panel.");
 
 			ImGui.SameLine();
-			if (ImGui.Button("1:1"))
+			if (Gui.Button("1:1"))
 				_zoom = 1f;
 
 			TileAtlasBackground.DrawPicker();
@@ -569,7 +569,7 @@ namespace Voltage.Editor.Tools.Tilemap
 				_showNormalMap = false;
 			}
 
-			ImGui.Checkbox("Edit solid tiles", ref _solidEditMode);
+			Gui.Checkbox("Edit solid tiles", ref _solidEditMode);
 			if (ImGui.IsItemHovered())
 				ImGui.SetTooltip("Click tiles to flag them Solid (or hold Ctrl). 'Solid from flagged tiles' in the Tile Palette reads this.");
 
@@ -637,7 +637,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			var terrains = _asset.Terrains;
 
 			// Manage terrains.
-			if (ImGui.SmallButton("+ New terrain"))
+			if (Gui.SmallButton("+ New terrain"))
 			{
 				var id = 0;
 				foreach (var t in terrains)
@@ -659,7 +659,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			}
 
 			ImGui.SetNextItemWidth(160f);
-			if (ImGui.Combo("Belongs to", ref index, labels.ToArray(), labels.Count))
+			if (Gui.Combo("Belongs to", ref index, labels.ToArray(), labels.Count))
 			{
 				info.TerrainId = index == 0 ? -1 : terrains[index - 1].Id;
 				_dirty = true;
@@ -670,7 +670,7 @@ namespace Voltage.Editor.Tools.Tilemap
 				var terrain = terrains[index - 1];
 				var name = terrain.Name ?? string.Empty;
 				ImGui.SetNextItemWidth(160f);
-				if (ImGui.InputText("Name", ref name, 64))
+				if (Gui.InputText("Name", ref name, 64))
 				{
 					terrain.Name = name;
 					_dirty = true;
@@ -703,13 +703,13 @@ namespace Voltage.Editor.Tools.Tilemap
 					{
 						ImGui.BeginDisabled();
 						var self = true;
-						ImGui.Checkbox("##self", ref self);
+						Gui.Checkbox("##self", ref self);
 						ImGui.EndDisabled();
 					}
 					else
 					{
 						var set = (info.TerrainMask & (1 << bit)) != 0;
-						if (ImGui.Checkbox("##n", ref set))
+						if (Gui.Checkbox("##n", ref set))
 						{
 							if (set) info.TerrainMask |= (byte)(1 << bit);
 							else info.TerrainMask &= (byte)~(1 << bit);
@@ -735,7 +735,7 @@ namespace Voltage.Editor.Tools.Tilemap
 
 			var shape = (int)info.CollisionShape;
 			ImGui.SetNextItemWidth(200f);
-			if (ImGui.Combo("Collision shape", ref shape, CollisionShapeNames, CollisionShapeNames.Length))
+			if (Gui.Combo("Collision shape", ref shape, CollisionShapeNames, CollisionShapeNames.Length))
 			{
 				info.CollisionShape = (Voltage.Tilesets.TileCollisionShape)shape;
 				_dirty = true;
@@ -748,7 +748,7 @@ namespace Voltage.Editor.Tools.Tilemap
 				DrawCustomColliderPicker(info);
 
 			var oneWay = info.OneWay;
-			if (ImGui.Checkbox("One-way platform", ref oneWay))
+			if (Gui.Checkbox("One-way platform", ref oneWay))
 			{
 				info.OneWay = oneWay;
 				_dirty = true;
@@ -773,13 +773,13 @@ namespace Voltage.Editor.Tools.Tilemap
 			}
 
 			ImGui.SetNextItemWidth(200f);
-			if (ImGui.Combo("Custom collider", ref current, labels.ToArray(), labels.Count))
+			if (Gui.Combo("Custom collider", ref current, labels.ToArray(), labels.Count))
 			{
 				info.CustomColliderName = current == 0 ? null : colliders[current - 1].Name;
 				_dirty = true;
 			}
 
-			if (ImGui.Button("New..."))
+			if (Gui.Button("New..."))
 				OpenColliderEditor(info, null);
 
 			if (ImGui.IsItemHovered())
@@ -788,7 +788,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			var canEdit = _asset.GetCustomCollider(info.CustomColliderName) != null;
 			ImGui.SameLine();
 			ImGui.BeginDisabled(!canEdit);
-			if (ImGui.Button("Edit...") && canEdit)
+			if (Gui.Button("Edit...") && canEdit)
 				OpenColliderEditor(info, info.CustomColliderName);
 			ImGui.EndDisabled();
 
@@ -807,7 +807,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			if (frameCount == 0)
 			{
 				ImGui.TextDisabled("Static tile. Add frames to animate it.");
-				if (ImGui.Button("Add first frame (self)"))
+				if (Gui.Button("Add first frame (self)"))
 				{
 					_asset.GetOrCreateTileInfo(_selectedTile).AnimationFrames.Add(_selectedTile);
 					_dirty = true;
@@ -818,7 +818,7 @@ namespace Voltage.Editor.Tools.Tilemap
 
 			var duration = info.AnimationFrameDuration;
 			ImGui.SetNextItemWidth(120f);
-			if (ImGui.InputFloat("Frame seconds", ref duration, 0.01f, 0.1f, "%.3f"))
+			if (Gui.InputFloat("Frame seconds", ref duration, 0.01f, 0.1f, "%.3f"))
 			{
 				info.AnimationFrameDuration = Math.Max(0.001f, duration);
 				_dirty = true;
@@ -835,14 +835,14 @@ namespace Voltage.Editor.Tools.Tilemap
 
 				var frame = info.AnimationFrames[i];
 				ImGui.SetNextItemWidth(80f);
-				if (ImGui.InputInt("##frame", ref frame))
+				if (Gui.InputInt("##frame", ref frame))
 				{
 					info.AnimationFrames[i] = Math.Clamp(frame, 0, _preview.TileCount - 1);
 					_dirty = true;
 				}
 
 				ImGui.SameLine();
-				if (ImGui.SmallButton("x"))
+				if (Gui.SmallButton("x"))
 					remove = i;
 
 				ImGui.SameLine();
@@ -857,14 +857,14 @@ namespace Voltage.Editor.Tools.Tilemap
 				_dirty = true;
 			}
 
-			if (ImGui.Button("Add frame"))
+			if (Gui.Button("Add frame"))
 			{
 				info.AnimationFrames.Add(_selectedTile);
 				_dirty = true;
 			}
 
 			ImGui.SameLine();
-			ImGui.Checkbox("Pick frames by clicking", ref _appendFramesOnClick);
+			Gui.Checkbox("Pick frames by clicking", ref _appendFramesOnClick);
 
 			if (ImGui.IsItemHovered())
 				ImGui.SetTooltip("While on, clicking a tile in the preview appends it as the next frame.");

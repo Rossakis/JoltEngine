@@ -115,13 +115,13 @@ namespace Voltage.Editor.FilePickers
             AsepriteSelection result = null;
             bool isOpen = _isOpen;
 
-            if (ImGui.BeginPopupModal(_popupId, ref isOpen))
+            if (Gui.BeginPopupModal(_popupId, ref isOpen))
             {
                 ImGui.Text("Aseprite File Selection:");
                 ImGuiSafe.TextColoredSafe(new Num.Vector4(0.7f, 1.0f, 0.7f, 1.0f), Path.GetFileName(_selectedFile));
 
                 ImGui.SameLine();
-                if (ImGui.Button("Change"))
+                if (Gui.Button("Change"))
                 {
                     _awaitingFile = true;
                     _fileBrowser.Open("Select Aseprite File", _startingPath, _owner);
@@ -132,7 +132,7 @@ namespace Voltage.Editor.FilePickers
                 ImGui.Spacing();
 
                 bool layerMergeOn = _isLayerMergeOn.Value;
-                if (ImGui.Checkbox("Merge Layers", ref layerMergeOn))
+                if (Gui.Checkbox("Merge Layers", ref layerMergeOn))
                     _isLayerMergeOn.Value = layerMergeOn;
 
                 if (ImGui.IsItemHovered())
@@ -158,7 +158,7 @@ namespace Voltage.Editor.FilePickers
                 }
 
 				int minRenderingLayer = _minRenderingLayer.Value;
-                if (ImGui.InputInt("Merge Layers", ref minRenderingLayer))
+                if (Gui.InputInt("Merge Layers", ref minRenderingLayer))
 	                _isLayerMergeOn.Value = layerMergeOn;
 
                 if (ImGui.IsItemHovered())
@@ -214,7 +214,7 @@ namespace Voltage.Editor.FilePickers
                     }
                 }
 
-	            ImGui.EndPopup();
+	            Gui.EndPopup();
             }
 
             // "Change" closes the popup too, so that is not a dismissal.
@@ -307,7 +307,7 @@ namespace Voltage.Editor.FilePickers
             ImGui.TextWrapped("Leave empty to merge all visible layers, or select specific layers:");
             
             ImGui.Spacing();
-            ImGui.InputText("Search Layers", ref _layerSearchFilter, 256);
+            Gui.InputText("Search Layers", ref _layerSearchFilter, 256);
             ImGui.Spacing();
 
             if (ImGui.BeginChild("layer-list", new Num.Vector2(-1, 120), true))
@@ -319,7 +319,7 @@ namespace Voltage.Editor.FilePickers
                 foreach (var layer in filteredLayers)
                 {
 	                bool isSelected = _selectedLayers.Contains(layer);
-                    if (ImGui.Selectable(layer, isSelected))
+                    if (Gui.Selectable(layer, isSelected))
                     {
                         if (isSelected)
                             _selectedLayers.Remove(layer);
@@ -342,7 +342,7 @@ namespace Voltage.Editor.FilePickers
             }
             
             ImGui.SameLine();
-            if (ImGui.Button("Clear Selection"))
+            if (Gui.Button("Clear Selection"))
             {
                 _selectedLayers.Clear();
             }
@@ -356,10 +356,10 @@ namespace Voltage.Editor.FilePickers
             ImGui.Spacing();
             
             ImGui.Text("Frame Range:");
-            ImGui.DragInt("Start Frame", ref _frameInputStart, 1, 0, _totalFrames - 1);
-            ImGui.DragInt("End Frame", ref _frameInputEnd, 1, 0, _totalFrames - 1);
+            Gui.DragInt("Start Frame", ref _frameInputStart, 1, 0, _totalFrames - 1);
+            Gui.DragInt("End Frame", ref _frameInputEnd, 1, 0, _totalFrames - 1);
             
-            if (ImGui.Button("Add Frame Range"))
+            if (Gui.Button("Add Frame Range"))
             {
                 int start = Math.Max(0, Math.Min(_frameInputStart, _frameInputEnd));
                 int end = Math.Min(_totalFrames - 1, Math.Max(_frameInputStart, _frameInputEnd));
@@ -375,13 +375,13 @@ namespace Voltage.Editor.FilePickers
             }
             
             ImGui.SameLine();
-            if (ImGui.Button("Clear Frames"))
+            if (Gui.Button("Clear Frames"))
             {
                 _selectedFrames.Clear();
             }
             
             ImGui.SameLine();
-            if (ImGui.Button("Select All Frames"))
+            if (Gui.Button("Select All Frames"))
             {
                 _selectedFrames.Clear();
                 for (int i = 0; i < _totalFrames; i++)
@@ -408,14 +408,14 @@ namespace Voltage.Editor.FilePickers
 
 			int minSelectedIndex = layerValues.IndexOf(_minRenderingLayer.Value);
 			if (minSelectedIndex < 0) minSelectedIndex = 0;
-			if (ImGui.Combo("Min Rendering Layer", ref minSelectedIndex, string.Join('\0', layerNames) + '\0'))
+			if (Gui.Combo("Min Rendering Layer", ref minSelectedIndex, string.Join('\0', layerNames) + '\0'))
 			{
 				_minRenderingLayer.Value = layerValues[minSelectedIndex];
 			}
 
 			int maxSelectedIndex = layerValues.IndexOf(_maxRenderingLayer.Value);
 			if (maxSelectedIndex < 0) maxSelectedIndex = 0;
-			if (ImGui.Combo("Max Rendering Layer", ref maxSelectedIndex, string.Join('\0', layerNames) + '\0'))
+			if (Gui.Combo("Max Rendering Layer", ref maxSelectedIndex, string.Join('\0', layerNames) + '\0'))
 			{
 				_maxRenderingLayer.Value = layerValues[maxSelectedIndex];
 			}
@@ -503,7 +503,7 @@ namespace Voltage.Editor.FilePickers
             float totalWidth = ImGui.GetContentRegionAvail().X;
             float rightButtonStart = totalWidth - buttonWidth;
 
-            if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
+            if (Gui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
             {
                 ImGui.CloseCurrentPopup();
                 openPopup = false;
@@ -518,7 +518,7 @@ namespace Voltage.Editor.FilePickers
                 ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.5f);
             }
 
-            if (ImGui.Button("Load", new Num.Vector2(buttonWidth, 0)) && canConfirm)
+            if (Gui.Button("Load", new Num.Vector2(buttonWidth, 0)) && canConfirm)
             {
                 shouldLoad = true;
             }

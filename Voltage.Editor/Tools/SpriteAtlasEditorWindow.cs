@@ -83,7 +83,7 @@ namespace Voltage.Editor.Tools
 			ImGui.SetNextWindowSize(new Num.Vector2(Screen.Width / 2, Screen.Height / 2), ImGuiCond.FirstUseEver);
 
 			var isOpen = true;
-			if (ImGui.Begin("Sprite Atlas Editor", ref isOpen, ImGuiWindowFlags.MenuBar))
+			if (Gui.Begin("Sprite Atlas Editor", ref isOpen, ImGuiWindowFlags.MenuBar))
 			{
 				DrawMenuBar();
 
@@ -119,7 +119,7 @@ namespace Voltage.Editor.Tools
 					ImGui.EndChild();
 				}
 
-				ImGui.End();
+				Gui.End();
 			}
 
 			return isOpen;
@@ -257,32 +257,32 @@ namespace Voltage.Editor.Tools
 
 			VoltageEditorUtils.MediumVerticalSpace();
 
-			if (ImGui.BeginPopup("set-all-origins"))
+			if (Gui.BeginPopup("set-all-origins"))
 			{
-				ImGui.Combo("###global-origin", ref _globalOriginEnumValue, _originEnumNames, _originEnumNames.Length);
-				if (ImGui.Button("Set All Origins"))
+				Gui.Combo("###global-origin", ref _globalOriginEnumValue, _originEnumNames, _originEnumNames.Length);
+				if (Gui.Button("Set All Origins"))
 				{
 					for (var i = 0; i < _spriteAtlasData.Origins.Count; i++)
 						_spriteAtlasData.Origins[i] = OriginValue((Origin)_globalOriginEnumValue, _spriteAtlasData.Origins[i]);
 					ImGui.CloseCurrentPopup();
 				}
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 
 			for (var i = 0; i < _spriteAtlasData.Origins.Count; i++)
 			{
 				ImGui.PushID(i);
 				var name = _spriteAtlasData.Names[i];
-				if (ImGui.InputText("Name", ref name, 25))
+				if (Gui.InputText("Name", ref name, 25))
 					_spriteAtlasData.Names[i] = name;
 
 				var origin = _spriteAtlasData.Origins[i].ToNumerics();
-				if (ImGui.SliderFloat2("Origin", ref origin, 0f, 1f))
+				if (Gui.SliderFloat2("Origin", ref origin, 0f, 1f))
 					_spriteAtlasData.Origins[i] = origin.ToXNA();
 
 				var originEnum = OriginIndex(_spriteAtlasData.Origins[i]);
 				var originEnumValue = (int)originEnum;
-				if (ImGui.Combo($"###enum_{i}", ref originEnumValue, _originEnumNames, _originEnumNames.Length))
+				if (Gui.Combo($"###enum_{i}", ref originEnumValue, _originEnumNames, _originEnumNames.Length))
 					_spriteAtlasData.Origins[i] = OriginValue((Origin)originEnumValue, _spriteAtlasData.Origins[i]);
 
 				ImGui.Separator();
@@ -341,17 +341,17 @@ namespace Voltage.Editor.Tools
 
 			if (ImGui.BeginMenuBar())
 			{
-				if (ImGui.BeginMenu("File"))
+				if (Gui.BeginMenu("File"))
 				{
-					if (ImGui.MenuItem("New Atlas from Folder"))
+					if (Gui.MenuItem("New Atlas from Folder"))
 						newAtlas = true;
 
-					if (ImGui.MenuItem("Load Atlas or PNG"))
+					if (Gui.MenuItem("Load Atlas or PNG"))
 						openFile = true;
 
-					if (ImGui.MenuItem("Save Atlas", _spriteAtlasData.SourceRects.Count > 0))
+					if (Gui.MenuItem("Save Atlas", _spriteAtlasData.SourceRects.Count > 0))
 						_spriteAtlasData.SaveToFile(_sourceAtlasFile);
-					ImGui.EndMenu();
+					Gui.EndMenu();
 				}
 				ImGui.EndMenuBar();
 			}
@@ -393,7 +393,7 @@ namespace Voltage.Editor.Tools
 		void NewAtlasPopup()
 		{
 			var isOpen = true;
-			if (ImGui.BeginPopupModal("new-atlas", ref isOpen, ImGuiWindowFlags.NoTitleBar))
+			if (Gui.BeginPopupModal("new-atlas", ref isOpen, ImGuiWindowFlags.NoTitleBar))
 			{
 				var picker = FilePicker.GetFolderPicker(this, new DirectoryInfo(Environment.CurrentDirectory).Parent.FullName);
 				picker.DontAllowTraverselBeyondRootFolder = false;
@@ -402,14 +402,14 @@ namespace Voltage.Editor.Tools
 					GenerateSpriteAtlasFromFolder(picker.SelectedFile);
 					FilePicker.RemoveFilePicker(this);
 				}
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 		}
 
 		void OpenFilePopup()
 		{
 			var isOpen = true;
-			if (ImGui.BeginPopupModal("open-file", ref isOpen, ImGuiWindowFlags.NoTitleBar))
+			if (Gui.BeginPopupModal("open-file", ref isOpen, ImGuiWindowFlags.NoTitleBar))
 			{
 				var picker = FilePicker.GetFilePicker(this, Path.Combine(Environment.CurrentDirectory, "Content"), ".png|.atlas");
 				picker.DontAllowTraverselBeyondRootFolder = true;
@@ -418,7 +418,7 @@ namespace Voltage.Editor.Tools
 					SetSourceFromPickedFile(picker.SelectedFile);
 					FilePicker.RemoveFilePicker(this);
 				}
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 		}
 
@@ -442,22 +442,22 @@ namespace Voltage.Editor.Tools
 		void DrawAtlasSlicerPopup()
 		{
 			var isOpen = true;
-			if (ImGui.BeginPopupModal("atlas-slicer", ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
+			if (Gui.BeginPopupModal("atlas-slicer", ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
 			{
-				ImGui.InputInt("Width", ref _width);
-				ImGui.InputInt("Height", ref _height);
-				ImGui.InputInt("Max Frames", ref _frames);
-				ImGui.InputInt("Padding", ref _padding);
+				Gui.InputInt("Width", ref _width);
+				Gui.InputInt("Height", ref _height);
+				Gui.InputInt("Max Frames", ref _frames);
+				Gui.InputInt("Padding", ref _padding);
 
-				if (ImGui.Button("Slice"))
+				if (Gui.Button("Slice"))
 					GenerateRects(_width, _height, _frames, _padding);
 
 				ImGui.SameLine();
 
-				if (ImGui.Button("Done"))
+				if (Gui.Button("Done"))
 					ImGui.CloseCurrentPopup();
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 		}
 
@@ -465,18 +465,18 @@ namespace Voltage.Editor.Tools
 		{
 			ImGui.SetCursorPos(Num.Vector2.Zero);
 
-			if (ImGui.Button("Center"))
+			if (Gui.Button("Center"))
 				CenterImage();
 
 			// ImGui.SameLine(ImGui.GetWindowWidth() - 70);
 			ImGui.SameLine();
 
-			if (ImGui.Button("Frame"))
+			if (Gui.Button("Frame"))
 				FrameImage();
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Slice"))
+			if (Gui.Button("Slice"))
 				ImGui.OpenPopup("atlas-slicer");
 
 			ImGui.SameLine(ImGui.GetContentRegionAvail().X - 160);
@@ -510,14 +510,14 @@ namespace Voltage.Editor.Tools
 				var isEditable = !_nonEditableAnimations.Contains(i);
 				ImGui.PushID(i);
 				var didNotDeleteAnimation = true;
-				if (ImGui.CollapsingHeader(_spriteAtlasData.AnimationNames[i] + $"###anim{i}", ref didNotDeleteAnimation))
+				if (Gui.CollapsingHeader(_spriteAtlasData.AnimationNames[i] + $"###anim{i}", ref didNotDeleteAnimation))
 				{
 					var name = _spriteAtlasData.AnimationNames[i];
-					if (ImGui.InputText("Name", ref name, 25))
+					if (Gui.InputText("Name", ref name, 25))
 						_spriteAtlasData.AnimationNames[i] = name;
 
 					var fps = _spriteAtlasData.AnimationFps[i];
-					if (ImGui.SliderInt("Frame Rate", ref fps, 0, 24))
+					if (Gui.SliderInt("Frame Rate", ref fps, 0, 24))
 						_spriteAtlasData.AnimationFps[i] = fps;
 
 
@@ -539,8 +539,8 @@ namespace Voltage.Editor.Tools
 							_startEndInt.End = frames.LastItem();
 						}
 
-						var framesChanged = ImGui.SliderInt("Start Frame", ref _startEndInt.Start, 0, _startEndInt.End);
-						framesChanged |= ImGui.SliderInt("End Frame", ref _startEndInt.End, _startEndInt.Start, _spriteAtlasData.SourceRects.Count - 1);
+						var framesChanged = Gui.SliderInt("Start Frame", ref _startEndInt.Start, 0, _startEndInt.End);
+						framesChanged |= Gui.SliderInt("End Frame", ref _startEndInt.End, _startEndInt.Start, _spriteAtlasData.SourceRects.Count - 1);
 
 						if (framesChanged)
 						{
@@ -580,14 +580,14 @@ namespace Voltage.Editor.Tools
 			}
 
 			VoltageEditorUtils.SmallVerticalSpace();
-			ImGui.SliderInt("Preview Size", ref _animationPreviewSize, 50, 150);
+			Gui.SliderInt("Preview Size", ref _animationPreviewSize, 50, 150);
 
-			if (ImGui.BeginPopup("add-animation"))
+			if (Gui.BeginPopup("add-animation"))
 			{
 				ImGui.Text("Animation Name");
-				ImGui.InputText("##animationName", ref _stringBuffer, 25);
+				Gui.InputText("##animationName", ref _stringBuffer, 25);
 
-				if (ImGui.Button("Cancel"))
+				if (Gui.Button("Cancel"))
 				{
 					_stringBuffer = "";
 					ImGui.CloseCurrentPopup();
@@ -596,7 +596,7 @@ namespace Voltage.Editor.Tools
 				ImGui.SameLine(ImGui.GetContentRegionAvail().X - ImGui.GetItemRectSize().X);
 
 				ImGui.PushStyleColor(ImGuiCol.Button, Color.Green.PackedValue);
-				if (ImGui.Button("Create"))
+				if (Gui.Button("Create"))
 				{
 					_stringBuffer = _stringBuffer.Length > 0 ? _stringBuffer : Voltage.Utils.Utils.RandomString(8);
 					_spriteAtlasData.AnimationNames.Add(_stringBuffer);
@@ -608,7 +608,7 @@ namespace Voltage.Editor.Tools
 				}
 				ImGui.PopStyleColor();
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 		}
 

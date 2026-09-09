@@ -41,7 +41,7 @@ namespace Voltage.Editor.Inspectors.ObjectInspectors
 		public void Draw()
 		{
 			ImGui.PushID(_componentType.FullName);
-			var headerOpen = ImGui.CollapsingHeader(_componentType.Name);
+			var headerOpen = Gui.CollapsingHeader(_componentType.Name);
 
 			if (headerOpen)
 			{

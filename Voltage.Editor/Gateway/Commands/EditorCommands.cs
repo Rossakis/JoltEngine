@@ -2,72 +2,32 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Voltage.Console;
+using System.Text.Json;
+using System.Threading.Tasks;
 using Voltage.Editor.ImGuiCore;
 using Voltage.Editor.ProjectFile;
 using Voltage.Editor.SceneFile;
 using Voltage.Editor.Undo.Core;
+using Voltage.Gateway;
 using Voltage.Utils;
 
 namespace Voltage.Editor.Gateway.Commands;
 
-/// <summary>Editor-wide commands: status, console, logs, undo and window visibility.</summary>
+/// <summary>Editor-wide commands: status, exit, undo and window visibility.</summary>
 internal static class EditorCommands
 {
 	public static void Register(GatewayCommandTable table)
 	{
-		table.Add("ping", "Round-trip check.", (_, _) => new { pong = true, time = DateTime.UtcNow });
+		table.Add("status", "Project, scene, play state, dirty flag and frame timing.", (_, ctx) => Status(ctx)).ReadOnly();
 
-		table.Add("commands", "List every gateway command with its help text.", (_, ctx) =>
-			ctx.Commands.All.Select(c => new { name = c.Name, help = c.Help }).ToList());
-
-		table.Add("status", "Project, scene, play state, dirty flag and frame timing.", (_, ctx) => Status(ctx));
-
-		table.Add("editor.exit", "Quit the editor. Without force the usual unsaved-changes prompt appears. params: force=false", (args, _) =>
+		table.Add("editor.exit", "Quit the editor. Without force the usual unsaved-changes prompt appears.", (args, _) =>
 		{
 			if (args.Bool("force"))
 				Core.ConfirmAndExit();
 			else
 				Core.Exit();
 			return new { exiting = true, forced = args.Bool("force") };
-		});
-
-		table.Add("console.exec", "Run a debug-console line. params: line", (args, _) =>
-		{
-			var console = DebugConsole.Instance ?? throw new GatewayException("debug console is not initialized");
-			return new { lines = console.Execute(args.Require("line")) };
-		});
-
-		table.Add("console.commands", "Names of the debug-console commands.", (_, _) =>
-			(DebugConsole.Instance?.CommandNames ?? Enumerable.Empty<string>()).OrderBy(n => n).ToList());
-
-		table.Add("log.tail", "Most recent log entries. params: count=50, level (Error|Warn|Log|Info|Trace|Success)", (args, _) =>
-		{
-			var count = Math.Clamp(args.Int("count", 50), 1, 500);
-			var level = args.String("level");
-			IEnumerable<Debug.LogEntry> entries = Debug.GetLogEntries();
-			if (!string.IsNullOrEmpty(level) && Enum.TryParse<Debug.LogType>(level, true, out var type))
-				entries = entries.Where(e => e.Type == type);
-			return entries.TakeLast(count).Select(LogEntry).ToList();
-		});
-
-		table.Add("log.subscribe", "Stream new log entries to this connection as 'log' events.", (_, ctx) =>
-		{
-			ctx.Client.LogSubscribed = true;
-			return new { subscribed = true };
-		});
-
-		table.Add("log.unsubscribe", "Stop streaming log entries to this connection.", (_, ctx) =>
-		{
-			ctx.Client.LogSubscribed = false;
-			return new { subscribed = false };
-		});
-
-		table.Add("log.clear", "Clear the editor log buffer.", (_, _) =>
-		{
-			Debug.ClearLogEntries();
-			return new { cleared = true };
-		});
+		}, P.Bool("force", "Skip the unsaved-changes prompt", false)).Destructive().Unsafe();
 
 		table.Add("undo", "Undo the last editor action.", (_, _) =>
 		{
@@ -85,20 +45,73 @@ internal static class EditorCommands
 		{
 			undo = EditorChangeTracker.UndoActions.Select(a => a.Description).ToList(),
 			redo = EditorChangeTracker.RedoActions.Select(a => a.Description).ToList()
-		});
+		}).ReadOnly();
+
+		table.Add("undo.group", "Fold every undoable edit between begin and end into one undo step.", (args, _) =>
+		{
+			switch (args.String("action", "begin"))
+			{
+				case "begin":
+					if (EditorChangeTracker.InGroup)
+						throw new GatewayException("an undo group is already open; call undo.group action=end first");
+					EditorChangeTracker.BeginGroup(args.String("description", "Gateway edits"));
+					return new { open = true };
+				case "end":
+					var count = EditorChangeTracker.EndGroup();
+					if (count < 0)
+						throw new GatewayException("no undo group is open");
+					return new { open = false, actions = count };
+				default:
+					throw new GatewayException("action must be begin or end");
+			}
+		}, P.Enum("action", "Open or close the group", new[] { "begin", "end" }, "begin"), P.Str("description", "Label in the undo history", "Gateway edits"));
+
+		// Wraps the engine's batch so its edits can land as one undo step.
+		var batch = table.All.First(c => c.Name == "batch");
+		table.Add("batch", batch.Help, (args, ctx) =>
+		{
+			var group = args.String("undoGroup");
+			if (string.IsNullOrEmpty(group))
+				return batch.Handler(args, ctx);
+			if (EditorChangeTracker.InGroup)
+				throw new GatewayException("an undo group is already open");
+
+			EditorChangeTracker.BeginGroup(group);
+			Task<object> task;
+			try
+			{
+				task = (Task<object>)batch.Handler(args, ctx);
+			}
+			catch
+			{
+				EditorChangeTracker.EndGroup();
+				throw;
+			}
+
+			var done = new TaskCompletionSource<object>();
+			task.ContinueWith(t =>
+			{
+				EditorChangeTracker.EndGroup();
+				if (t.IsCompletedSuccessfully)
+					done.TrySetResult(t.Result);
+				else
+					done.TrySetException(t.Exception?.GetBaseException() ?? new GatewayException("cancelled"));
+			}, TaskContinuationOptions.ExecuteSynchronously);
+			return done.Task;
+		}, batch.Params.Append(P.Str("undoGroup", "Fold the batch's edits into one undo step with this label")).ToArray());
 
 		table.Add("window.list", "Editor windows and whether each is visible.", (_, ctx) =>
-			WindowToggles(ctx.ImGui).Select(p => new { name = WindowName(p), visible = (bool)p.GetValue(ctx.ImGui) }).ToList());
+			WindowToggles(ctx.ImGui()).Select(p => new { name = WindowName(p), visible = (bool)p.GetValue(ctx.ImGui()) }).ToList()).ReadOnly();
 
-		table.Add("window.show", "Show or hide an editor window. params: name, visible=true", (args, ctx) =>
+		table.Add("window.show", "Show or hide an editor window.", (args, ctx) =>
 		{
 			var name = args.Require("name");
-			var prop = WindowToggles(ctx.ImGui).FirstOrDefault(p => WindowName(p).Equals(name, StringComparison.OrdinalIgnoreCase))
+			var prop = WindowToggles(ctx.ImGui()).FirstOrDefault(p => WindowName(p).Equals(name, StringComparison.OrdinalIgnoreCase))
 				?? throw new GatewayException($"unknown window '{name}'; see window.list");
 			var visible = args.Bool("visible", true);
-			prop.SetValue(ctx.ImGui, visible);
+			prop.SetValue(ctx.ImGui(), visible);
 			return new { name = WindowName(prop), visible };
-		});
+		}, P.Str("name", "Window name from window.list", required: true), P.Bool("visible", "Show (true) or hide", true));
 	}
 
 	private static object Status(GatewayContext ctx)
@@ -109,6 +122,8 @@ internal static class EditorCommands
 
 		return new
 		{
+			host = "editor",
+			pid = Environment.ProcessId,
 			project = project == null ? null : new { name = project.ProjectName, path = project.ProjectPath },
 			scene = sceneManager != null && sceneManager.HasLoadedScene
 				? new { name = sceneManager.CurrentSceneName, path = sceneManager.CurrentScenePath }
@@ -122,18 +137,13 @@ internal static class EditorCommands
 			deltaTime = dt,
 			fps = dt > 0 ? 1f / dt : 0f,
 			entityCount = Core.Scene?.Entities.Count ?? 0,
-			clients = ctx.Server?.ClientCount ?? 0
+			clients = ctx.Server?.ClientCount ?? 0,
+			safe = ctx.Dispatcher.Options.Safe,
+			headless = EditorRunMode.Headless,
+			noPrompts = EditorRunMode.NoPrompts,
+			suppressedPrompts = EditorGatewayDispatcher.SuppressedPrompts
 		};
 	}
-
-	public static object LogEntry(Debug.LogEntry e) => new
-	{
-		type = e.Type.ToString(),
-		message = e.Message,
-		time = e.Timestamp,
-		caller = e.CallerClass,
-		line = e.CallerLine
-	};
 
 	private static IEnumerable<PropertyInfo> WindowToggles(ImGuiManager imGui) =>
 		imGui.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)

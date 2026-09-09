@@ -98,13 +98,13 @@ namespace Voltage.Editor.FilePickers
             TmxSelection result = null;
             bool isOpen = _isOpen;
 
-            if (ImGui.BeginPopupModal(_popupId, ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
+            if (Gui.BeginPopupModal(_popupId, ref isOpen, ImGuiWindowFlags.AlwaysAutoResize))
             {
                 ImGui.Text("TMX File Selection:");
                 ImGuiSafe.TextColoredSafe(new Num.Vector4(0.7f, 1.0f, 0.7f, 1.0f), Path.GetFileName(_selectedFile));
 
                 ImGui.SameLine();
-                if (ImGui.Button("Change"))
+                if (Gui.Button("Change"))
                 {
                     _awaitingFile = true;
                     _fileBrowser.Open("Select TMX File", _startingPath, _owner);
@@ -119,7 +119,7 @@ namespace Voltage.Editor.FilePickers
                     ImGui.TextColored(new Num.Vector4(0.8f, 0.9f, 1.0f, 1.0f), "Load Options:");
 
                     bool loadColliders = _loadColliders.Value;
-                    if (ImGui.Checkbox("Load Colliders", ref loadColliders))
+                    if (Gui.Checkbox("Load Colliders", ref loadColliders))
                         _loadColliders.Value = loadColliders;
 
                     if (ImGui.IsItemHovered())
@@ -143,13 +143,13 @@ namespace Voltage.Editor.FilePickers
 
                     int currentMode = _imageLoadMode.Value;
                     
-                    if (ImGui.RadioButton("None", ref currentMode, (int)ImageLoadMode.None))
+                    if (Gui.RadioButton("None", ref currentMode, (int)ImageLoadMode.None))
                         _imageLoadMode.Value = currentMode;
                     
-                    if (ImGui.RadioButton("Load Separate Image Layers", ref currentMode, (int)ImageLoadMode.SeparateLayers))
+                    if (Gui.RadioButton("Load Separate Image Layers", ref currentMode, (int)ImageLoadMode.SeparateLayers))
                         _imageLoadMode.Value = currentMode;
                     
-                    if (ImGui.RadioButton("Bake Image Layers", ref currentMode, (int)ImageLoadMode.BakedLayers))
+                    if (Gui.RadioButton("Bake Image Layers", ref currentMode, (int)ImageLoadMode.BakedLayers))
                         _imageLoadMode.Value = currentMode;
 
                     var renderingLayers = ProjectSettings.Instance.Rendering.RenderingLayers;
@@ -158,7 +158,7 @@ namespace Voltage.Editor.FilePickers
 
                     int minSelectedIndex = layerValues.IndexOf(_layerToRenderTo.Value);
                     if (minSelectedIndex < 0) minSelectedIndex = 0;
-                    if (ImGui.Combo("Layer To Render At:", ref minSelectedIndex, string.Join('\0', layerNames) + '\0'))
+                    if (Gui.Combo("Layer To Render At:", ref minSelectedIndex, string.Join('\0', layerNames) + '\0'))
                     {
 	                    _layerToRenderTo.Value = layerValues[minSelectedIndex];
                     }
@@ -192,7 +192,7 @@ namespace Voltage.Editor.FilePickers
                     }
                 }
 
-                ImGui.EndPopup();
+                Gui.EndPopup();
             }
 
             // "Change" closes the popup too, so that is not a dismissal.
@@ -241,7 +241,7 @@ namespace Voltage.Editor.FilePickers
             float totalWidth = ImGui.GetContentRegionAvail().X;
             float rightButtonStart = totalWidth - buttonWidth;
 
-            if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
+            if (Gui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
             {
                 Close();
             }
@@ -255,7 +255,7 @@ namespace Voltage.Editor.FilePickers
                 ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 0.5f);
             }
 
-            if (ImGui.Button("Load", new Num.Vector2(buttonWidth, 0)) && canConfirm)
+            if (Gui.Button("Load", new Num.Vector2(buttonWidth, 0)) && canConfirm)
             {
                 shouldLoad = true;
             }

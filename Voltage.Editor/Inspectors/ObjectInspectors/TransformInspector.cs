@@ -35,7 +35,7 @@ public class TransformInspector
 
     public void Draw()
     {
-        if (ImGui.CollapsingHeader("Transform", ImGuiTreeNodeFlags.DefaultOpen))
+        if (Gui.CollapsingHeader("Transform", ImGuiTreeNodeFlags.DefaultOpen))
         {
             ImGuiSafe.LabelTextSafe("Children", _transform.ChildCount.ToString());
 
@@ -48,11 +48,11 @@ public class TransformInspector
                 if (VoltageEditorUtils.LabelButton("Parent", _transform.Parent.Entity.Name))
                     Core.GetGlobalManager<ImGuiManager>().OpenSeparateEntityInspector(_transform.Parent.Entity);
 
-                if (ImGui.Button("Detach From Parent"))
+                if (Gui.Button("Detach From Parent"))
                     _transform.Parent = null;
             }
 
-            if (ImGui.Button("Set Parent"))
+            if (Gui.Button("Set Parent"))
             {
                 _showSetParentPopup = true;
                 _parentSearch = "";
@@ -63,13 +63,13 @@ public class TransformInspector
             if (_showSetParentPopup)
             {
                 ImGui.SetNextWindowSize(new Num.Vector2(350, 400), ImGuiCond.Appearing);
-                if (ImGui.BeginPopupModal("SetParentPopup", ref _showSetParentPopup, ImGuiWindowFlags.AlwaysAutoResize))
+                if (Gui.BeginPopupModal("SetParentPopup", ref _showSetParentPopup, ImGuiWindowFlags.AlwaysAutoResize))
                 {
                     ImGui.Text("Select Parent Entity");
                     ImGui.Separator();
 
                     // Search box
-                    ImGui.InputText("Search", ref _parentSearch, 64);
+                    Gui.InputText("Search", ref _parentSearch, 64);
 
                     // Get all entities except the current one
                     var allEntities = _transform.Entity.Scene.Entities
@@ -86,7 +86,7 @@ public class TransformInspector
                     for (int i = 0; i < filtered.Count; i++)
                     {
                         bool selected = i == _parentListSelectedIndex;
-                        if (ImGui.Selectable(filtered[i].Name, selected))
+                        if (Gui.Selectable(filtered[i].Name, selected))
                         {
                             _parentListSelectedIndex = i;
                         }
@@ -94,7 +94,7 @@ public class TransformInspector
                     ImGui.EndChild();
 
                     // Confirm/Cancel buttons
-                    if (ImGui.Button("Set") && _parentListSelectedIndex >= 0 && _parentListSelectedIndex < filtered.Count)
+                    if (Gui.Button("Set") && _parentListSelectedIndex >= 0 && _parentListSelectedIndex < filtered.Count)
                     {
                         var selectedParent = filtered[_parentListSelectedIndex];
                         _transform.SetParent(selectedParent.Transform);
@@ -102,13 +102,13 @@ public class TransformInspector
                         ImGui.CloseCurrentPopup();
                     }
                     ImGui.SameLine();
-                    if (ImGui.Button("Cancel"))
+                    if (Gui.Button("Cancel"))
                     {
                         _showSetParentPopup = false;
                         ImGui.CloseCurrentPopup();
                     }
 
-                    ImGui.EndPopup();
+                    Gui.EndPopup();
                 }
             }
 
@@ -116,7 +116,7 @@ public class TransformInspector
 
             // Local Position 
             var pos = _transform.LocalPosition.ToNumerics();
-            bool posChanged = ImGui.DragFloat2("Local Position", ref pos);
+            bool posChanged = Gui.DragFloat2("Local Position", ref pos);
 
             if (ImGui.IsItemActive() && !_isEditingLocalPosition)
             {
@@ -149,7 +149,7 @@ public class TransformInspector
 
             // Local Rotation Degrees 
             var rot = _transform.LocalRotationDegrees;
-            bool rotChanged = ImGui.DragFloat("Local Rotation", ref rot, 1, -360, 360);
+            bool rotChanged = Gui.DragFloat("Local Rotation", ref rot, 1, -360, 360);
 
             if (ImGui.IsItemActive() && !_isEditingLocalRotation)
             {
@@ -182,7 +182,7 @@ public class TransformInspector
 
             // Local Scale 
             var scale = _transform.LocalScale.ToNumerics();
-            bool scaleChanged = ImGui.DragFloat2("Local Scale", ref scale, 0.05f);
+            bool scaleChanged = Gui.DragFloat2("Local Scale", ref scale, 0.05f);
 
             if (ImGui.IsItemActive() && !_isEditingLocalScale)
             {
@@ -215,7 +215,7 @@ public class TransformInspector
 
             // Global Scale not tracked for undo 
             scale = _transform.Scale.ToNumerics();
-            if (ImGui.DragFloat2("Scale", ref scale, 0.05f))
+            if (Gui.DragFloat2("Scale", ref scale, 0.05f))
                 _transform.SetScale(scale.ToXNA());
         }
     }

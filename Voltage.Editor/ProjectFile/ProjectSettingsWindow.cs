@@ -103,7 +103,7 @@ namespace Voltage.Editor.ProjectFile
 			ImGui.SetNextWindowSize(new Vector2(700, 700), ImGuiCond.Appearing);
 
 			bool open = true;
-			if (ImGui.BeginPopupModal("Project Settings", ref open, ImGuiWindowFlags.None))
+			if (Gui.BeginPopupModal("Project Settings", ref open, ImGuiWindowFlags.None))
 			{
 				var project = _projectManager.CurrentProject;
 
@@ -116,13 +116,13 @@ namespace Voltage.Editor.ProjectFile
 				// Begin tabs
 				if (ImGui.BeginTabBar("ProjectSettingsTabs"))
 				{
-					if (ImGui.BeginTabItem("Project Info"))
+					if (Gui.BeginTabItem("Project Info"))
 					{
 						DrawProjectInfoSettings();
 						ImGui.EndTabItem();
 					}
 
-					if (ImGui.BeginTabItem("Display & Audio"))
+					if (Gui.BeginTabItem("Display & Audio"))
 					{
 						DrawDisplaySettings();
 						VoltageEditorUtils.MediumVerticalSpace();
@@ -136,19 +136,19 @@ namespace Voltage.Editor.ProjectFile
 						ImGui.EndTabItem();
 					}
 					
-					if (ImGui.BeginTabItem("Physics Layers"))
+					if (Gui.BeginTabItem("Physics Layers"))
 					{
 						DrawPhysicsLayersSettings();
 						ImGui.EndTabItem();
 					}
 					
-					if (ImGui.BeginTabItem("Rendering Layers"))
+					if (Gui.BeginTabItem("Rendering Layers"))
 					{
 						DrawRenderingLayersSettings();
 						ImGui.EndTabItem();
 					}
 					
-					if (ImGui.BeginTabItem("Entity Tags"))
+					if (Gui.BeginTabItem("Entity Tags"))
 					{
 						DrawEntityTagsSettings();
 						ImGui.EndTabItem();
@@ -160,7 +160,7 @@ namespace Voltage.Editor.ProjectFile
 				VoltageEditorUtils.MediumVerticalSpace();
 				DrawActionButtons();
 				
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 			
 			if (!open)
@@ -255,7 +255,7 @@ namespace Voltage.Editor.ProjectFile
 			// Not offered when the project is newer: stamping it down would claim support this build lacks.
 			if (state is ProjectVersionState.Older or ProjectVersionState.Unstamped or ProjectVersionState.Unreadable)
 			{
-				if (ImGui.Button($"Set project to Voltage {editor}"))
+				if (Gui.Button($"Set project to Voltage {editor}"))
 				{
 					_engineVersionMessageIsError = !ProjectEngineVersion.StampCurrentVersion(
 						_projectManager.CurrentProject, _projectManager.LastProjectPath, out _engineVersionMessage);
@@ -313,7 +313,7 @@ namespace Voltage.Editor.ProjectFile
 			ImGui.PushStyleColor(ImGuiCol.FrameBg, frameBgColor);
 
 			ImGui.SetNextItemWidth(200);
-			if (ImGui.InputText("##ProjectVersion", ref _editableVersion, 32))
+			if (Gui.InputText("##ProjectVersion", ref _editableVersion, 32))
 			{
 				_versionIsValid = Version.TryParse(_editableVersion, out _);
 				if (_versionIsValid)
@@ -331,26 +331,26 @@ namespace Voltage.Editor.ProjectFile
 
 		private void DrawDisplaySettings()
 		{
-			if (ImGui.CollapsingHeader("Display Settings", ImGuiTreeNodeFlags.DefaultOpen))
+			if (Gui.CollapsingHeader("Display Settings", ImGuiTreeNodeFlags.DefaultOpen))
 			{
 				ImGui.Indent();
 				
 				ImGui.Text("Screen Resolution:");
 				ImGui.SetNextItemWidth(150);
-				if (ImGui.InputInt("Width##ScreenWidth", ref _screenWidth))
+				if (Gui.InputInt("Width##ScreenWidth", ref _screenWidth))
 					_hasUnsavedChanges = true;
 				
 				ImGui.SameLine();
 				ImGui.SetNextItemWidth(150);
-				if (ImGui.InputInt("Height##ScreenHeight", ref _screenHeight))
+				if (Gui.InputInt("Height##ScreenHeight", ref _screenHeight))
 					_hasUnsavedChanges = true;
 				
 				VoltageEditorUtils.SmallVerticalSpace();
 				
-				if (ImGui.Checkbox("Fullscreen", ref _isFullscreen))
+				if (Gui.Checkbox("Fullscreen", ref _isFullscreen))
 					_hasUnsavedChanges = true;
 				
-				if (ImGui.Checkbox("Enable VSync", ref _enableVSync))
+				if (Gui.Checkbox("Enable VSync", ref _enableVSync))
 					_hasUnsavedChanges = true;
 				
 				ImGui.Unindent();
@@ -360,7 +360,7 @@ namespace Voltage.Editor.ProjectFile
 		/// <summary>Background clear colour, applied to every scene the game loads.</summary>
 		private void DrawBackgroundSettings()
 		{
-			if (ImGui.CollapsingHeader("Background", ImGuiTreeNodeFlags.DefaultOpen))
+			if (Gui.CollapsingHeader("Background", ImGuiTreeNodeFlags.DefaultOpen))
 			{
 				ImGui.Indent();
 
@@ -379,7 +379,7 @@ namespace Voltage.Editor.ProjectFile
 				if (ImGui.IsItemHovered())
 					ImGui.SetTooltip("Background Clear Color - click to pick.");
 
-				if (ImGui.BeginPopup("project-background-color-popup"))
+				if (Gui.BeginPopup("project-background-color-popup"))
 				{
 					if (ImGui.ColorPicker4("##BackgroundClearColorPicker", ref _backgroundClearColor,
 						    ImGuiColorEditFlags.NoAlpha | ImGuiColorEditFlags.NoSidePreview))
@@ -387,7 +387,7 @@ namespace Voltage.Editor.ProjectFile
 						_hasUnsavedChanges = true;
 					}
 
-					ImGui.EndPopup();
+					Gui.EndPopup();
 				}
 
 				if (EditorBackgroundColor.UseTemporary)
@@ -404,7 +404,7 @@ namespace Voltage.Editor.ProjectFile
 
 		private void DrawDesignResolutionSettings()
 		{
-			if (ImGui.CollapsingHeader("Design Resolution", ImGuiTreeNodeFlags.DefaultOpen))
+			if (Gui.CollapsingHeader("Design Resolution", ImGuiTreeNodeFlags.DefaultOpen))
 			{
 				ImGui.Indent();
 		
@@ -413,12 +413,12 @@ namespace Voltage.Editor.ProjectFile
 				
 				ImGui.Text("Design Resolution:");
 				ImGui.SetNextItemWidth(150);
-				if (ImGui.InputInt("Width##DesignWidth", ref _designWidth))
+				if (Gui.InputInt("Width##DesignWidth", ref _designWidth))
 					_hasUnsavedChanges = true;
 				
 				ImGui.SameLine();
 				ImGui.SetNextItemWidth(150);
-				if (ImGui.InputInt("Height##DesignHeight", ref _designHeight))
+				if (Gui.InputInt("Height##DesignHeight", ref _designHeight))
 					_hasUnsavedChanges = true;
 				
 				VoltageEditorUtils.SmallVerticalSpace();
@@ -429,7 +429,7 @@ namespace Voltage.Editor.ProjectFile
 				// Store current policy name for tooltip
 				var currentPolicyName = _resolutionPolicies[_selectedResolutionPolicy];
 				
-				if (ImGui.Combo("##ResolutionPolicy", ref _selectedResolutionPolicy, _resolutionPolicies, _resolutionPolicies.Length))
+				if (Gui.Combo("##ResolutionPolicy", ref _selectedResolutionPolicy, _resolutionPolicies, _resolutionPolicies.Length))
 					_hasUnsavedChanges = true;
 				
 				if (ImGui.IsItemHovered())
@@ -450,27 +450,27 @@ namespace Voltage.Editor.ProjectFile
 		
 		private void DrawAudioSettings()
 		{
-			if (ImGui.CollapsingHeader("Audio Settings", ImGuiTreeNodeFlags.DefaultOpen))
+			if (Gui.CollapsingHeader("Audio Settings", ImGuiTreeNodeFlags.DefaultOpen))
 			{
 				ImGui.Indent();
 				
 				ImGui.Text("Master Volume:");
 				ImGui.SetNextItemWidth(-1);
-				if (ImGui.SliderFloat("##MasterVolume", ref _masterVolume, 0.0f, 1.0f, "%.2f"))
+				if (Gui.SliderFloat("##MasterVolume", ref _masterVolume, 0.0f, 1.0f, "%.2f"))
 					_hasUnsavedChanges = true;
 				
 				VoltageEditorUtils.SmallVerticalSpace();
 				
 				ImGui.Text("Music Volume:");
 				ImGui.SetNextItemWidth(-1);
-				if (ImGui.SliderFloat("##MusicVolume", ref _musicVolume, 0.0f, 1.0f, "%.2f"))
+				if (Gui.SliderFloat("##MusicVolume", ref _musicVolume, 0.0f, 1.0f, "%.2f"))
 					_hasUnsavedChanges = true;
 				
 				VoltageEditorUtils.SmallVerticalSpace();
 				
 				ImGui.Text("SFX Volume:");
 				ImGui.SetNextItemWidth(-1);
-				if (ImGui.SliderFloat("##SFXVolume", ref _sfxVolume, 0.0f, 1.0f, "%.2f"))
+				if (Gui.SliderFloat("##SFXVolume", ref _sfxVolume, 0.0f, 1.0f, "%.2f"))
 					_hasUnsavedChanges = true;
 				
 				ImGui.Unindent();
@@ -479,13 +479,13 @@ namespace Voltage.Editor.ProjectFile
 		
 		private void DrawContentSettings()
 		{
-			if (ImGui.CollapsingHeader("Content Settings"))
+			if (Gui.CollapsingHeader("Content Settings"))
 			{
 				ImGui.Indent();
 				
 				ImGui.Text("Content Directory:");
 				ImGui.SetNextItemWidth(-1);
-				if (ImGui.InputText("##ContentDirectory", ref _contentDirectory, 256))
+				if (Gui.InputText("##ContentDirectory", ref _contentDirectory, 256))
 					_hasUnsavedChanges = true;
 				
 				if (ImGui.IsItemHovered())
@@ -524,7 +524,7 @@ namespace Voltage.Editor.ProjectFile
 					ImGuiSafe.TextSafe(kvp.Value.ToString());
 					
 					ImGui.TableNextColumn();
-					if (ImGui.Button($"Remove##physics_{kvp.Key}"))
+					if (Gui.Button($"Remove##physics_{kvp.Key}"))
 					{
 						layersToRemove.Add(kvp.Key);
 						_hasUnsavedChanges = true;
@@ -544,16 +544,16 @@ namespace Voltage.Editor.ProjectFile
 			// Add new layer
 			ImGui.TextColored(new Vector4(0.5f, 0.8f, 1.0f, 1.0f), "Add New Layer:");
 			ImGui.SetNextItemWidth(200);
-			ImGui.InputText("##NewPhysicsLayerName", ref _newPhysicsLayerName, 64);
+			Gui.InputText("##NewPhysicsLayerName", ref _newPhysicsLayerName, 64);
 			ImGui.SameLine();
 			ImGui.SetNextItemWidth(100);
-			ImGui.InputInt("##NewPhysicsLayerValue", ref _newPhysicsLayerValue);
+			Gui.InputInt("##NewPhysicsLayerValue", ref _newPhysicsLayerValue);
 			ImGui.SameLine();
 			
 			bool canAdd = !string.IsNullOrWhiteSpace(_newPhysicsLayerName) && !_physicsLayers.ContainsKey(_newPhysicsLayerName);
 			if (!canAdd) ImGui.BeginDisabled();
 			
-			if (ImGui.Button("Add##AddPhysicsLayer"))
+			if (Gui.Button("Add##AddPhysicsLayer"))
 			{
 				_physicsLayers[_newPhysicsLayerName.Trim()] = _newPhysicsLayerValue;
 				_newPhysicsLayerName = "";
@@ -592,7 +592,7 @@ namespace Voltage.Editor.ProjectFile
 					ImGuiSafe.TextSafe(kvp.Value.ToString());
 					
 					ImGui.TableNextColumn();
-					if (ImGui.Button($"Remove##rendering_{kvp.Key}"))
+					if (Gui.Button($"Remove##rendering_{kvp.Key}"))
 					{
 						layersToRemove.Add(kvp.Key);
 						_hasUnsavedChanges = true;
@@ -612,16 +612,16 @@ namespace Voltage.Editor.ProjectFile
 			// Add new layer
 			ImGui.TextColored(new Vector4(0.5f, 0.8f, 1.0f, 1.0f), "Add New Layer:");
 			ImGui.SetNextItemWidth(200);
-			ImGui.InputText("##NewRenderingLayerName", ref _newRenderingLayerName, 64);
+			Gui.InputText("##NewRenderingLayerName", ref _newRenderingLayerName, 64);
 			ImGui.SameLine();
 			ImGui.SetNextItemWidth(100);
-			ImGui.InputInt("##NewRenderingLayerValue", ref _newRenderingLayerValue);
+			Gui.InputInt("##NewRenderingLayerValue", ref _newRenderingLayerValue);
 			ImGui.SameLine();
 			
 			bool canAdd = !string.IsNullOrWhiteSpace(_newRenderingLayerName) && !_renderingLayers.ContainsKey(_newRenderingLayerName);
 			if (!canAdd) ImGui.BeginDisabled();
 			
-			if (ImGui.Button("Add##AddRenderingLayer"))
+			if (Gui.Button("Add##AddRenderingLayer"))
 			{
 				_renderingLayers[_newRenderingLayerName.Trim()] = _newRenderingLayerValue;
 				_newRenderingLayerName = "";
@@ -659,7 +659,7 @@ namespace Voltage.Editor.ProjectFile
 					ImGuiSafe.TextSafe(kvp.Value.ToString());
 					
 					ImGui.TableNextColumn();
-					if (ImGui.Button($"Remove##tag_{kvp.Key}"))
+					if (Gui.Button($"Remove##tag_{kvp.Key}"))
 					{
 						tagsToRemove.Add(kvp.Key);
 						_hasUnsavedChanges = true;
@@ -679,16 +679,16 @@ namespace Voltage.Editor.ProjectFile
 			// Add new tag
 			ImGui.TextColored(new Vector4(0.5f, 0.8f, 1.0f, 1.0f), "Add New Tag:");
 			ImGui.SetNextItemWidth(200);
-			ImGui.InputText("##NewEntityTagName", ref _newEntityTagName, 64);
+			Gui.InputText("##NewEntityTagName", ref _newEntityTagName, 64);
 			ImGui.SameLine();
 			ImGui.SetNextItemWidth(100);
-			ImGui.InputInt("##NewEntityTagValue", ref _newEntityTagValue);
+			Gui.InputInt("##NewEntityTagValue", ref _newEntityTagValue);
 			ImGui.SameLine();
 			
 			bool canAdd = !string.IsNullOrWhiteSpace(_newEntityTagName) && !_entityTags.ContainsKey(_newEntityTagName);
 			if (!canAdd) ImGui.BeginDisabled();
 			
-			if (ImGui.Button("Add##AddEntityTag"))
+			if (Gui.Button("Add##AddEntityTag"))
 			{
 				_entityTags[_newEntityTagName.Trim()] = _newEntityTagValue;
 				_newEntityTagName = "";
@@ -720,7 +720,7 @@ namespace Voltage.Editor.ProjectFile
 			if (!canSave)
 				ImGui.BeginDisabled();
 
-			if (ImGui.Button("Save", new Vector2(buttonWidth, 0)))
+			if (Gui.Button("Save", new Vector2(buttonWidth, 0)))
 			{
 				SaveSettings();
 			}
@@ -730,7 +730,7 @@ namespace Voltage.Editor.ProjectFile
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Apply", new Vector2(buttonWidth, 0)))
+			if (Gui.Button("Apply", new Vector2(buttonWidth, 0)))
 			{
 				ApplySettings();
 			}
@@ -742,7 +742,7 @@ namespace Voltage.Editor.ProjectFile
 			
 			ImGui.SameLine();
 			
-			if (ImGui.Button("Close", new Vector2(buttonWidth, 0)))
+			if (Gui.Button("Close", new Vector2(buttonWidth, 0)))
 			{
 				if (_hasUnsavedChanges)
 				{

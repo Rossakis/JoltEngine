@@ -161,15 +161,15 @@ public class GameBuildWindow
 		ImGui.SetNextWindowSize(new Num.Vector2(550, 0), ImGuiCond.Appearing);
 
 		bool open = true;
-		if (ImGui.BeginPopupModal("Build Game##Options", ref open, ImGuiWindowFlags.AlwaysAutoResize))
+		if (Gui.BeginPopupModal("Build Game##Options", ref open, ImGuiWindowFlags.AlwaysAutoResize))
 		{
 			var projectManager = ProjectManager.Instance;
 			if (!projectManager.HasActiveProject)
 			{
 				ImGui.TextColored(new Num.Vector4(1.0f, 0.4f, 0.4f, 1.0f), "No active project.");
-				if (ImGui.Button("Close", new Num.Vector2(100, 0)))
+				if (Gui.Button("Close", new Num.Vector2(100, 0)))
 					ImGui.CloseCurrentPopup();
-				ImGui.EndPopup();
+				Gui.EndPopup();
 				return;
 			}
 
@@ -225,7 +225,7 @@ public class GameBuildWindow
 
 			// Debug / Release toggle  use a local for ImGui ref, write back if changed
 			var debugBuildValue = _debugBuild.Value;
-			if (ImGui.Checkbox("Debug Build", ref debugBuildValue))
+			if (Gui.Checkbox("Debug Build", ref debugBuildValue))
 				_debugBuild.Value = debugBuildValue;
 
 			if (ImGui.IsItemHovered())
@@ -254,7 +254,7 @@ public class GameBuildWindow
 				if (LinuxContainerBuild.IsLinux(selectedPlatform))
 				{
 					var compatValue = _linuxCompatContainer.Value;
-					if (ImGui.Checkbox("Build in glibc-compat container (recommended)", ref compatValue))
+					if (Gui.Checkbox("Build in glibc-compat container (recommended)", ref compatValue))
 						_linuxCompatContainer.Value = compatValue;
 
 					if (ImGui.IsItemHovered())
@@ -284,7 +284,7 @@ public class GameBuildWindow
 			if (compileAssetsValue)
 				ImGui.BeginDisabled();
 
-			if (ImGui.Checkbox("Compile Assets with MGCB", ref compileAssetsValue))
+			if (Gui.Checkbox("Compile Assets with MGCB", ref compileAssetsValue))
 			{
 				// Force back to false since it's not implemented
 				_compileAssets.Value = false;
@@ -311,7 +311,7 @@ public class GameBuildWindow
 			VoltageEditorUtils.MediumVerticalSpace();
 
 			// Build contents summary
-			if (ImGui.CollapsingHeader("Build Contents", ImGuiTreeNodeFlags.DefaultOpen))
+			if (Gui.CollapsingHeader("Build Contents", ImGuiTreeNodeFlags.DefaultOpen))
 			{
 				ImGui.Indent();
 				ImGui.BulletText("Game executable (AOT + Trimmed)");
@@ -326,7 +326,7 @@ public class GameBuildWindow
 			VoltageEditorUtils.MediumVerticalSpace();
 
 			// On-demand toolchain check (explicit; never blocks a build).
-			if (ImGui.Button("Check Dependencies", new Num.Vector2(-1, 0)))
+			if (Gui.Button("Check Dependencies", new Num.Vector2(-1, 0)))
 				OpenDependencyCheck();
 			if (ImGui.IsItemHovered())
 			{
@@ -354,7 +354,7 @@ public class GameBuildWindow
 			if (!canBuild)
 				ImGui.BeginDisabled();
 
-			if (ImGui.Button("Build", new Num.Vector2(buttonWidth, 30)))
+			if (Gui.Button("Build", new Num.Vector2(buttonWidth, 30)))
 			{
 				SaveInitialSceneSetting(project);
 				ImGui.CloseCurrentPopup();
@@ -363,7 +363,7 @@ public class GameBuildWindow
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Build and Run", new Num.Vector2(buttonWidth, 30)))
+			if (Gui.Button("Build and Run", new Num.Vector2(buttonWidth, 30)))
 			{
 				SaveInitialSceneSetting(project);
 				ImGui.CloseCurrentPopup();
@@ -375,12 +375,12 @@ public class GameBuildWindow
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 30)))
+			if (Gui.Button("Cancel", new Num.Vector2(buttonWidth, 30)))
 			{
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 	}
 
@@ -399,12 +399,12 @@ public class GameBuildWindow
 		ImGui.Text("Scene to load on startup:");
 
 		ImGui.SetNextItemWidth(-1);
-		if (ImGui.BeginCombo("##InitialScene", _availableScenes[_selectedSceneIndex]))
+		if (Gui.BeginCombo("##InitialScene", _availableScenes[_selectedSceneIndex]))
 		{
 			for (int i = 0; i < _availableScenes.Count; i++)
 			{
 				bool isSelected = _selectedSceneIndex == i;
-				if (ImGui.Selectable(_availableScenes[i], isSelected))
+				if (Gui.Selectable(_availableScenes[i], isSelected))
 				{
 					_selectedSceneIndex = i;
 				}
@@ -466,7 +466,7 @@ public class GameBuildWindow
 
 			bool isSelected = _selectedPlatformIndex.Value == i;
 
-			if (ImGui.RadioButton(platform.DisplayName, isSelected))
+			if (Gui.RadioButton(platform.DisplayName, isSelected))
 				_selectedPlatformIndex.Value = i;
 
 			if (!platform.IsAvailable)

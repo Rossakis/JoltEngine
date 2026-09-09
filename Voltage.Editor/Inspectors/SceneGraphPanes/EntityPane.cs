@@ -135,12 +135,12 @@ public class EntityPane
 			ImGui.GetContentRegionAvail().X - clearWidth - ImGui.GetStyle().ItemSpacing.X);
 
 		ImGui.SetNextItemWidth(inputWidth);
-		ImGui.InputTextWithHint("##EntitySearch", "Search entities...", ref _entitySearch, 128);
+		Gui.InputTextWithHint("##EntitySearch", "Search entities...", ref _entitySearch, 128);
 
 		ImGui.SameLine();
 
 		ImGui.BeginDisabled(!IsFiltering);
-		if (ImGui.Button("x##ClearEntitySearch", new System.Numerics.Vector2(clearWidth, 0)))
+		if (Gui.Button("x##ClearEntitySearch", new System.Numerics.Vector2(clearWidth, 0)))
 			_entitySearch = string.Empty;
 		ImGui.EndDisabled();
 
@@ -247,7 +247,7 @@ public class EntityPane
 
 
 		// Unparent
-		ImGui.InvisibleButton("##drop_root", new System.Numerics.Vector2(-1, 1));
+		Gui.InvisibleButton("##drop_root", new System.Numerics.Vector2(-1, 1));
 		if (ImGui.IsItemHovered())
 			ImGui.SetTooltip("Drop here to unparent");
 
@@ -283,22 +283,22 @@ public class EntityPane
 	/// </summary>
 	private void DrawPaneContextMenu()
 	{
-		if (ImGui.BeginPopupContextWindow("entityPaneContextMenu",
+		if (Gui.BeginPopupContextWindow("entityPaneContextMenu",
 			ImGuiPopupFlags.MouseButtonRight | ImGuiPopupFlags.NoOpenOverItems))
 		{
-			if (ImGui.MenuItem("Add Entity", EditorHotkeys.MenuLabel(EditorHotkeys.NewEntity)))
+			if (Gui.MenuItem("Add Entity", EditorHotkeys.MenuLabel(EditorHotkeys.NewEntity)))
 				CreateEntity();
 
 			// Also here, so pasting into an empty scene does not require an existing entity to right-click.
 			ImGui.BeginDisabled(!EntityClipboard.HasContent);
-			if (ImGui.MenuItem("Paste Entity", EditorHotkeys.MenuLabel(EditorHotkeys.PasteEntity)))
+			if (Gui.MenuItem("Paste Entity", EditorHotkeys.MenuLabel(EditorHotkeys.PasteEntity)))
 				PasteEntities();
 			ImGui.EndDisabled();
 
 			if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
 				ImGui.SetTooltip("Pastes into the current scene - copy in one scene, switch, then paste here.");
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 	}
 
@@ -416,7 +416,7 @@ public class EntityPane
 		}
 
 		ImGui.SetNextItemWidth(-1);
-		bool enter = ImGui.InputText($"##entrename_{entity.Id}", ref _renameBuffer, 64,
+		bool enter = Gui.InputText($"##entrename_{entity.Id}", ref _renameBuffer, 64,
 			ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.AutoSelectAll);
 
 		// Escape must be checked before deactivation: pressing Escape also deactivates the field.
@@ -524,10 +524,9 @@ public class EntityPane
 
 			if (entry.newParent == null)
 			{
-				// -1 means append here, but MoveEntityToIndex clamps a negative index to 0, which would put
-				// the entity at the top of the scene instead of the bottom.
-				var rootIndex = entry.newIndex >= 0 ? entry.newIndex : Core.Scene.Entities.Count;
-				Core.Scene.Entities.MoveEntityToIndex(entry.entity, rootIndex);
+				// newIndex is a final position (-1 appends); MoveRootTo converts it for MoveEntityToIndex.
+				var rootIndex = entry.newIndex >= 0 ? entry.newIndex : Core.Scene.Entities.Count - 1;
+				EntityReparentUndoAction.MoveRootTo(entry.entity, rootIndex);
 			}
 
 			// Force-recalculate locals from world values, bypassing equality guards
@@ -685,10 +684,10 @@ public class EntityPane
 
 		// Draw tree node
 		if (entity.Transform.ChildCount > 0)
-			ImGui.TreeNodeEx($"{entity.Name} ({entity.Transform.ChildCount})###{entity.Id}",
+			Gui.TreeNodeEx($"{entity.Name} ({entity.Transform.ChildCount})###{entity.Id}",
 				ImGuiTreeNodeFlags.OpenOnArrow | flags);
 		else
-			ImGui.TreeNodeEx($"{entity.Name} ({entity.Transform.ChildCount})###{entity.Id}",
+			Gui.TreeNodeEx($"{entity.Name} ({entity.Transform.ChildCount})###{entity.Id}",
 				ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.OpenOnArrow | flags);
 
 		if (isSceneRequired || isPrefab || isNonSerialized)
@@ -831,7 +830,7 @@ public class EntityPane
         if (_imGuiManager == null)
             _imGuiManager = Core.GetGlobalManager<ImGuiManager>();
 
-        if (ImGui.BeginPopup("entityContextMenu"))
+        if (Gui.BeginPopup("entityContextMenu"))
         {
             var blocksCopy = entity.Type == Entity.InstanceType.NonSerialized
                              || entity.Type == Entity.InstanceType.SceneRequired;
@@ -841,7 +840,7 @@ public class EntityPane
             var copyLabel = copyTargets > 1 ? $"Copy ({copyTargets} entities)" : "Copy";
 
             ImGui.BeginDisabled(blocksCopy);
-            if (ImGui.MenuItem(copyLabel, EditorHotkeys.MenuLabel(EditorHotkeys.CopyEntity)))
+            if (Gui.MenuItem(copyLabel, EditorHotkeys.MenuLabel(EditorHotkeys.CopyEntity)))
             {
                 if (!_selectedEntities.Contains(entity))
                     SetSelectedEntity(entity, ctrlDown: false);
@@ -851,7 +850,7 @@ public class EntityPane
             ImGui.EndDisabled();
 
             ImGui.BeginDisabled(!EntityClipboard.HasContent);
-            if (ImGui.MenuItem("Paste", EditorHotkeys.MenuLabel(EditorHotkeys.PasteEntity)))
+            if (Gui.MenuItem("Paste", EditorHotkeys.MenuLabel(EditorHotkeys.PasteEntity)))
                 PasteEntities();
             ImGui.EndDisabled();
 
@@ -860,7 +859,7 @@ public class EntityPane
 
             ImGui.Separator();
 
-            if (_imGuiManager.SceneGraphWindow.CopiedComponent != null && ImGui.Selectable("Paste Component"))
+            if (_imGuiManager.SceneGraphWindow.CopiedComponent != null && Gui.Selectable("Paste Component"))
             {
                 var copiedComponent = _imGuiManager.SceneGraphWindow.CopiedComponent;
                 var existingComponent = entity.Components.FirstOrDefault(c => c.GetType() == copiedComponent.GetType());
@@ -916,14 +915,14 @@ public class EntityPane
                 }
             }
 
-            if (ImGui.Selectable("Rename"))
+            if (Gui.Selectable("Rename"))
                 BeginEntityRename(entity);
 
-            if (ImGui.Selectable("Open in separate window"))
+            if (Gui.Selectable("Open in separate window"))
                 Core.GetGlobalManager<ImGuiManager>().OpenSeparateEntityInspector(entity);
 
             // Entity Commands
-            if (ImGui.Selectable("Move Camera Here"))
+            if (Gui.Selectable("Move Camera Here"))
                 if (Core.Scene.Entities.Count > 0 && Core.IsEditMode)
                     _imGuiManager.CursorSelectionManager.SetCameraTargetPosition(entity.Transform.Position);
 
@@ -940,14 +939,14 @@ public class EntityPane
 
             if (reason == null)
             {
-                if (ImGui.MenuItem("Duplicate",
+                if (Gui.MenuItem("Duplicate",
                         EditorHotkeys.MenuLabel(EditorHotkeys.DuplicateEntity)))
                     DuplicateEntity(entity);
             }
             else
             {
                 ImGui.BeginDisabled(true);
-                ImGui.Selectable(reason);
+                Gui.Selectable(reason);
                 ImGui.EndDisabled();
             }
 
@@ -955,12 +954,12 @@ public class EntityPane
             if (entity.Type == Entity.InstanceType.SceneRequired)
             {
                 ImGui.BeginDisabled(true);
-                ImGui.Selectable("Can't delete SceneRequired entities!");
+                Gui.Selectable("Can't delete SceneRequired entities!");
                 ImGui.EndDisabled();
             }
             else
             {
-                if (ImGui.MenuItem("Destroy", EditorHotkeys.MenuLabel(EditorHotkeys.DeleteEntity)))
+                if (Gui.MenuItem("Destroy", EditorHotkeys.MenuLabel(EditorHotkeys.DeleteEntity)))
                 {
                     // Push undo BEFORE destroying, so the entity is still valid
                     EditorChangeTracker.PushUndo(
@@ -972,7 +971,7 @@ public class EntityPane
                 }
             }
 
-			if (ImGui.Selectable("Create Child", false, ImGuiSelectableFlags.DontClosePopups))
+			if (Gui.Selectable("Create Child", false, ImGuiSelectableFlags.DontClosePopups))
 			{
 				var child = new Entity("Child Entity");
 				child.Transform.SetParent(entity.Transform);
@@ -989,7 +988,7 @@ public class EntityPane
 			}
 
 			// Add an empty Parent (multi-selection only)
-			if (_selectedEntities.Count > 1 && ImGui.Selectable("Add an empty Parent"))
+			if (_selectedEntities.Count > 1 && Gui.Selectable("Add an empty Parent"))
 			{
 				var entitiesToGroup = _selectedEntities
 					.Where(e => e.Type != Entity.InstanceType.SceneRequired)
@@ -1046,7 +1045,7 @@ public class EntityPane
 				}
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
         }
     }
 	#endregion

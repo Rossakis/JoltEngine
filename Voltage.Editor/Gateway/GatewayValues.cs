@@ -11,6 +11,7 @@ using AssetReference = Voltage.Serialization.AssetReference;
 using ComponentReference = Voltage.Serialization.ComponentReference;
 using EntityReference = Voltage.Serialization.EntityReference;
 using PrefabReference = Voltage.Serialization.PrefabReference;
+using Voltage.Gateway;
 
 namespace Voltage.Editor.Gateway;
 
@@ -18,6 +19,12 @@ namespace Voltage.Editor.Gateway;
 internal static class GatewayValues
 {
 	private static readonly HashSet<string> Hidden = new(StringComparer.Ordinal) { "Entity", "Transform", "Scene" };
+
+	public static Scene RequireScene() => Core.Scene ?? throw new GatewayException("no scene loaded");
+
+	public static ProjectFile.IGameProject RequireProject() => ProjectFile.ProjectManager.Instance.CurrentProject ?? throw new GatewayException("no project loaded");
+
+	public static AssetDatabase RequireAssets() => AssetDatabase.Instance ?? throw new GatewayException("no project loaded; the asset database is empty");
 
 	/// <summary>Public instance fields and publicly settable properties the gateway can write directly.</summary>
 	public static IEnumerable<MemberInfo> Members(Type type) => AllMembers(type).Where(m => IsSupported(MemberType(m)));

@@ -165,22 +165,22 @@ namespace Voltage.Editor.Tools.Tilemap
 			ImGui.SetNextWindowSize(new Num.Vector2(440, 560), ImGuiCond.Appearing);
 
 			var open = true;
-			if (!ImGui.BeginPopupModal(ColliderPopupId, ref open, ImGuiWindowFlags.NoResize))
+			if (!Gui.BeginPopupModal(ColliderPopupId, ref open, ImGuiWindowFlags.NoResize))
 				return;
 
 			ImGui.TextUnformatted("Name");
 			ImGui.SameLine();
 			ImGui.SetNextItemWidth(-1);
-			ImGui.InputText("##collidername", ref _colliderName, 64);
+			Gui.InputText("##collidername", ref _colliderName, 64);
 
 			DrawColliderCanvas();
 
-			if (ImGui.Button("Add vertex"))
+			if (Gui.Button("Add vertex"))
 				AddColliderVertex();
 
 			ImGui.SameLine();
 			ImGui.BeginDisabled(_colliderDragIndex < 0 || _colliderPoints.Count <= 3);
-			if (ImGui.Button("Remove vertex"))
+			if (Gui.Button("Remove vertex"))
 				RemoveColliderVertex();
 			ImGui.EndDisabled();
 
@@ -191,7 +191,7 @@ namespace Voltage.Editor.Tools.Tilemap
 
 			var canSave = !string.IsNullOrWhiteSpace(_colliderName) && _colliderPoints.Count >= 3;
 			ImGui.BeginDisabled(!canSave);
-			if (ImGui.Button("Save", new Num.Vector2(120, 0)))
+			if (Gui.Button("Save", new Num.Vector2(120, 0)))
 			{
 				SaveColliderEditor();
 				ImGui.CloseCurrentPopup();
@@ -199,10 +199,10 @@ namespace Voltage.Editor.Tools.Tilemap
 			ImGui.EndDisabled();
 
 			ImGui.SameLine();
-			if (ImGui.Button("Cancel", new Num.Vector2(120, 0)))
+			if (Gui.Button("Cancel", new Num.Vector2(120, 0)))
 				ImGui.CloseCurrentPopup();
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		private void DrawColliderCanvas()
@@ -211,7 +211,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			var canvasPos = ImGui.GetCursorScreenPos();
 			var canvasSize = new Num.Vector2(side, side);
 
-			ImGui.InvisibleButton("collider-canvas", canvasSize);
+			Gui.InvisibleButton("collider-canvas", canvasSize);
 			var active = ImGui.IsItemActive();
 			var mouse = ImGui.GetIO().MousePos;
 

@@ -62,7 +62,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			RefreshList();
 
 			ImGui.Indent();
-			if (ImGui.CollapsingHeader($"{_name} [{_list.Count}]###{_name}", ImGuiTreeNodeFlags.FramePadding))
+			if (Gui.CollapsingHeader($"{_name} [{_list.Count}]###{_name}", ImGuiTreeNodeFlags.FramePadding))
 			{
 				ImGui.Indent();
 
@@ -71,13 +71,13 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 					// Array size control — arrays must be replaced to resize
 					int size = _list.Count;
 					ImGui.SetNextItemWidth(100);
-					if (ImGui.InputInt($"Size##arrsize_{_scopeId}", ref size, 1) && size >= 0 && size != _list.Count)
+					if (Gui.InputInt($"Size##arrsize_{_scopeId}", ref size, 1) && size >= 0 && size != _list.Count)
 						ResizeArray(size);
 				}
 				else
 				{
 					// List: Add / Clear
-					if (ImGui.Button("Add Element"))
+					if (Gui.Button("Add Element"))
 					{
 						if (_elementKind == ElementKind.AssetRef)
 							_list.Add(default(Voltage.Serialization.AssetReference));
@@ -96,7 +96,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 					ImGui.SameLine(ImGui.GetWindowWidth() - ImGui.GetItemRectSize().X -
 					               ImGui.GetStyle().ItemInnerSpacing.X);
 
-					if (ImGui.Button("Clear"))
+					if (Gui.Button("Clear"))
 						ImGui.OpenPopup("Clear Data");
 
 					if (VoltageEditorUtils.SimpleDialog("Clear Data", "Are you sure you want to clear the data?"))
@@ -161,7 +161,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
 		void DrawWidget(int value, int index)
 		{
-			if (ImGui.DragInt($"{index}", ref value))
+			if (Gui.DragInt($"{index}", ref value))
 			{
 				_list[index] = value;
 				NoteValueWritten();
@@ -171,7 +171,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
 		void DrawWidget(float value, int index)
 		{
-			if (ImGui.DragFloat($"{index}", ref value))
+			if (Gui.DragFloat($"{index}", ref value))
 			{
 				_list[index] = value;
 				NoteValueWritten();
@@ -181,7 +181,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
 		void DrawWidget(string value, int index)
 		{
-			if (ImGui.InputText($"{index}", ref value, 200))
+			if (Gui.InputText($"{index}", ref value, 200))
 			{
 				_list[index] = value;
 				NoteValueWritten();
@@ -192,7 +192,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 		void DrawWidget(Vector2 value, int index)
 		{
 			var vec = value.ToNumerics();
-			if (ImGui.DragFloat2($"{index}", ref vec))
+			if (Gui.DragFloat2($"{index}", ref vec))
 			{
 				_list[index] = vec.ToXNA();
 				NoteValueWritten();
@@ -239,7 +239,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			ImGui.PushStyleColor(ImGuiCol.Button, buttonColor);
 			ImGui.PushStyleColor(ImGuiCol.ButtonHovered, buttonColor with { W = 1f });
 
-			if (ImGui.Button($"{label}##ref_{index}", new Num.Vector2(availableWidth, 0)))
+			if (Gui.Button($"{label}##ref_{index}", new Num.Vector2(availableWidth, 0)))
 				_pendingPickerIndex = index;
 
 			ImGui.PopStyleColor(2);
@@ -281,21 +281,21 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			}
 
 			// Right-click: clear slot
-			if (ImGui.BeginPopupContextItem($"reflist_ctx_{index}"))
+			if (Gui.BeginPopupContextItem($"reflist_ctx_{index}"))
 			{
-				if (ImGui.Selectable("Clear"))
+				if (Gui.Selectable("Clear"))
 				{
 					_list[index] = null;
 					NoteValueWritten();
 				}
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 
 			// Remove button (lists only)
 			if (!_isArray)
 			{
 				ImGui.SameLine();
-				if (ImGui.Button($"X##rem_{index}", new Num.Vector2(removeButtonWidth, 0)))
+				if (Gui.Button($"X##rem_{index}", new Num.Vector2(removeButtonWidth, 0)))
 					removeAt = index;
 			}
 
@@ -320,7 +320,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			ImGui.SetNextWindowSize(new Num.Vector2(400, 450), ImGuiCond.Appearing);
 
 			bool open = true;
-			if (!ImGui.BeginPopupModal($"reflist_epicker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
+			if (!Gui.BeginPopupModal($"reflist_epicker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
 				return;
 
 			var currentEntity = ResolveEntityAt(_activePickerIndex);
@@ -349,7 +349,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		void DrawComponentPickerPopup()
@@ -369,7 +369,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			ImGui.SetNextWindowSize(new Num.Vector2(400, 450), ImGuiCond.Appearing);
 
 			bool open = true;
-			if (!ImGui.BeginPopupModal($"reflist_cpicker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
+			if (!Gui.BeginPopupModal($"reflist_cpicker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
 				return;
 
 			ImGuiSafe.TextColoredSafe(new Num.Vector4(0.3f, 0.8f, 1f, 1f),
@@ -378,7 +378,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
 			var currentComp = _list[_activePickerIndex] as Component;
 
-			if (ImGui.Selectable($"  None ({_elementType.Name})", currentComp == null))
+			if (Gui.Selectable($"  None ({_elementType.Name})", currentComp == null))
 			{
 				_list[_activePickerIndex] = null;
 				NoteValueWritten();
@@ -401,7 +401,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 							continue;
 
 						bool isSelected = comp == currentComp;
-						if (ImGui.Selectable($"  {entity.Name}  /  {comp}", isSelected))
+						if (Gui.Selectable($"  {entity.Name}  /  {comp}", isSelected))
 						{
 							_list[_activePickerIndex] = comp;
 							_activePickerIndex = -1;
@@ -419,7 +419,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		private AssetSlotFilter _assetFilter;
@@ -446,7 +446,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			ImGui.PushStyleColor(ImGuiCol.Button, btnColor);
 			ImGui.PushStyleColor(ImGuiCol.ButtonHovered, btnColor with { W = 1f });
 
-			if (ImGui.Button($"{label}##asref_{index}", new Num.Vector2(availableWidth, 0)))
+			if (Gui.Button($"{label}##asref_{index}", new Num.Vector2(availableWidth, 0)))
 				_pendingPickerIndex = index;
 
 			ImGui.PopStyleColor(2);
@@ -476,17 +476,17 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			}
 
 			// Right-click: clear
-			if (ImGui.BeginPopupContextItem($"asreflist_ctx_{index}"))
+			if (Gui.BeginPopupContextItem($"asreflist_ctx_{index}"))
 			{
-				if (ImGui.Selectable("Clear"))
+				if (Gui.Selectable("Clear"))
 					_list[index] = default(Voltage.Serialization.AssetReference);
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 
 			if (!_isArray)
 			{
 				ImGui.SameLine();
-				if (ImGui.Button($"X##asrefrem_{index}", new Num.Vector2(removeButtonWidth, 0)))
+				if (Gui.Button($"X##asrefrem_{index}", new Num.Vector2(removeButtonWidth, 0)))
 					removeAt = index;
 			}
 
@@ -511,7 +511,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			ImGui.SetNextWindowSize(new Num.Vector2(420, 460), ImGuiCond.Appearing);
 
 			bool open = true;
-			if (!ImGui.BeginPopupModal($"reflist_aspicker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
+			if (!Gui.BeginPopupModal($"reflist_aspicker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
 				return;
 
 			var current = (AssetReference)_list[_activePickerIndex];
@@ -519,10 +519,10 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			ImGui.Separator();
 
 			ImGui.SetNextItemWidth(-1);
-			ImGui.InputTextWithHint("##asreflistsearch", "Search...", ref _pickerSearch, 128);
+			Gui.InputTextWithHint("##asreflistsearch", "Search...", ref _pickerSearch, 128);
 			ImGui.Separator();
 
-			if (ImGui.Selectable("  None (AssetReference)", !current.IsValid))
+			if (Gui.Selectable("  None (AssetReference)", !current.IsValid))
 			{
 				_list[_activePickerIndex] = default(AssetReference);
 				_activePickerIndex = -1;
@@ -547,7 +547,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		void DrawAssetPickerNodes(
@@ -569,7 +569,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 
 				if (!FolderHasAcceptableFiles(folder)) continue;
 
-				if (ImGui.TreeNodeEx(folder.Label, ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.SpanAvailWidth))
+				if (Gui.TreeNodeEx(folder.Label, ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.SpanAvailWidth))
 				{
 					foreach (var item in folder.Files)
 						DrawAssetPickerItem(item, current);
@@ -608,7 +608,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 				return;
 			bool isCurrent = current.IsValid && current.AssetGuid != Guid.Empty && current.AssetGuid == edRef.Guid;
 
-			if (ImGui.Selectable($"  {item.FileName}", isCurrent))
+			if (Gui.Selectable($"  {item.FileName}", isCurrent))
 			{
 				_list[_activePickerIndex] = new AssetReference
 				{
@@ -649,7 +649,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			ImGui.PushStyleColor(ImGuiCol.Button, btnColor);
 			ImGui.PushStyleColor(ImGuiCol.ButtonHovered, btnColor with { W = 1f });
 
-			if (ImGui.Button($"{label}##prref_{index}", new Num.Vector2(availableWidth, 0)))
+			if (Gui.Button($"{label}##prref_{index}", new Num.Vector2(availableWidth, 0)))
 				_pendingPickerIndex = index;
 
 			ImGui.PopStyleColor(2);
@@ -663,17 +663,17 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			}
 
 			// Right-click: clear
-			if (ImGui.BeginPopupContextItem($"prreflist_ctx_{index}"))
+			if (Gui.BeginPopupContextItem($"prreflist_ctx_{index}"))
 			{
-				if (ImGui.Selectable("Clear"))
+				if (Gui.Selectable("Clear"))
 					_list[index] = default(PrefabReference);
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 
 			if (!_isArray)
 			{
 				ImGui.SameLine();
-				if (ImGui.Button($"X##prrefrem_{index}", new Num.Vector2(removeButtonWidth, 0)))
+				if (Gui.Button($"X##prrefrem_{index}", new Num.Vector2(removeButtonWidth, 0)))
 					removeAt = index;
 			}
 
@@ -698,7 +698,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			ImGui.SetNextWindowSize(new Num.Vector2(420, 460), ImGuiCond.Appearing);
 
 			bool open = true;
-			if (!ImGui.BeginPopupModal($"reflist_prpicker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
+			if (!Gui.BeginPopupModal($"reflist_prpicker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
 				return;
 
 			var current = (PrefabReference)_list[_activePickerIndex];
@@ -706,10 +706,10 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			ImGui.Separator();
 
 			ImGui.SetNextItemWidth(-1);
-			ImGui.InputTextWithHint("##prreflistsearch", "Search...", ref _pickerSearch, 128);
+			Gui.InputTextWithHint("##prreflistsearch", "Search...", ref _pickerSearch, 128);
 			ImGui.Separator();
 
-			if (ImGui.Selectable("  None (PrefabReference)", !current.IsValid))
+			if (Gui.Selectable("  None (PrefabReference)", !current.IsValid))
 			{
 				_list[_activePickerIndex] = default(PrefabReference);
 				_activePickerIndex = -1;
@@ -740,7 +740,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 					string.Equals(current.PrefabName, entry.Name, StringComparison.OrdinalIgnoreCase);
 
 				ImGui.PushID(i);
-				if (ImGui.Selectable($"  {entry.Name}", isCurrent))
+				if (Gui.Selectable($"  {entry.Name}", isCurrent))
 				{
 					_list[_activePickerIndex] = PrefabReferenceTypeInspector.BuildPrefabRef(entry.AbsolutePath, entry.Name);
 					_activePickerIndex = -1;
@@ -764,7 +764,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		Entity ResolveEntityAt(int index)

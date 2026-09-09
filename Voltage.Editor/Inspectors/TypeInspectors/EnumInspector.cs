@@ -16,7 +16,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 		public override void DrawMutable()
 		{
 			var index = Array.IndexOf(_enumNames, GetValue<object>().ToString());
-			if (ImGui.Combo(_name, ref index, _enumNames, _enumNames.Length))
+			if (Gui.Combo(_name, ref index, _enumNames, _enumNames.Length))
 				SetValue(Enum.Parse(_valueType, _enumNames[index]));
 			HandleTooltip();
 		}

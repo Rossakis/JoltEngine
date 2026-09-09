@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using Voltage.Console;
 using Voltage.Editor.Gateway;
+using Voltage.Gateway;
 using Voltage.Editor.ImGuiCore;
 using Voltage.Editor.Persistence;
 using Voltage.Editor.ProjectFile;
@@ -20,7 +21,7 @@ namespace Voltage.Editor;
 
 public class Editor : Core
 {
-	private GatewayDispatcher _gateway;
+	private EditorGatewayDispatcher _gateway;
 
 	protected override void Initialize()
 	{
@@ -63,7 +64,20 @@ public class Editor : Core
 		RegisterGlobalManager(imGuiManager);
 
 		// Registered after ImGuiManager so it updates before it: managers run in reverse registration order.
-		_gateway = new GatewayDispatcher(GatewayOptions.FromArgs(Program.CommandLineArgs), imGuiManager);
+		var gatewayOptions = GatewayOptions.FromArgs(Program.CommandLineArgs, true);
+		_gateway = new EditorGatewayDispatcher(new GatewayOptions
+		{
+			Enabled = gatewayOptions.Enabled,
+			Port = gatewayOptions.Port,
+			Safe = gatewayOptions.Safe,
+			InfoFilePath = gatewayOptions.InfoFilePath ?? System.IO.Path.Combine(EditorStorage.Root, "gateway.json"),
+			Args = Program.CommandLineArgs,
+			LogsDirectory = EditorStorage.LogsDirectory,
+			Host = "editor",
+			Name = "Voltage Editor",
+			NoPrompts = gatewayOptions.NoPrompts,
+			Headless = gatewayOptions.Headless
+		}, imGuiManager);
 		RegisterGlobalManager(_gateway);
 
 		Scene.OnSceneBegin += TrackSceneChange;
@@ -76,8 +90,13 @@ public class Editor : Core
 		Screen.SynchronizeWithVerticalRetrace = true;
 		Screen.HardwareModeSwitch = false; // Fix for the Display to not fight against Monogame's F11 fullscreen toggle
 
-		ScreenUtils.ApplyScreenChange(ScreenUtils.ScreenMode.WindowedMax);
-		Voltage.Editor.Utils.EditorWindowLayout.FitToUsableBounds();
+		if (EditorRunMode.Headless)
+			EnterHeadless();
+		else
+		{
+			ScreenUtils.ApplyScreenChange(ScreenUtils.ScreenMode.WindowedMax);
+			Voltage.Editor.Utils.EditorWindowLayout.FitToUsableBounds();
+		}
 		HandleCommandLineArguments(); // when we open a project file through the file explorer
 		SceneManager.Instance.LoadLastUsedScene();
 
@@ -115,12 +134,18 @@ public class Editor : Core
 		}
 	}
 
+	/// <summary>The editor registers its own dispatcher; IsEditorMode is not yet set when Core initializes.</summary>
+	protected override void StartRuntimeGateway()
+	{
+	}
+
 	protected override void Draw(GameTime gameTime)
 	{
 		// The gateway keeps the loop alive while unfocused, but a minimized window has no surface to draw to.
 		// Update may leave a render target bound for Draw to clear, and Present refuses to run with one active.
-		if (IsWindowMinimized())
+		if (!EditorRunMode.Headless && IsWindowMinimized())
 		{
+			_gateway?.ImGuiManager.DiscardFrame();
 			GraphicsDevice.SetRenderTarget(null);
 			return;
 		}
@@ -131,6 +156,21 @@ public class Editor : Core
 
 	[System.Runtime.InteropServices.UnmanagedFunctionPointer(System.Runtime.InteropServices.CallingConvention.Cdecl)]
 	private delegate uint SdlGetWindowFlags(IntPtr window);
+
+	[System.Runtime.InteropServices.UnmanagedFunctionPointer(System.Runtime.InteropServices.CallingConvention.Cdecl)]
+	private delegate void SdlHideWindow(IntPtr window);
+
+	/// <summary>A fixed windowed size keeps screenshot coordinates stable; the hidden SDL window still owns a GL context, so drawing and back-buffer reads keep working.</summary>
+	private void EnterHeadless()
+	{
+		ScreenUtils.ApplyScreenChange(ScreenUtils.ScreenMode.Windowed);
+		Screen.SetSize(1600, 900);
+		KeepRunningWhenUnfocused = true;
+		if (Voltage.Editor.Utils.SdlNative.TryGet<SdlHideWindow>("SDL_HideWindow", out var hide))
+			hide(Window.Handle);
+		else
+			Debug.Warn("[Headless] SDL_HideWindow unavailable; the window stays visible");
+	}
 
 	private const uint SdlWindowMinimized = 0x40;
 
@@ -180,8 +220,19 @@ public class Editor : Core
 		
 		if (args != null && args.Length > 0)
 		{
-			// First argument is expected to be the .voltage file path
-			string projectPath = args[0];
+			// The project path is the first argument that is not a --flag (or a flag's value).
+			string projectPath = null;
+			for (var i = 0; i < args.Length; i++)
+			{
+				if (args[i].StartsWith("--", System.StringComparison.Ordinal))
+				{
+					if (GatewayOptions.TakesValue(args[i]))
+						i++;
+					continue;
+				}
+				projectPath = args[i];
+				break;
+			}
 			
 			if (!string.IsNullOrWhiteSpace(projectPath) && 
 				System.IO.File.Exists(projectPath) &&

@@ -1,105 +1,119 @@
-module.exports = {
-  title: 'Nez',
-  tagline: 'Nez is a free 2D focused framework that works with MonoGame and FNA ',
-  url: 'https://prime31.github.io/',
-  baseUrl: '/Nez/',
+// @ts-check
+const {themes: prismThemes} = require('prism-react-renderer');
+
+/** @type {import('@docusaurus/types').Config} */
+const config = {
+  title: 'Voltage Engine',
+  tagline: 'A 2D game engine and editor for C# developers',
+  favicon: 'img/favicon.svg',
+
+  url: 'https://voltageengine.github.io',
+  baseUrl: '/VoltageEngine/',
+  trailingSlash: false,
+  organizationName: 'VoltageEngine',
+  projectName: 'VoltageEngine',
+
   onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'warn',
-  favicon: 'img/favicon.ico',
-  organizationName: 'prime31', // Usually your GitHub org/user name.
-  projectName: 'Nez', // Usually your repo name.
-  themeConfig: {
-    navbar: {
-      logo: {
-        alt: 'Nez Logo',
-        src: 'img/logo.svg',
-      },
-      items: [
-        {
-          to: 'docs/',
-          activeBasePath: 'docs',
-          label: 'Docs',
-          position: 'left',
-        },
-        {to: 'blog', label: 'Blog', position: 'left'},
-        {
-          href: 'https://github.com/prime31/Nez',
-          label: 'GitHub',
-          position: 'right',
-        },
-      ],
+  onBrokenAnchors: 'warn',
+  markdown: {
+    mermaid: true,
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
     },
-    footer: {
-      style: 'dark',
-      links: [
-        {
-          title: 'Docs',
-          items: [
-            {
-              label: 'Installation',
-              to: 'docs/',
-            },
-            {
-              label: 'Features',
-              to: 'docs/features/core',
-            },
-          ],
-        },
-        {
-          title: 'Community',
-          items: [
-            {
-              label: 'Discord',
-              href: 'https://discord.gg/fuNrR4jF5Z',
-            },
-            {
-              label: 'Twitter',
-              href: 'https://twitter.com/prime_31',
-            },
-          ],
-        },
-        {
-          title: 'More',
-          items: [
-            {
-              label: 'Blog',
-              to: 'blog',
-            },
-            {
-              label: 'GitHub',
-              href: 'https://github.com/prime31/Nez',
-            },
-          ],
-        },
-      ],
-      copyright: `Copyright © ${new Date().getFullYear()} Prime31, Inc. Built with Docusaurus.`,
-    },
-    prism: {
-      additionalLanguages: ['csharp'],
-      theme: require('prism-react-renderer/themes/github'),
-      darkTheme: require('prism-react-renderer/themes/vsDark')
-    }
   },
+  themes: ['@docusaurus/theme-mermaid'],
+
+  i18n: {
+    defaultLocale: 'en',
+    locales: ['en'],
+  },
+
   presets: [
     [
-      '@docusaurus/preset-classic',
-      {
+      'classic',
+      /** @type {import('@docusaurus/preset-classic').Options} */
+      ({
         docs: {
+          path: '../docs',
+          routeBasePath: 'docs',
           sidebarPath: require.resolve('./sidebars.js'),
-          // Please change this to your repo.
-          editUrl:
-          'https://github.com/prime31/Nez/edit/master/Nez.github.io/',
+          exclude: ['**/ROADMAP.md'],
+          editUrl: 'https://github.com/VoltageEngine/VoltageEngine/edit/main/docs/',
         },
-        blog: {
-          showReadingTime: true,
-          // Please change this to your repo.
-          editUrl:
-            'https://github.com/prime31/Nez/edit/master/Nez.github.io/',
-        },
+        blog: false,
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
-      },
+      }),
     ],
   ],
+
+  themeConfig:
+    /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
+    ({
+      colorMode: {
+        defaultMode: 'dark',
+        respectPrefersColorScheme: true,
+      },
+      navbar: {
+        title: 'Voltage',
+        logo: {
+          alt: 'Voltage Engine',
+          src: 'img/logo.svg',
+        },
+        items: [
+          {
+            type: 'docSidebar',
+            sidebarId: 'docs',
+            position: 'left',
+            label: 'Docs',
+          },
+          {
+            to: 'docs/gateway',
+            position: 'left',
+            label: 'Gateway',
+          },
+          {
+            href: 'https://github.com/VoltageEngine/VoltageEngine',
+            label: 'GitHub',
+            position: 'right',
+          },
+        ],
+      },
+      footer: {
+        style: 'dark',
+        links: [
+          {
+            title: 'Docs',
+            items: [
+              {label: 'Introduction', to: 'docs/intro'},
+              {label: 'Installation', to: 'docs/getting-started/installation'},
+              {label: 'Scripting', to: 'docs/scripting/components'},
+            ],
+          },
+          {
+            title: 'Automation',
+            items: [
+              {label: 'Editor Gateway', to: 'docs/gateway'},
+              {label: 'Plugins', to: 'docs/plugins'},
+            ],
+          },
+          {
+            title: 'Project',
+            items: [
+              {label: 'GitHub', href: 'https://github.com/VoltageEngine/VoltageEngine'},
+              {label: 'Issues', href: 'https://github.com/VoltageEngine/VoltageEngine/issues'},
+            ],
+          },
+        ],
+        copyright: `Copyright © ${new Date().getFullYear()} Voltage Engine contributors. MIT licensed.`,
+      },
+      prism: {
+        theme: prismThemes.github,
+        darkTheme: prismThemes.vsDark,
+        additionalLanguages: ['csharp', 'json', 'bash', 'powershell'],
+      },
+    }),
 };
+
+module.exports = config;

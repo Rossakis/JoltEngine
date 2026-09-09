@@ -70,6 +70,50 @@ namespace Voltage.Editor.Plugins
 		/// <summary>How many plugins the project declares that this machine cannot use. Zero when all is well.</summary>
 		public static int MissingCount => _pending.Count;
 
+		internal static bool IsInstalling => _installing;
+
+		internal static string Status => _status;
+
+		/// <summary>The prompt's own reading of a plugin: fetchable, unpublished, brokenLocal, missingInRepo, or null when it is fine.</summary>
+		internal static string Describe(PluginInstance plugin)
+		{
+			if (!NeedsAttention(plugin))
+				return null;
+			return Classify(plugin) switch
+			{
+				Kind.Fetchable => "fetchable",
+				Kind.Unpublished => "unpublished",
+				Kind.BrokenLocal => "brokenLocal",
+				_ => "missingInRepo"
+			};
+		}
+
+		private static string Describe(Pending pending) => pending.Kind switch
+		{
+			Kind.Fetchable => "fetchable",
+			Kind.Unpublished => "unpublished",
+			Kind.BrokenLocal => "brokenLocal",
+			_ => "missingInRepo"
+		};
+
+		/// <summary>Queues the fetchable plugins (one id, or all) exactly as the Install button does; returns how many were queued.</summary>
+		internal static int Install(string id = null)
+		{
+			_queue.Clear();
+			foreach (var pending in _pending)
+			{
+				if (pending.Unfetchable)
+					continue;
+				if (id != null && !string.Equals(pending.Id, id, StringComparison.OrdinalIgnoreCase))
+					continue;
+				_queue.Enqueue(pending);
+			}
+
+			_installing = _queue.Count > 0;
+			_status = _installing ? "Starting..." : null;
+			return _queue.Count;
+		}
+
 		/// <summary>
 		/// Recomputes what is missing and raises the prompt when that set changes. Cheap enough to call every
 		/// frame: it reads already-resolved state and touches no disk.
@@ -106,8 +150,17 @@ namespace Voltage.Editor.Plugins
 
 				if (_pending.Count > 0 && !string.Equals(signature, _dismissedSignature, StringComparison.Ordinal))
 				{
-					_open = true;
-					_openRequested = true;
+					if (EditorRunMode.NoPrompts)
+					{
+						_dismissedSignature = signature;
+						Gateway.EditorGatewayDispatcher.SuppressPrompt("Plugins Needed",
+							$"{string.Join(", ", _pending.Select(p => $"{p.DisplayName} ({Describe(p)})"))}; see plugin.list and plugin.restore");
+					}
+					else
+					{
+						_open = true;
+						_openRequested = true;
+					}
 				}
 			}
 
@@ -146,7 +199,7 @@ namespace Voltage.Editor.Plugins
 			ImGui.SetNextWindowSize(new Num.Vector2(640, 0), ImGuiCond.Appearing);
 
 			var open = true;
-			if (!ImGui.BeginPopupModal("Plugins Needed###PluginRestorePrompt", ref open,
+			if (!Gui.BeginPopupModal("Plugins Needed###PluginRestorePrompt", ref open,
 				    ImGuiWindowFlags.AlwaysAutoResize))
 			{
 				return;
@@ -216,7 +269,7 @@ namespace Voltage.Editor.Plugins
 
 			ImGui.BeginDisabled(_installing || fetchable == 0);
 
-			if (ImGui.Button(fetchable > 0 && fetchable < _pending.Count ? $"Install {fetchable}" : "Install All",
+			if (Gui.Button(fetchable > 0 && fetchable < _pending.Count ? $"Install {fetchable}" : "Install All",
 				    new Num.Vector2(140, 0)))
 			{
 				StartInstall();
@@ -233,7 +286,7 @@ namespace Voltage.Editor.Plugins
 
 			ImGui.SameLine();
 
-			if (ImGui.Button(_installing ? "Hide" : "Not now", new Num.Vector2(140, 0)))
+			if (Gui.Button(_installing ? "Hide" : "Not now", new Num.Vector2(140, 0)))
 			{
 				// Remembered by which plugins were missing, so it stays quiet until that actually changes.
 				_dismissedSignature = _lastSignature;
@@ -249,7 +302,7 @@ namespace Voltage.Editor.Plugins
 					  "Plugins > Restore Plugins asks again.");
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 
 			if (!open)
 			{
@@ -264,7 +317,7 @@ namespace Voltage.Editor.Plugins
 		/// </summary>
 		private static void DrawRowActions(Pending pending)
 		{
-			if (ImGui.SmallButton("Browse"))
+			if (Gui.SmallButton("Browse"))
 				Locate(pending);
 
 			if (ImGui.IsItemHovered())
@@ -279,7 +332,7 @@ namespace Voltage.Editor.Plugins
 			{
 				ImGui.SameLine();
 
-				if (ImGui.SmallButton("Forget local folder"))
+				if (Gui.SmallButton("Forget local folder"))
 					_status = PluginManager.Instance.ForgetLocalOverride(pending.Id);
 
 				if (ImGui.IsItemHovered())
@@ -299,7 +352,7 @@ namespace Voltage.Editor.Plugins
 
 			ImGui.SameLine();
 
-			if (ImGui.SmallButton($"Install {listing.VersionLabel} from registry"))
+			if (Gui.SmallButton($"Install {listing.VersionLabel} from registry"))
 			{
 				var started = PluginInstaller.Start(
 					new ProjectPluginEntry { Id = pending.Id, Source = listing.ToSourceSpec() },
@@ -336,19 +389,7 @@ namespace Voltage.Editor.Plugins
 			_status = PluginManager.Instance.RepointLocalOverride(pending.Id, folder);
 		}
 
-		private static void StartInstall()
-		{
-			_queue.Clear();
-
-			foreach (var pending in _pending)
-			{
-				if (!pending.Unfetchable)
-					_queue.Enqueue(pending);
-			}
-
-			_installing = _queue.Count > 0;
-			_status = _installing ? "Starting..." : null;
-		}
+		private static void StartInstall() => Install();
 
 		/// <summary>
 		/// Feeds the queue into the installer one at a time - it takes a single job at a time by design, since

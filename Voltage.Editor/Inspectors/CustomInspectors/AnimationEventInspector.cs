@@ -74,7 +74,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
 
             bool open = true;
           
-            if (ImGui.Begin("Animation Event Inspector###AnimationEventInspector", ref open, ImGuiWindowFlags.None))
+            if (Gui.Begin("Animation Event Inspector###AnimationEventInspector", ref open, ImGuiWindowFlags.None))
             {
                 if (_shouldFocusWindow)
                 {
@@ -85,7 +85,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                 if (_animator == null)
                 {
                     ImGui.TextColored(new Num.Vector4(1, 1, 0, 1), "Select an AnimatedSprite to Manage its events");
-                    ImGui.End();
+                    Gui.End();
 
                     if (!open)
                     {
@@ -107,7 +107,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                 if (_selectedAnimationIndex >= animationNames.Length)
                     _selectedAnimationIndex = 0;
 
-                if (ImGui.Combo("Animation", ref _selectedAnimationIndex, animationDisplayNames, animationDisplayNames.Length))
+                if (Gui.Combo("Animation", ref _selectedAnimationIndex, animationDisplayNames, animationDisplayNames.Length))
                 {
                     _animator.Play(animationNames[_selectedAnimationIndex]);
                     _selectedFrame = 0;
@@ -117,7 +117,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                 ImGui.Separator();
 
                 // Play/Stop toggle
-                if (ImGui.Button(_isPlaying ? "Stop" : "Play"))
+                if (Gui.Button(_isPlaying ? "Stop" : "Play"))
                 {
                     _isPlaying = !_isPlaying;
                     if (_isPlaying)
@@ -129,7 +129,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                 if (_selectedFrame >= frameCount)
                     _selectedFrame = 0;
 
-                if (ImGui.SliderInt("Frame", ref _selectedFrame, 0, frameCount - 1))
+                if (Gui.SliderInt("Frame", ref _selectedFrame, 0, frameCount - 1))
                 {
                     _animator.SetFrame(_selectedFrame);
                     _previewTimer = 0f;
@@ -183,20 +183,20 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                         // Clamp startFrame
                         evt.StartFrame = Math.Clamp(evt.StartFrame, 0, frameCount - 1);
                         ImGui.Text("startFrame");
-                        ImGui.InputInt($"##startFrame_{evtIndex}", ref evt.StartFrame);
+                        Gui.InputInt($"##startFrame_{evtIndex}", ref evt.StartFrame);
 
                         if (evt is LongAnimationEvent longEvt)
                         {
                             // Clamp endFrame
                             longEvt.EndFrame = Math.Clamp(longEvt.EndFrame, 0, frameCount - 1);
                             ImGui.Text("endFrame");
-                            ImGui.InputInt($"##endFrame_{evtIndex}", ref longEvt.EndFrame);
+                            Gui.InputInt($"##endFrame_{evtIndex}", ref longEvt.EndFrame);
                         }
 
                         // Name column
                         ImGui.TableSetColumnIndex(1);
                         string name = evt.Name ?? "";
-                        if (ImGui.InputText($"##name_{evtIndex}", ref name, 32))
+                        if (Gui.InputText($"##name_{evtIndex}", ref name, 32))
                         {
                             // Ensure uniqueness only within the same animation
                             if (_editableEvents.Any(e => e != evt && e.Name == name && e.AnimationName == evt.AnimationName))
@@ -222,17 +222,17 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                             selectedAnimIdx = Array.IndexOf(animationNames, evt.AnimationName);
 
                         string listboxLabel = $"##anim_select_{evtIndex}";
-                        if (ImGui.BeginCombo(listboxLabel, selectedAnimIdx >= 0 ? animationNames[selectedAnimIdx] : "Not Selected"))
+                        if (Gui.BeginCombo(listboxLabel, selectedAnimIdx >= 0 ? animationNames[selectedAnimIdx] : "Not Selected"))
                         {
                             // "Not Selected" option
-                            if (ImGui.Selectable("Not Selected", selectedAnimIdx == -1))
+                            if (Gui.Selectable("Not Selected", selectedAnimIdx == -1))
                             {
                                 evt.AnimationName = null;
                             }
                             for (int animIdx = 0; animIdx < animationNames.Length; animIdx++)
                             {
                                 bool isSelected = selectedAnimIdx == animIdx;
-                                if (ImGui.Selectable(animationNames[animIdx], isSelected))
+                                if (Gui.Selectable(animationNames[animIdx], isSelected))
                                 {
                                     evt.AnimationName = animationNames[animIdx];
                                 }
@@ -244,7 +244,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
 
                         // Actions column
                         ImGui.TableSetColumnIndex(4);
-                        if (ImGui.Button($"Delete##{evtIndex}"))
+                        if (Gui.Button($"Delete##{evtIndex}"))
                         {
                             _editableEvents.RemoveAt(evtIndex);
                             break;
@@ -253,7 +253,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                     ImGui.EndTable();
                 }
 
-                if (ImGui.Button("Add Event"))
+                if (Gui.Button("Add Event"))
                 {
                     _showAddEventPopup = true;
                     _newEventTypeIndex = 0;
@@ -262,13 +262,13 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                 if (_showAddEventPopup)
                 {
                     ImGui.OpenPopup("AddEventPopup");
-                    if (ImGui.BeginPopupModal("AddEventPopup", ref _showAddEventPopup, ImGuiWindowFlags.AlwaysAutoResize))
+                    if (Gui.BeginPopupModal("AddEventPopup", ref _showAddEventPopup, ImGuiWindowFlags.AlwaysAutoResize))
                     {
                         ImGui.Text("Select Event Type:");
                         string[] eventTypes = { "AnimationEvent", "LongAnimationEvent" };
-                        ImGui.Combo("Type", ref _newEventTypeIndex, eventTypes, eventTypes.Length);
+                        Gui.Combo("Type", ref _newEventTypeIndex, eventTypes, eventTypes.Length);
 
-                        if (ImGui.Button("Create"))
+                        if (Gui.Button("Create"))
                         {
                             var oldEvents = new List<AnimationEvent>(_editableEvents);
                             var animationName = animationNames[_selectedAnimationIndex];
@@ -306,12 +306,12 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                             _showAddEventPopup = false;
                         }
                         ImGui.SameLine();
-                        if (ImGui.Button("Cancel"))
+                        if (Gui.Button("Cancel"))
                         {
                             ImGui.CloseCurrentPopup();
                             _showAddEventPopup = false;
                         }
-                        ImGui.EndPopup();
+                        Gui.EndPopup();
                     }
                 }
 
@@ -323,7 +323,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                 float cursorX = (ImGui.GetWindowWidth() - buttonWidth) * 0.5f;
                 ImGui.SetCursorPosX(cursorX);
 
-                if (ImGui.Button("Save", new Num.Vector2(buttonWidth, buttonHeight)))
+                if (Gui.Button("Save", new Num.Vector2(buttonWidth, buttonHeight)))
                 {
                     try
                     {
@@ -370,7 +370,7 @@ namespace Voltage.Editor.Inspectors.CustomInspectors
                     }
                 }
             }
-            ImGui.End();
+            Gui.End();
 
             if (!open)
             {

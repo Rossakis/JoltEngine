@@ -42,7 +42,7 @@ public class AssetReferenceTypeInspector : AbstractTypeInspector
 		ImGui.PushStyleColor(ImGuiCol.ButtonHovered, buttonColor with { W = 1f });
 
 		// Single click reveals in the Asset Browser; double click opens the picker.
-		var pressed = ImGui.Button($"{label}##assetref_{_scopeId}", new Num.Vector2(-1, 0));
+		var pressed = Gui.Button($"{label}##assetref_{_scopeId}", new Num.Vector2(-1, 0));
 		var doubleClicked = ImGui.IsItemHovered() && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left);
 
 		if (doubleClicked || (pressed && !current.IsValid))
@@ -97,11 +97,11 @@ public class AssetReferenceTypeInspector : AbstractTypeInspector
 		}
 
 		// Right-click: clear.
-		if (current.IsValid && ImGui.BeginPopupContextItem($"assetref_ctx_{_scopeId}"))
+		if (current.IsValid && Gui.BeginPopupContextItem($"assetref_ctx_{_scopeId}"))
 		{
-			if (ImGui.Selectable("Clear"))
+			if (Gui.Selectable("Clear"))
 				SetValueWithUndo(default(AssetReference), $"Clear {_name}");
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		if (_showPicker)
@@ -121,17 +121,17 @@ public class AssetReferenceTypeInspector : AbstractTypeInspector
 		ImGui.SetNextWindowSize(new Num.Vector2(420, 460), ImGuiCond.Appearing);
 
 		bool open = true;
-		if (!ImGui.BeginPopupModal($"assetref_picker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
+		if (!Gui.BeginPopupModal($"assetref_picker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
 			return;
 
 		ImGuiSafe.TextColoredSafe(new Num.Vector4(0.3f, 0.8f, 1f, 1f), $"{_name}  ({Filter.DisplayTypeName})");
 		ImGui.Separator();
 
 		ImGui.SetNextItemWidth(-1);
-		ImGui.InputTextWithHint("##assetsearch", "Search...", ref _pickerSearch, 128);
+		Gui.InputTextWithHint("##assetsearch", "Search...", ref _pickerSearch, 128);
 		ImGui.Separator();
 
-		if (ImGui.Selectable($"  None ({Filter.DisplayTypeName})", !current.IsValid))
+		if (Gui.Selectable($"  None ({Filter.DisplayTypeName})", !current.IsValid))
 		{
 			SetValueWithUndo(default(AssetReference), $"Clear {_name}");
 			ImGui.CloseCurrentPopup();
@@ -152,7 +152,7 @@ public class AssetReferenceTypeInspector : AbstractTypeInspector
 		if (VoltageEditorUtils.CenteredButton("Cancel", 0.5f))
 			ImGui.CloseCurrentPopup();
 
-		ImGui.EndPopup();
+		Gui.EndPopup();
 	}
 
 	private void DrawAssetNodes(
@@ -175,7 +175,7 @@ public class AssetReferenceTypeInspector : AbstractTypeInspector
 			if (!hasVisibleContent)
 				continue;
 
-			bool open = ImGui.TreeNodeEx(folder.Label, ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.SpanAvailWidth);
+			bool open = Gui.TreeNodeEx(folder.Label, ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.SpanAvailWidth);
 			if (open)
 			{
 				foreach (var item in folder.Files)
@@ -205,7 +205,7 @@ public class AssetReferenceTypeInspector : AbstractTypeInspector
 			return;
 		bool isCurrent = current.IsValid && current.AssetGuid != Guid.Empty && current.AssetGuid == edRef.Guid;
 
-		if (ImGui.Selectable($"  {item.FileName}", isCurrent))
+		if (Gui.Selectable($"  {item.FileName}", isCurrent))
 		{
 			var assetRef = new AssetReference
 			{

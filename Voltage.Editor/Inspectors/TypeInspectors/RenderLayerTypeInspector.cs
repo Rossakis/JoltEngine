@@ -42,7 +42,7 @@ namespace Voltage.Editor.Inspectors.TypeInspectors
 			if (selectedIndex < 0)
 				selectedIndex = 0;
 
-			if (ImGui.Combo(_name, ref selectedIndex, _layerNames, _layerNames.Length))
+			if (Gui.Combo(_name, ref selectedIndex, _layerNames, _layerNames.Length))
 				SetValueWithUndo(_layerValues[selectedIndex], _name);
 
 			HandleTooltip();

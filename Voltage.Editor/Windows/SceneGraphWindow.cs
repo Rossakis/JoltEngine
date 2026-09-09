@@ -158,7 +158,7 @@ public class SceneGraphWindow
 		
 		var windowFlags = ImGuiWindowFlags.None; 
 
-		if (ImGui.Begin("Scene Graph ###SceneGraphWindow", ref isOpen, windowFlags))
+		if (Gui.Begin("Scene Graph ###SceneGraphWindow", ref isOpen, windowFlags))
 		{
 			// Update width after user resizes
 			var currentWidth = ImGui.GetWindowSize().X;
@@ -179,7 +179,7 @@ public class SceneGraphWindow
 			// Prefab edit scene: a "Go Back" control at the very top returns to the previous game scene.
 			if (_imGuiManager != null && _imGuiManager.IsInPrefabEditScene)
 			{
-				if (ImGui.Button("< Go Back", new Num.Vector2(100, 0)))
+				if (Gui.Button("< Go Back", new Num.Vector2(100, 0)))
 					_imGuiManager.ExitPrefabEditScene();
 
 				ImGui.SameLine();
@@ -191,16 +191,16 @@ public class SceneGraphWindow
 			}
 
 			VoltageEditorUtils.MediumVerticalSpace();
-			if (ImGui.CollapsingHeader("Scene Components"))
+			if (Gui.CollapsingHeader("Scene Components"))
 				_sceneComponentsPane.Draw();
 
-			if (ImGui.CollapsingHeader("Post Processors"))
+			if (Gui.CollapsingHeader("Post Processors"))
 				_postProcessorsPane.Draw();
 
-			if (ImGui.CollapsingHeader("Renderers"))
+			if (Gui.CollapsingHeader("Renderers"))
 				_renderersPane.Draw();
 
-			if (ImGui.CollapsingHeader("Entities (double-click label to inspect)", ImGuiTreeNodeFlags.DefaultOpen))
+			if (Gui.CollapsingHeader("Entities (double-click label to inspect)", ImGuiTreeNodeFlags.DefaultOpen))
 				_entityPane.Draw();
 
 			VoltageEditorUtils.MediumVerticalSpace();
@@ -281,7 +281,7 @@ public class SceneGraphWindow
 		}
 
 		// Must run even when Begin() returns false (collapsed/clipped), or the ImGui stacks stay unbalanced.
-		ImGui.End();
+		Gui.End();
 		ImGui.PopStyleVar();
 		ImGui.PopStyleColor();
 
@@ -315,7 +315,7 @@ public class SceneGraphWindow
 		ImGui.SetNextWindowPos(center, ImGuiCond.Appearing, new Num.Vector2(0.5f, 0.5f));
 
 		bool open = true;
-		if (ImGui.BeginPopupModal("delete-prefab-confirmation", ref open, ImGuiWindowFlags.AlwaysAutoResize))
+		if (Gui.BeginPopupModal("delete-prefab-confirmation", ref open, ImGuiWindowFlags.AlwaysAutoResize))
 		{
 			ImGui.Text("Delete SerializedPrefab");
 			ImGui.Separator();
@@ -333,19 +333,19 @@ public class SceneGraphWindow
 			
 			ImGui.SetCursorPosX(centerStart);
 			
-			if (ImGui.Button("Yes", new Num.Vector2(buttonWidth, 0)))
+			if (Gui.Button("Yes", new Num.Vector2(buttonWidth, 0)))
 			{
 				DeletePrefab(_prefabToDelete);
 			}
 			
 			ImGui.SameLine(); 
 			
-			if (ImGui.Button("No", new Num.Vector2(buttonWidth, 0)))
+			if (Gui.Button("No", new Num.Vector2(buttonWidth, 0)))
 			{
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 	}
 

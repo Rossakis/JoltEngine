@@ -330,12 +330,12 @@ public class AssetBrowserWindow : IDisposable
         ConsumePingRequest();
 
         var open = IsOpen;
-        ImGui.Begin(WindowTitle, ref open);
+        Gui.Begin(WindowTitle, ref open);
         IsOpen = open;
 
         if (!IsOpen)
         {
-            ImGui.End();
+            Gui.End();
             return;
         }
 
@@ -368,7 +368,7 @@ public class AssetBrowserWindow : IDisposable
 
         PromotePendingRename();
 
-        ImGui.End();
+        Gui.End();
 
         // Must be outside Begin/End to be modal.
         DrawDeleteConfirmationPopup();
@@ -436,11 +436,11 @@ public class AssetBrowserWindow : IDisposable
     private void DrawToolbar()
     {
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 80f);
-        ImGui.InputTextWithHint("##AssetSearch", "Search...", ref _searchFilter, 128);
+        Gui.InputTextWithHint("##AssetSearch", "Search...", ref _searchFilter, 128);
 
         ImGui.SameLine();
 
-        if (ImGui.Button("Refresh"))
+        if (Gui.Button("Refresh"))
             _db.Refresh();
 
         if (ImGui.IsItemHovered())
@@ -514,7 +514,7 @@ public class AssetBrowserWindow : IDisposable
         if (!isCollapsed)
             flags |= ImGuiTreeNodeFlags.DefaultOpen;
 
-        bool nodeOpen = ImGui.TreeNodeEx(node.Label, flags);
+        bool nodeOpen = Gui.TreeNodeEx(node.Label, flags);
 
         // Track hover for SDL file-drop targeting.
         if (ImGui.IsItemHovered())
@@ -658,7 +658,7 @@ public class AssetBrowserWindow : IDisposable
             ImGui.PushStyleColor(ImGuiCol.HeaderActive, ping);
         }
 
-        bool clicked = ImGui.Selectable(item.FileName, isSelected || isPinging,
+        bool clicked = Gui.Selectable(item.FileName, isSelected || isPinging,
             ImGuiSelectableFlags.AllowDoubleClick,
             new Num.Vector2(ImGui.GetContentRegionAvail().X, IconSize));
 
@@ -748,7 +748,7 @@ public class AssetBrowserWindow : IDisposable
         var assetPopupId = $"##ctx_{item.FileName}";
         ImGuiPopupUtils.ConstrainHeight(assetPopupId);
 
-        if (ImGui.BeginPopupContextItem(assetPopupId))
+        if (Gui.BeginPopupContextItem(assetPopupId))
         {
             // Right-clicking inside a multi-selection keeps it; otherwise the click reselects.
             if (!IsSelected(item.AbsolutePath))
@@ -758,27 +758,27 @@ public class AssetBrowserWindow : IDisposable
             var many = targets.Count > 1;
             var suffix = many ? $" ({targets.Count} assets)" : string.Empty;
 
-            if (ImGui.MenuItem($"Copy{suffix}"))
+            if (Gui.MenuItem($"Copy{suffix}"))
                 CopyToInternalClipboard(targets);
 
             bool hasCopied = _copiedPaths.Count > 0;
             if (!hasCopied)
                 ImGui.BeginDisabled();
 
-            if (ImGui.MenuItem("Paste"))
+            if (Gui.MenuItem("Paste"))
                 PasteFiles(parentFolderPath);
 
             if (!hasCopied)
                 ImGui.EndDisabled();
 
-            if (ImGui.MenuItem($"Duplicate{suffix}"))
+            if (Gui.MenuItem($"Duplicate{suffix}"))
             {
                 foreach (var path in targets)
                     DuplicateFile(path);
             }
 
             ImGui.BeginDisabled(many);
-            if (ImGui.MenuItem("Rename"))
+            if (Gui.MenuItem("Rename"))
                 BeginRename(item.AbsolutePath);
             ImGui.EndDisabled();
 
@@ -786,21 +786,21 @@ public class AssetBrowserWindow : IDisposable
                 ImGui.SetTooltip("Rename works on a single asset.");
 
             ImGui.BeginDisabled(many);
-            if (ImGui.MenuItem("Create Shortcut"))
+            if (Gui.MenuItem("Create Shortcut"))
                 AddShortcut(item.AbsolutePath);
             ImGui.EndDisabled();
 
             ImGui.Separator();
 
-            if (ImGui.MenuItem("Open In File Explorer"))
+            if (Gui.MenuItem("Open In File Explorer"))
                 FileExplorerUtils.Reveal(item.AbsolutePath);
 
             ImGui.Separator();
 
-            if (ImGui.MenuItem($"Delete{suffix}"))
+            if (Gui.MenuItem($"Delete{suffix}"))
                 RequestDeleteMany(targets);
 
-            ImGui.EndPopup();
+            Gui.EndPopup();
         }
 
         if (ImGui.BeginDragDropSource(ImGuiDragDropFlags.None))
@@ -893,7 +893,7 @@ public class AssetBrowserWindow : IDisposable
         }
 
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-        bool enter = ImGui.InputText($"##rename_{item.AbsolutePath}", ref _renameBuffer, 256,
+        bool enter = Gui.InputText($"##rename_{item.AbsolutePath}", ref _renameBuffer, 256,
             ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.AutoSelectAll);
 
         // Escape must be checked before deactivation: pressing Escape also deactivates the field.
@@ -1131,7 +1131,7 @@ public class AssetBrowserWindow : IDisposable
         ImGui.SetNextWindowPos(center, ImGuiCond.Appearing, new Num.Vector2(0.5f, 0.5f));
 
         bool open = true;
-        if (ImGui.BeginPopupModal("asset-delete-confirmation", ref open, ImGuiWindowFlags.AlwaysAutoResize))
+        if (Gui.BeginPopupModal("asset-delete-confirmation", ref open, ImGuiWindowFlags.AlwaysAutoResize))
         {
             ImGui.Text(_deleteIsFolder ? "Delete Folder" : "Delete Asset");
             ImGui.Separator();
@@ -1163,7 +1163,7 @@ public class AssetBrowserWindow : IDisposable
             float centerStart  = (ImGui.GetWindowSize().X - totalWidth) * 0.5f;
             ImGui.SetCursorPosX(centerStart);
 
-            if (ImGui.Button("Yes", new Num.Vector2(buttonWidth, 0)))
+            if (Gui.Button("Yes", new Num.Vector2(buttonWidth, 0)))
             {
                 if (_deleteIsFolder)
                 {
@@ -1182,14 +1182,14 @@ public class AssetBrowserWindow : IDisposable
 
             ImGui.SameLine();
 
-            if (ImGui.Button("No", new Num.Vector2(buttonWidth, 0)))
+            if (Gui.Button("No", new Num.Vector2(buttonWidth, 0)))
             {
                 _filesToDelete.Clear();
                 _fileToDelete = null;
                 ImGui.CloseCurrentPopup();
             }
 
-            ImGui.EndPopup();
+            Gui.EndPopup();
         }
     }
 
@@ -1338,32 +1338,32 @@ public class AssetBrowserWindow : IDisposable
         var folderPopupId = $"##folderctx_{node.RelativePath}";
         ImGuiPopupUtils.ConstrainHeight(folderPopupId);
 
-        if (!ImGui.BeginPopupContextItem(folderPopupId))
+        if (!Gui.BeginPopupContextItem(folderPopupId))
             return;
 
         // When this folder is the root of a Shortcuts entry, allow removing the shortcut here.
         if (shortcutRelPath != null)
         {
-            if (ImGui.MenuItem("Remove Shortcut"))
+            if (Gui.MenuItem("Remove Shortcut"))
                 RemoveShortcut(shortcutRelPath);
             ImGui.Separator();
         }
 
-        if (ImGui.MenuItem("Add Folder"))
+        if (Gui.MenuItem("Add Folder"))
             CreateFolder(node.AbsolutePath);
 
-        if (ImGui.BeginMenu("Create"))
+        if (Gui.BeginMenu("Create"))
         {
             DrawCreateAssetMenuItems(node.AbsolutePath);
-            ImGui.EndMenu();
+            Gui.EndMenu();
         }
 
-        if (ImGui.MenuItem("Create Shortcut"))
+        if (Gui.MenuItem("Create Shortcut"))
             AddShortcut(node.AbsolutePath);
 
         ImGui.Separator();
 
-        if (ImGui.MenuItem("Open In File Explorer"))
+        if (Gui.MenuItem("Open In File Explorer"))
             FileExplorerUtils.Reveal(node.AbsolutePath);
 
         ImGui.Separator();
@@ -1371,12 +1371,12 @@ public class AssetBrowserWindow : IDisposable
         if (isProtected)
             ImGui.BeginDisabled();
 
-        if (ImGui.MenuItem("Rename"))
+        if (Gui.MenuItem("Rename"))
             BeginRenameFolder(node.AbsolutePath);
 
         ImGui.Separator();
 
-        if (ImGui.MenuItem("Delete"))
+        if (Gui.MenuItem("Delete"))
             RequestDelete(node.AbsolutePath, isFolder: true);
 
         if (isProtected)
@@ -1386,7 +1386,7 @@ public class AssetBrowserWindow : IDisposable
             ImGui.TextColored(new Num.Vector4(0.6f, 0.6f, 0.6f, 1f), "(protected folder)");
         }
 
-        ImGui.EndPopup();
+        Gui.EndPopup();
     }
 
     // True for folders that must not be moved/renamed/deleted: project roots and their standard
@@ -1460,23 +1460,23 @@ public class AssetBrowserWindow : IDisposable
             if (options.Count == 1)
             {
                 var option = options[0];
-                if (ImGui.MenuItem(option.Label))
+                if (Gui.MenuItem(option.Label))
                     BeginCreateAsset(targetFolder, option.Label, option.DefaultFileName,
                         format.Extension, path => option.Write(path));
                 continue;
             }
 
-            if (!ImGui.BeginMenu(format.DisplayName))
+            if (!Gui.BeginMenu(format.DisplayName))
                 continue;
 
             foreach (var option in options)
             {
-                if (ImGui.MenuItem(option.Label))
+                if (Gui.MenuItem(option.Label))
                     BeginCreateAsset(targetFolder, option.Label, option.DefaultFileName,
                         format.Extension, path => option.Write(path));
             }
 
-            ImGui.EndMenu();
+            Gui.EndMenu();
         }
     }
 
@@ -1510,7 +1510,7 @@ public class AssetBrowserWindow : IDisposable
         ImGui.SetNextWindowSize(new Num.Vector2(400, 0), ImGuiCond.Appearing);
 
         bool open = true;
-        if (!ImGui.BeginPopupModal("create-asset", ref open, ImGuiWindowFlags.AlwaysAutoResize))
+        if (!Gui.BeginPopupModal("create-asset", ref open, ImGuiWindowFlags.AlwaysAutoResize))
             return;
 
         ImGui.Text($"New {_createAssetLabel}");
@@ -1521,7 +1521,7 @@ public class AssetBrowserWindow : IDisposable
 
         ImGui.Text("Enter name:");
         ImGui.SetNextItemWidth(350);
-        bool enter = ImGui.InputText("##createassetname", ref _createAssetName, 128,
+        bool enter = Gui.InputText("##createassetname", ref _createAssetName, 128,
             ImGuiInputTextFlags.EnterReturnsTrue);
 
         bool nameValid = !string.IsNullOrWhiteSpace(_createAssetName)
@@ -1541,7 +1541,7 @@ public class AssetBrowserWindow : IDisposable
         if (!nameValid)
             ImGui.BeginDisabled();
 
-        bool confirm = ImGui.Button("Create", new Num.Vector2(buttonWidth, 0)) || (enter && nameValid);
+        bool confirm = Gui.Button("Create", new Num.Vector2(buttonWidth, 0)) || (enter && nameValid);
 
         if (!nameValid)
             ImGui.EndDisabled();
@@ -1554,10 +1554,10 @@ public class AssetBrowserWindow : IDisposable
 
         ImGui.SameLine();
 
-        if (ImGui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
+        if (Gui.Button("Cancel", new Num.Vector2(buttonWidth, 0)))
             ImGui.CloseCurrentPopup();
 
-        ImGui.EndPopup();
+        Gui.EndPopup();
     }
 
     // Writes a fresh default asset of the armed kind into targetFolder, appending the extension if absent
@@ -1639,7 +1639,7 @@ public class AssetBrowserWindow : IDisposable
         }
 
         ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-        bool enter = ImGui.InputText($"##folderrename_{node.AbsolutePath}", ref _renameBuffer, 256,
+        bool enter = Gui.InputText($"##folderrename_{node.AbsolutePath}", ref _renameBuffer, 256,
             ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.AutoSelectAll);
 
         bool escape = ImGui.IsKeyPressed(ImGuiKey.Escape, false);
@@ -1777,7 +1777,7 @@ public class AssetBrowserWindow : IDisposable
         if (_shortcuts.Count == 0)
             return;
 
-        if (!ImGui.CollapsingHeader("Shortcuts", ImGuiTreeNodeFlags.DefaultOpen))
+        if (!Gui.CollapsingHeader("Shortcuts", ImGuiTreeNodeFlags.DefaultOpen))
         {
             VoltageEditorUtils.SmallVerticalSpace();
             ImGui.Separator();
@@ -1856,7 +1856,7 @@ public class AssetBrowserWindow : IDisposable
             ImGui.SameLine(0, IconTextSpacing);
         }
 
-        bool clicked = ImGui.Selectable(Path.GetFileName(abs), false,
+        bool clicked = Gui.Selectable(Path.GetFileName(abs), false,
             ImGuiSelectableFlags.AllowDoubleClick, new Num.Vector2(ImGui.GetContentRegionAvail().X, IconSize));
 
         if (clicked && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
@@ -1901,13 +1901,13 @@ public class AssetBrowserWindow : IDisposable
     // Right-click menu for a shortcut row — currently just "Remove Shortcut".
     private void DrawShortcutContextMenu(string relPath, string abs)
     {
-        if (!ImGui.BeginPopupContextItem($"##shortcutctx_{relPath}"))
+        if (!Gui.BeginPopupContextItem($"##shortcutctx_{relPath}"))
             return;
 
-        if (ImGui.MenuItem("Remove Shortcut"))
+        if (Gui.MenuItem("Remove Shortcut"))
             RemoveShortcut(relPath);
 
-        ImGui.EndPopup();
+        Gui.EndPopup();
     }
 
     // Adds a folder/file to the Shortcuts section (idempotent) and persists.

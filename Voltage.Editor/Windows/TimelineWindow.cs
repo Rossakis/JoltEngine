@@ -100,9 +100,9 @@ namespace Voltage.Editor.Windows
 			_imgui ??= Core.GetGlobalManager<ImGuiManager>();
 
 			ImGui.SetNextWindowSize(new Num.Vector2(820, 560), ImGuiCond.FirstUseEver);
-			if (!ImGui.Begin("Timeline ###TimelineWindow", ref IsOpen))
+			if (!Gui.Begin("Timeline ###TimelineWindow", ref IsOpen))
 			{
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
@@ -113,14 +113,14 @@ namespace Voltage.Editor.Windows
 				ImGui.TextColored(Muted, "Select an entity with a Timeline Director to edit its timeline.");
 				ImGui.Spacing();
 				ImGui.TextWrapped("Drag a .vtimeline asset into the scene (or add a Timeline Director component) to get started.");
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
 			if (_asset == null)
 			{
 				DrawNoAssetState();
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
@@ -142,17 +142,17 @@ namespace Voltage.Editor.Windows
 
 			if (ImGui.BeginTabBar("TimelineTabs"))
 			{
-				if (ImGui.BeginTabItem("Roles"))      { DrawRoles(); ImGui.EndTabItem(); }
-				if (ImGui.BeginTabItem("Events"))     { DrawEvents(); ImGui.EndTabItem(); }
-				if (ImGui.BeginTabItem("Transform"))  { DrawTransformTracks(); ImGui.EndTabItem(); }
-				if (ImGui.BeginTabItem("Tint"))       { DrawTintTracks(); ImGui.EndTabItem(); }
-				if (ImGui.BeginTabItem("Sprite"))     { DrawSpriteTracks(); ImGui.EndTabItem(); }
-				if (ImGui.BeginTabItem("Active"))     { DrawActivationTracks(); ImGui.EndTabItem(); }
-				if (ImGui.BeginTabItem("Audio"))      { DrawAudioTracks(); ImGui.EndTabItem(); }
-				if (ImGui.BeginTabItem("Property"))   { DrawPropertyTracks(); ImGui.EndTabItem(); }
-				if (ImGui.BeginTabItem("Nested"))     { DrawNestedTracks(); ImGui.EndTabItem(); }
-				if (ImGui.BeginTabItem("Spawns"))     { DrawSpawns(); ImGui.EndTabItem(); }
-				if (ImGui.BeginTabItem("Markers"))    { DrawMarkers(); ImGui.EndTabItem(); }
+				if (Gui.BeginTabItem("Roles"))      { DrawRoles(); ImGui.EndTabItem(); }
+				if (Gui.BeginTabItem("Events"))     { DrawEvents(); ImGui.EndTabItem(); }
+				if (Gui.BeginTabItem("Transform"))  { DrawTransformTracks(); ImGui.EndTabItem(); }
+				if (Gui.BeginTabItem("Tint"))       { DrawTintTracks(); ImGui.EndTabItem(); }
+				if (Gui.BeginTabItem("Sprite"))     { DrawSpriteTracks(); ImGui.EndTabItem(); }
+				if (Gui.BeginTabItem("Active"))     { DrawActivationTracks(); ImGui.EndTabItem(); }
+				if (Gui.BeginTabItem("Audio"))      { DrawAudioTracks(); ImGui.EndTabItem(); }
+				if (Gui.BeginTabItem("Property"))   { DrawPropertyTracks(); ImGui.EndTabItem(); }
+				if (Gui.BeginTabItem("Nested"))     { DrawNestedTracks(); ImGui.EndTabItem(); }
+				if (Gui.BeginTabItem("Spawns"))     { DrawSpawns(); ImGui.EndTabItem(); }
+				if (Gui.BeginTabItem("Markers"))    { DrawMarkers(); ImGui.EndTabItem(); }
 				ImGui.EndTabBar();
 			}
 
@@ -162,7 +162,7 @@ namespace Voltage.Editor.Windows
 				_needsNormalize = false;
 			}
 
-			ImGui.End();
+			Gui.End();
 		}
 
 		#region Director / asset sync
@@ -225,13 +225,13 @@ namespace Voltage.Editor.Windows
 					_previewPlaying = false;
 			}
 
-			if (ImGui.Button(_previewPlaying ? "Pause" : "Play"))
+			if (Gui.Button(_previewPlaying ? "Pause" : "Play"))
 			{
 				if (_previewPlaying) { _director.Pause(); _previewPlaying = false; }
 				else { SetRecording(false); if (_director.State != DirectorState.Paused) _director.Play(); else _director.Resume(); _previewPlaying = true; }
 			}
 			ImGui.SameLine();
-			if (ImGui.Button("Stop"))
+			if (Gui.Button("Stop"))
 				StopPreview();
 
 			// Record toggle — red when armed.
@@ -241,7 +241,7 @@ namespace Voltage.Editor.Windows
 				ImGui.PushStyleColor(ImGuiCol.Button, new Num.Vector4(0.75f, 0.15f, 0.15f, 1f));
 				ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new Num.Vector4(0.9f, 0.25f, 0.25f, 1f));
 			}
-			if (ImGui.Button(_recording ? "● Recording" : "● Record"))
+			if (Gui.Button(_recording ? "● Recording" : "● Record"))
 				SetRecording(!_recording);
 			if (_recording)
 				ImGui.PopStyleColor(2);
@@ -253,10 +253,10 @@ namespace Voltage.Editor.Windows
 
 			// Zoom controls.
 			ImGui.SameLine();
-			if (ImGui.SmallButton("-"))
+			if (Gui.SmallButton("-"))
 				_pixelsPerSecond = Math.Max(12f, _pixelsPerSecond / 1.25f);
 			ImGui.SameLine();
-			if (ImGui.SmallButton("+"))
+			if (Gui.SmallButton("+"))
 				_pixelsPerSecond = Math.Min(600f, _pixelsPerSecond * 1.25f);
 			if (ImGui.IsItemHovered())
 				ImGui.SetTooltip("Zoom (or scroll the wheel over the timeline).");
@@ -264,7 +264,7 @@ namespace Voltage.Editor.Windows
 			ImGui.SameLine();
 			ImGui.SetNextItemWidth(80);
 			var dur = _asset.Duration;
-			if (ImGui.InputFloat("Length", ref dur, 0f, 0f, "%.2f"))
+			if (Gui.InputFloat("Length", ref dur, 0f, 0f, "%.2f"))
 				_asset.Duration = Math.Max(0.1f, dur);
 
 			ImGui.SameLine();
@@ -277,26 +277,26 @@ namespace Voltage.Editor.Windows
 				ImGui.SameLine();
 			}
 
-			if (ImGui.Button("Fit"))
+			if (Gui.Button("Fit"))
 				_asset.Duration = Math.Max(0.1f, contentEnd);
 			if (ImGui.IsItemHovered())
 				ImGui.SetTooltip("Set Length to the end of the last keyframe, clip, event or marker.");
 
 			ImGui.SameLine();
-			if (ImGui.Button("Save"))
+			if (Gui.Button("Save"))
 				SaveIfPathKnown();
 			ImGui.SameLine();
-			if (ImGui.Button("Load..."))
+			if (Gui.Button("Load..."))
 				LoadTimeline();
 		}
 
 		/// <summary>New / Load buttons — create a fresh .vtimeline file or open an existing one for this director.</summary>
 		private void DrawFileButtons()
 		{
-			if (ImGui.Button("New Timeline..."))
+			if (Gui.Button("New Timeline..."))
 				NewTimeline();
 			ImGui.SameLine();
-			if (ImGui.Button("Load Timeline..."))
+			if (Gui.Button("Load Timeline..."))
 				LoadTimeline();
 
 			if (!NativeFileDialogs.IsAvailable)
@@ -442,20 +442,20 @@ namespace Voltage.Editor.Windows
 				ImGui.SetNextItemWidth(160);
 				DrawRoleSelect("Target Role", ref track.TargetRole);
 				ImGui.SameLine();
-				if (ImGui.SmallButton("Remove Track")) { _asset.ParameterTracks.Remove(track); ImGui.PopID(); break; }
+				if (Gui.SmallButton("Remove Track")) { _asset.ParameterTracks.Remove(track); ImGui.PopID(); break; }
 
 				var current = string.IsNullOrEmpty(track.Property)
 					? "(pick a property)"
 					: $"{track.TargetComponentId}.{track.Property}";
 
 				ImGui.SetNextItemWidth(280);
-				if (ImGui.BeginCombo("Property", current))
+				if (Gui.BeginCombo("Property", current))
 				{
 					foreach (var entry in registered)
 					{
 						var label = $"{entry.ComponentId}.{entry.Property}  ({entry.Kind})";
 						var selected = entry.ComponentId == track.TargetComponentId && entry.Property == track.Property;
-						if (ImGui.Selectable(label, selected))
+						if (Gui.Selectable(label, selected))
 						{
 							track.TargetComponentId = entry.ComponentId;
 							track.Property = entry.Property;
@@ -483,7 +483,7 @@ namespace Voltage.Editor.Windows
 			}
 
 			ImGui.Separator();
-			if (ImGui.Button("Add Property Track"))
+			if (Gui.Button("Add Property Track"))
 				_asset.ParameterTracks.Add(new TimelinePropertyTrack { TargetRole = _asset.Roles.FirstOrDefault()?.Name });
 		}
 
@@ -505,7 +505,7 @@ namespace Voltage.Editor.Windows
 				ImGui.PushID("nest" + i);
 				ImGui.Separator();
 
-				if (ImGui.SmallButton("Remove Track")) { _asset.ParameterTracks.Remove(track); ImGui.PopID(); break; }
+				if (Gui.SmallButton("Remove Track")) { _asset.ParameterTracks.Remove(track); ImGui.PopID(); break; }
 
 				for (var c = 0; c < track.Clips.Count; c++)
 				{
@@ -513,11 +513,11 @@ namespace Voltage.Editor.Windows
 					ImGui.PushID(c);
 
 					ImGui.SetNextItemWidth(70);
-					MarkEditedTime(ImGui.InputFloat("t", ref clip.Time, 0, 0, "%.2f"));
+					MarkEditedTime(Gui.InputFloat("t", ref clip.Time, 0, 0, "%.2f"));
 					ImGui.SameLine();
 
 					var label = clip.Timeline.IsValid ? (clip.Timeline.AssetName ?? "timeline") : "None (.vtimeline)";
-					ImGui.Button($"{label}##nested", new Num.Vector2(170, 0));
+					Gui.Button($"{label}##nested", new Num.Vector2(170, 0));
 					if (ImGui.BeginDragDropTarget())
 					{
 						var payload = ImGui.AcceptDragDropPayload(AssetBrowserWindow.DragDropPayloadId);
@@ -541,24 +541,24 @@ namespace Voltage.Editor.Windows
 
 					ImGui.SameLine();
 					ImGui.SetNextItemWidth(60);
-					ImGui.InputFloat("speed", ref clip.Speed, 0, 0, "%.2f");
+					Gui.InputFloat("speed", ref clip.Speed, 0, 0, "%.2f");
 					ImGui.SameLine();
-					if (ImGui.SmallButton("x")) { track.Clips.RemoveAt(c); ImGui.PopID(); break; }
+					if (Gui.SmallButton("x")) { track.Clips.RemoveAt(c); ImGui.PopID(); break; }
 					ImGui.PopID();
 				}
 
-				if (ImGui.SmallButton("+ nested"))
+				if (Gui.SmallButton("+ nested"))
 					track.Clips.Add(new TimelineNestedClip { Time = _scrub });
 
 				ImGui.PopID();
 			}
 
 			ImGui.Separator();
-			if (ImGui.Button("Add Nested Track"))
+			if (Gui.Button("Add Nested Track"))
 				_asset.ParameterTracks.Add(new TimelineNestedTrack());
 
 			ImGui.SameLine();
-			if (ImGui.Button("Reload Nested"))
+			if (Gui.Button("Reload Nested"))
 				TimelineNestedTrack.ClearCache();
 			if (ImGui.IsItemHovered())
 				ImGui.SetTooltip("Nested timelines are cached. Press this after editing one to see the change.");
@@ -582,15 +582,15 @@ namespace Voltage.Editor.Windows
 				ImGui.PushID("mk" + i);
 
 				ImGui.SetNextItemWidth(70);
-				MarkEditedTime(ImGui.InputFloat("t", ref marker.Time, 0, 0, "%.2f"));
+				MarkEditedTime(Gui.InputFloat("t", ref marker.Time, 0, 0, "%.2f"));
 				ImGui.SameLine();
 
 				var name = marker.Name ?? string.Empty;
 				ImGui.SetNextItemWidth(180);
-				if (ImGui.InputText("name", ref name, 64)) marker.Name = name;
+				if (Gui.InputText("name", ref name, 64)) marker.Name = name;
 
 				ImGui.SameLine();
-				if (ImGui.SmallButton("go"))
+				if (Gui.SmallButton("go"))
 				{
 					_previewPlaying = false;
 					_scrub = Math.Clamp(marker.Time, 0f, Math.Max(0.1f, _asset.Duration));
@@ -598,13 +598,13 @@ namespace Voltage.Editor.Windows
 				}
 
 				ImGui.SameLine();
-				if (ImGui.SmallButton("x")) { _asset.Markers.RemoveAt(i); ImGui.PopID(); break; }
+				if (Gui.SmallButton("x")) { _asset.Markers.RemoveAt(i); ImGui.PopID(); break; }
 
 				ImGui.PopID();
 			}
 
 			ImGui.Separator();
-			if (ImGui.Button("Add Marker"))
+			if (Gui.Button("Add Marker"))
 				_asset.Markers.Add(new TimelineMarker { Time = _scrub, Name = "beat" });
 		}
 
@@ -635,7 +635,7 @@ namespace Voltage.Editor.Windows
 
 			var dl = ImGui.GetWindowDrawList();
 			var origin = ImGui.GetCursorScreenPos();
-			ImGui.InvisibleButton("##tlcontent", new Num.Vector2(contentW, contentH));
+			Gui.InvisibleButton("##tlcontent", new Num.Vector2(contentW, contentH));
 			var hovered = ImGui.IsItemHovered();
 			var mouse = ImGui.GetMousePos();
 
@@ -1303,14 +1303,14 @@ namespace Voltage.Editor.Windows
 
 				var name = role.Name ?? "";
 				ImGui.SetNextItemWidth(200);
-				if (ImGui.InputText("Role", ref name, 64))
+				if (Gui.InputText("Role", ref name, 64))
 					role.Name = name;
 
 				ImGui.SameLine();
 				DrawRoleBindingCombo(role.Name);
 
 				ImGui.SameLine();
-				if (ImGui.SmallButton("X"))
+				if (Gui.SmallButton("X"))
 				{
 					_asset.Roles.RemoveAt(i);
 					ImGui.PopID();
@@ -1319,7 +1319,7 @@ namespace Voltage.Editor.Windows
 				ImGui.PopID();
 			}
 
-			if (ImGui.Button("Add Role"))
+			if (Gui.Button("Add Role"))
 				_asset.Roles.Add(new TimelineRole { Name = "Role" + _asset.Roles.Count });
 		}
 
@@ -1332,14 +1332,14 @@ namespace Voltage.Editor.Windows
 			var current = binding?.Entity.EntityName ?? "(unbound)";
 
 			ImGui.SetNextItemWidth(220);
-			if (ImGui.BeginCombo($"##bind_{role}", current))
+			if (Gui.BeginCombo($"##bind_{role}", current))
 			{
 				var scene = Core.Scene;
 				if (scene != null)
 				{
 					foreach (var e in scene.Entities.OrderBy(e => e.Name))
 					{
-						if (ImGui.Selectable(e.Name, current == e.Name))
+						if (Gui.Selectable(e.Name, current == e.Name))
 							BindRole(role, e);
 					}
 				}
@@ -1377,14 +1377,14 @@ namespace Voltage.Editor.Windows
 
 				var name = e.Name ?? "";
 				ImGui.SetNextItemWidth(160);
-				if (ImGui.InputText("Name", ref name, 64)) e.Name = name;
+				if (Gui.InputText("Name", ref name, 64)) e.Name = name;
 
 				ImGui.SameLine();
 				ImGui.SetNextItemWidth(80);
-				if (ImGui.InputFloat("Time", ref e.Time, 0, 0, "%.2f")) _asset.InvalidateEventOrder();
+				if (Gui.InputFloat("Time", ref e.Time, 0, 0, "%.2f")) _asset.InvalidateEventOrder();
 				ImGui.SameLine();
 				ImGui.SetNextItemWidth(80);
-				ImGui.InputFloat("Dur", ref e.Duration, 0, 0, "%.2f");
+				Gui.InputFloat("Dur", ref e.Duration, 0, 0, "%.2f");
 
 				// Target role
 				ImGui.SetNextItemWidth(140);
@@ -1393,10 +1393,10 @@ namespace Voltage.Editor.Windows
 				ImGui.SameLine();
 				ImGui.SetNextItemWidth(150);
 				var comp = e.TargetComponentId ?? "";
-				if (ImGui.BeginCombo("Component", comp))
+				if (Gui.BeginCombo("Component", comp))
 				{
 					foreach (var id in componentIds)
-						if (ImGui.Selectable(id, comp == id)) e.TargetComponentId = id;
+						if (Gui.Selectable(id, comp == id)) e.TargetComponentId = id;
 					ImGui.EndCombo();
 				}
 
@@ -1415,23 +1415,23 @@ namespace Voltage.Editor.Windows
 
 				var bc = e.BroadcastMessage ?? "";
 				ImGui.SetNextItemWidth(160);
-				if (ImGui.InputText("Broadcast", ref bc, 64)) e.BroadcastMessage = string.IsNullOrWhiteSpace(bc) ? null : bc;
+				if (Gui.InputText("Broadcast", ref bc, 64)) e.BroadcastMessage = string.IsNullOrWhiteSpace(bc) ? null : bc;
 
 				ImGui.SameLine();
 				var skip = (int)e.OnSkip;
 				ImGui.SetNextItemWidth(150);
-				if (ImGui.Combo("On Skip", ref skip, SkipNames, SkipNames.Length)) e.OnSkip = (SkipBehavior)skip;
+				if (Gui.Combo("On Skip", ref skip, SkipNames, SkipNames.Length)) e.OnSkip = (SkipBehavior)skip;
 				if (ImGui.IsItemHovered())
 					ImGui.SetTooltip("Skip = dropped when the player skips.\nFireImmediately = still runs (give item, spawn boss).");
 
 				ImGui.SameLine();
-				if (ImGui.SmallButton("Remove")) { _asset.Events.RemoveAt(i); _asset.InvalidateEventOrder(); ImGui.PopID(); break; }
+				if (Gui.SmallButton("Remove")) { _asset.Events.RemoveAt(i); _asset.InvalidateEventOrder(); ImGui.PopID(); break; }
 
 				ImGui.PopID();
 			}
 
 			ImGui.Separator();
-			if (ImGui.Button("Add Event"))
+			if (Gui.Button("Add Event"))
 			{
 				_asset.Events.Add(new TimelineEventClip { Name = "event", Time = _scrub });
 				_asset.InvalidateEventOrder();
@@ -1441,11 +1441,11 @@ namespace Voltage.Editor.Windows
 		private void DrawMethodCombo(string label, ref string value, string[] methods)
 		{
 			var cur = value ?? "(none)";
-			if (ImGui.BeginCombo(label, cur))
+			if (Gui.BeginCombo(label, cur))
 			{
-				if (ImGui.Selectable("(none)", value == null)) value = null;
+				if (Gui.Selectable("(none)", value == null)) value = null;
 				foreach (var m in methods)
-					if (ImGui.Selectable(m, value == m)) value = m;
+					if (Gui.Selectable(m, value == m)) value = m;
 				ImGui.EndCombo();
 			}
 		}
@@ -1453,11 +1453,11 @@ namespace Voltage.Editor.Windows
 		private void DrawRoleSelect(string label, ref string role)
 		{
 			var cur = role ?? "(none)";
-			if (ImGui.BeginCombo(label, cur))
+			if (Gui.BeginCombo(label, cur))
 			{
-				if (ImGui.Selectable("(none)", role == null)) role = null;
+				if (Gui.Selectable("(none)", role == null)) role = null;
 				foreach (var r in _asset.Roles)
-					if (ImGui.Selectable(r.Name, role == r.Name)) role = r.Name;
+					if (Gui.Selectable(r.Name, role == r.Name)) role = r.Name;
 				ImGui.EndCombo();
 			}
 		}
@@ -1481,7 +1481,7 @@ namespace Voltage.Editor.Windows
 				ImGui.SetNextItemWidth(160);
 				DrawRoleSelect("Target Role", ref track.TargetRole);
 				ImGui.SameLine();
-				if (ImGui.SmallButton("Remove Track")) { _asset.ParameterTracks.Remove(track); ImGui.PopID(); break; }
+				if (Gui.SmallButton("Remove Track")) { _asset.ParameterTracks.Remove(track); ImGui.PopID(); break; }
 
 				DrawVector2Keys("Position", track.Position);
 				DrawFloatKeys("Rotation (rad)", track.Rotation);
@@ -1491,13 +1491,13 @@ namespace Voltage.Editor.Windows
 			}
 
 			ImGui.Separator();
-			if (ImGui.Button("Add Transform Track"))
+			if (Gui.Button("Add Transform Track"))
 				_asset.ParameterTracks.Add(new TimelineTransformTrack { TargetRole = _asset.Roles.FirstOrDefault()?.Name });
 		}
 
 		private void DrawVector2Keys(string label, List<Vector2Keyframe> keys)
 		{
-			if (!ImGui.TreeNode($"{label} ({keys.Count} keys)"))
+			if (!Gui.TreeNode($"{label} ({keys.Count} keys)"))
 				return;
 
 			for (var i = 0; i < keys.Count; i++)
@@ -1505,20 +1505,20 @@ namespace Voltage.Editor.Windows
 				var k = keys[i];
 				ImGui.PushID(label + i);
 				ImGui.SetNextItemWidth(70);
-				MarkEditedTime(ImGui.InputFloat("t", ref k.Time, 0, 0, "%.2f"));
+				MarkEditedTime(Gui.InputFloat("t", ref k.Time, 0, 0, "%.2f"));
 				ImGui.SameLine();
 				var v = new Num.Vector2(k.Value.X, k.Value.Y);
 				ImGui.SetNextItemWidth(140);
-				if (ImGui.InputFloat2("val", ref v)) k.Value = new Microsoft.Xna.Framework.Vector2(v.X, v.Y);
+				if (Gui.InputFloat2("val", ref v)) k.Value = new Microsoft.Xna.Framework.Vector2(v.X, v.Y);
 				ImGui.SameLine();
 				var ease = (int)k.Ease;
 				ImGui.SetNextItemWidth(130);
-				if (ImGui.Combo("ease", ref ease, EaseNames, EaseNames.Length)) k.Ease = (EaseType)ease;
+				if (Gui.Combo("ease", ref ease, EaseNames, EaseNames.Length)) k.Ease = (EaseType)ease;
 				ImGui.SameLine();
-				if (ImGui.SmallButton("x")) { keys.RemoveAt(i); ImGui.PopID(); break; }
+				if (Gui.SmallButton("x")) { keys.RemoveAt(i); ImGui.PopID(); break; }
 				ImGui.PopID();
 			}
-			if (ImGui.SmallButton($"+ key##{label}"))
+			if (Gui.SmallButton($"+ key##{label}"))
 			{
 				var last = keys.Count > 0 ? keys[keys.Count - 1].Value : default;
 				keys.Add(new Vector2Keyframe { Time = _scrub, Value = last });
@@ -1529,7 +1529,7 @@ namespace Voltage.Editor.Windows
 
 		private void DrawFloatKeys(string label, List<FloatKeyframe> keys)
 		{
-			if (!ImGui.TreeNode($"{label} ({keys.Count} keys)"))
+			if (!Gui.TreeNode($"{label} ({keys.Count} keys)"))
 				return;
 
 			for (var i = 0; i < keys.Count; i++)
@@ -1537,19 +1537,19 @@ namespace Voltage.Editor.Windows
 				var k = keys[i];
 				ImGui.PushID(label + i);
 				ImGui.SetNextItemWidth(70);
-				MarkEditedTime(ImGui.InputFloat("t", ref k.Time, 0, 0, "%.2f"));
+				MarkEditedTime(Gui.InputFloat("t", ref k.Time, 0, 0, "%.2f"));
 				ImGui.SameLine();
 				ImGui.SetNextItemWidth(90);
-				ImGui.InputFloat("val", ref k.Value, 0, 0, "%.3f");
+				Gui.InputFloat("val", ref k.Value, 0, 0, "%.3f");
 				ImGui.SameLine();
 				var ease = (int)k.Ease;
 				ImGui.SetNextItemWidth(130);
-				if (ImGui.Combo("ease", ref ease, EaseNames, EaseNames.Length)) k.Ease = (EaseType)ease;
+				if (Gui.Combo("ease", ref ease, EaseNames, EaseNames.Length)) k.Ease = (EaseType)ease;
 				ImGui.SameLine();
-				if (ImGui.SmallButton("x")) { keys.RemoveAt(i); ImGui.PopID(); break; }
+				if (Gui.SmallButton("x")) { keys.RemoveAt(i); ImGui.PopID(); break; }
 				ImGui.PopID();
 			}
-			if (ImGui.SmallButton($"+ key##{label}"))
+			if (Gui.SmallButton($"+ key##{label}"))
 			{
 				var last = keys.Count > 0 ? keys[keys.Count - 1].Value : 0f;
 				keys.Add(new FloatKeyframe { Time = _scrub, Value = last });
@@ -1577,7 +1577,7 @@ namespace Voltage.Editor.Windows
 				ImGui.SetNextItemWidth(160);
 				DrawRoleSelect("Target Role", ref track.TargetRole);
 				ImGui.SameLine();
-				if (ImGui.SmallButton("Remove Track")) { _asset.ParameterTracks.Remove(track); ImGui.PopID(); break; }
+				if (Gui.SmallButton("Remove Track")) { _asset.ParameterTracks.Remove(track); ImGui.PopID(); break; }
 
 				DrawFloatKeys("Alpha (0-1)", track.Alpha);
 				DrawColorKeys("Tint", track.Tint);
@@ -1586,13 +1586,13 @@ namespace Voltage.Editor.Windows
 			}
 
 			ImGui.Separator();
-			if (ImGui.Button("Add Tint Track"))
+			if (Gui.Button("Add Tint Track"))
 				_asset.ParameterTracks.Add(new TimelineTintTrack { TargetRole = _asset.Roles.FirstOrDefault()?.Name });
 		}
 
 		private void DrawColorKeys(string label, List<ColorKeyframe> keys)
 		{
-			if (!ImGui.TreeNode($"{label} ({keys.Count} keys)"))
+			if (!Gui.TreeNode($"{label} ({keys.Count} keys)"))
 				return;
 
 			for (var i = 0; i < keys.Count; i++)
@@ -1600,24 +1600,24 @@ namespace Voltage.Editor.Windows
 				var k = keys[i];
 				ImGui.PushID(label + i);
 				ImGui.SetNextItemWidth(70);
-				MarkEditedTime(ImGui.InputFloat("t", ref k.Time, 0, 0, "%.2f"));
+				MarkEditedTime(Gui.InputFloat("t", ref k.Time, 0, 0, "%.2f"));
 				ImGui.SameLine();
 
 				var rgb = new Num.Vector3(k.Value.R / 255f, k.Value.G / 255f, k.Value.B / 255f);
 				ImGui.SetNextItemWidth(160);
-				if (ImGui.ColorEdit3("rgb", ref rgb, ImGuiColorEditFlags.NoInputs))
+				if (Gui.ColorEdit3("rgb", ref rgb, ImGuiColorEditFlags.NoInputs))
 					k.Value = new Xna.Color(rgb.X, rgb.Y, rgb.Z);
 
 				ImGui.SameLine();
 				var ease = (int)k.Ease;
 				ImGui.SetNextItemWidth(130);
-				if (ImGui.Combo("ease", ref ease, EaseNames, EaseNames.Length)) k.Ease = (EaseType)ease;
+				if (Gui.Combo("ease", ref ease, EaseNames, EaseNames.Length)) k.Ease = (EaseType)ease;
 				ImGui.SameLine();
-				if (ImGui.SmallButton("x")) { keys.RemoveAt(i); ImGui.PopID(); break; }
+				if (Gui.SmallButton("x")) { keys.RemoveAt(i); ImGui.PopID(); break; }
 				ImGui.PopID();
 			}
 
-			if (ImGui.SmallButton($"+ key##{label}"))
+			if (Gui.SmallButton($"+ key##{label}"))
 			{
 				keys.Add(new ColorKeyframe { Time = _scrub, Value = Xna.Color.White });
 				keys.Sort((a, b) => a.Time.CompareTo(b.Time));
@@ -1642,39 +1642,39 @@ namespace Voltage.Editor.Windows
 				ImGui.SetNextItemWidth(160);
 				DrawRoleSelect("Target Role", ref track.TargetRole);
 				ImGui.SameLine();
-				if (ImGui.SmallButton("Remove Track")) { _asset.ParameterTracks.Remove(track); ImGui.PopID(); break; }
+				if (Gui.SmallButton("Remove Track")) { _asset.ParameterTracks.Remove(track); ImGui.PopID(); break; }
 
 				for (var c = 0; c < track.Clips.Count; c++)
 				{
 					var clip = track.Clips[c];
 					ImGui.PushID(c);
 					ImGui.SetNextItemWidth(70);
-					MarkEditedTime(ImGui.InputFloat("t", ref clip.Time, 0, 0, "%.2f"));
+					MarkEditedTime(Gui.InputFloat("t", ref clip.Time, 0, 0, "%.2f"));
 					ImGui.SameLine();
 					ImGui.SetNextItemWidth(70);
-					ImGui.InputFloat("len", ref clip.Duration, 0, 0, "%.2f");
+					Gui.InputFloat("len", ref clip.Duration, 0, 0, "%.2f");
 					ImGui.SameLine();
 					var name = clip.Animation ?? string.Empty;
 					ImGui.SetNextItemWidth(130);
-					if (ImGui.InputText("anim", ref name, 64)) clip.Animation = name;
+					if (Gui.InputText("anim", ref name, 64)) clip.Animation = name;
 					ImGui.SameLine();
 					var loop = (int)clip.Loop;
 					ImGui.SetNextItemWidth(110);
-					if (ImGui.Combo("loop", ref loop, LoopNames, LoopNames.Length))
+					if (Gui.Combo("loop", ref loop, LoopNames, LoopNames.Length))
 						clip.Loop = (SpriteAnimator.LoopMode)loop;
 					ImGui.SameLine();
-					if (ImGui.SmallButton("x")) { track.Clips.RemoveAt(c); ImGui.PopID(); break; }
+					if (Gui.SmallButton("x")) { track.Clips.RemoveAt(c); ImGui.PopID(); break; }
 					ImGui.PopID();
 				}
 
-				if (ImGui.SmallButton("+ clip"))
+				if (Gui.SmallButton("+ clip"))
 					track.Clips.Add(new TimelineSpriteClip { Time = _scrub, Duration = 1f });
 
 				ImGui.PopID();
 			}
 
 			ImGui.Separator();
-			if (ImGui.Button("Add Sprite Track"))
+			if (Gui.Button("Add Sprite Track"))
 				_asset.ParameterTracks.Add(new TimelineSpriteTrack { TargetRole = _asset.Roles.FirstOrDefault()?.Name });
 		}
 
@@ -1693,10 +1693,10 @@ namespace Voltage.Editor.Windows
 				ImGui.SetNextItemWidth(160);
 				DrawRoleSelect("Target Role", ref track.TargetRole);
 				ImGui.SameLine();
-				if (ImGui.SmallButton("Remove Track")) { _asset.ParameterTracks.Remove(track); ImGui.PopID(); break; }
+				if (Gui.SmallButton("Remove Track")) { _asset.ParameterTracks.Remove(track); ImGui.PopID(); break; }
 
 				var outside = track.ActiveOutsideRanges;
-				if (ImGui.Checkbox("Active outside ranges (invert)", ref outside))
+				if (Gui.Checkbox("Active outside ranges (invert)", ref outside))
 					track.ActiveOutsideRanges = outside;
 
 				for (var r = 0; r < track.Ranges.Count; r++)
@@ -1704,23 +1704,23 @@ namespace Voltage.Editor.Windows
 					var range = track.Ranges[r];
 					ImGui.PushID(r);
 					ImGui.SetNextItemWidth(70);
-					MarkEditedTime(ImGui.InputFloat("t", ref range.Time, 0, 0, "%.2f"));
+					MarkEditedTime(Gui.InputFloat("t", ref range.Time, 0, 0, "%.2f"));
 					ImGui.SameLine();
 					ImGui.SetNextItemWidth(70);
-					ImGui.InputFloat("len", ref range.Duration, 0, 0, "%.2f");
+					Gui.InputFloat("len", ref range.Duration, 0, 0, "%.2f");
 					ImGui.SameLine();
-					if (ImGui.SmallButton("x")) { track.Ranges.RemoveAt(r); ImGui.PopID(); break; }
+					if (Gui.SmallButton("x")) { track.Ranges.RemoveAt(r); ImGui.PopID(); break; }
 					ImGui.PopID();
 				}
 
-				if (ImGui.SmallButton("+ range"))
+				if (Gui.SmallButton("+ range"))
 					track.Ranges.Add(new TimelineActiveRange { Time = _scrub, Duration = 1f });
 
 				ImGui.PopID();
 			}
 
 			ImGui.Separator();
-			if (ImGui.Button("Add Activation Track"))
+			if (Gui.Button("Add Activation Track"))
 				_asset.ParameterTracks.Add(new TimelineActivationTrack { TargetRole = _asset.Roles.FirstOrDefault()?.Name });
 		}
 
@@ -1737,19 +1737,19 @@ namespace Voltage.Editor.Windows
 				ImGui.PushID("audio" + i);
 				ImGui.Separator();
 
-				if (ImGui.SmallButton("Remove Track")) { _asset.ParameterTracks.Remove(track); ImGui.PopID(); break; }
+				if (Gui.SmallButton("Remove Track")) { _asset.ParameterTracks.Remove(track); ImGui.PopID(); break; }
 
 				for (var c = 0; c < track.Clips.Count; c++)
 				{
 					var clip = track.Clips[c];
 					ImGui.PushID(c);
 					ImGui.SetNextItemWidth(70);
-					MarkEditedTime(ImGui.InputFloat("t", ref clip.Time, 0, 0, "%.2f"));
+					MarkEditedTime(Gui.InputFloat("t", ref clip.Time, 0, 0, "%.2f"));
 					ImGui.SameLine();
 
 					var label = clip.Clip.IsValid ? (clip.Clip.AssetName ?? "clip") : "None (audio)";
 					ImGui.SetNextItemWidth(150);
-					ImGui.Button($"{label}##clip", new Num.Vector2(150, 0));
+					Gui.Button($"{label}##clip", new Num.Vector2(150, 0));
 					if (ImGui.BeginDragDropTarget())
 					{
 						var payload = ImGui.AcceptDragDropPayload(AssetBrowserWindow.DragDropPayloadId);
@@ -1773,24 +1773,24 @@ namespace Voltage.Editor.Windows
 
 					ImGui.SameLine();
 					ImGui.SetNextItemWidth(70);
-					ImGui.InputFloat("vol", ref clip.Volume, 0, 0, "%.2f");
+					Gui.InputFloat("vol", ref clip.Volume, 0, 0, "%.2f");
 					ImGui.SameLine();
 					var bus = clip.Bus ?? "SFX";
 					ImGui.SetNextItemWidth(80);
-					if (ImGui.InputText("bus", ref bus, 32)) clip.Bus = bus;
+					if (Gui.InputText("bus", ref bus, 32)) clip.Bus = bus;
 					ImGui.SameLine();
-					if (ImGui.SmallButton("x")) { track.Clips.RemoveAt(c); ImGui.PopID(); break; }
+					if (Gui.SmallButton("x")) { track.Clips.RemoveAt(c); ImGui.PopID(); break; }
 					ImGui.PopID();
 				}
 
-				if (ImGui.SmallButton("+ sound"))
+				if (Gui.SmallButton("+ sound"))
 					track.Clips.Add(new TimelineAudioClip { Time = _scrub });
 
 				ImGui.PopID();
 			}
 
 			ImGui.Separator();
-			if (ImGui.Button("Add Audio Track"))
+			if (Gui.Button("Add Audio Track"))
 				_asset.ParameterTracks.Add(new TimelineAudioTrack());
 		}
 
@@ -1811,27 +1811,27 @@ namespace Voltage.Editor.Windows
 
 				var role = s.SpawnRole ?? "";
 				ImGui.SetNextItemWidth(140);
-				if (ImGui.InputText("Spawn Role", ref role, 64)) s.SpawnRole = role;
+				if (Gui.InputText("Spawn Role", ref role, 64)) s.SpawnRole = role;
 
 				ImGui.SameLine();
 				ImGui.SetNextItemWidth(80);
-				ImGui.InputFloat("Time", ref s.Time, 0, 0, "%.2f");
+				Gui.InputFloat("Time", ref s.Time, 0, 0, "%.2f");
 				ImGui.SameLine();
 				ImGui.SetNextItemWidth(80);
-				ImGui.InputFloat("Dur", ref s.Duration, 0, 0, "%.2f");
+				Gui.InputFloat("Dur", ref s.Duration, 0, 0, "%.2f");
 
 				ImGui.SameLine();
-				ImGui.Checkbox("Keep after", ref s.KeepAfterTimeline);
+				Gui.Checkbox("Keep after", ref s.KeepAfterTimeline);
 
 				ImGui.TextColored(Muted, $"Prefab: {(s.Prefab.IsValid ? s.Prefab.PrefabName : "(assign in inspector — drag a prefab)")}");
 
 				ImGui.SameLine();
-				if (ImGui.SmallButton("Remove")) { _asset.SpawnClips.RemoveAt(i); ImGui.PopID(); break; }
+				if (Gui.SmallButton("Remove")) { _asset.SpawnClips.RemoveAt(i); ImGui.PopID(); break; }
 				ImGui.PopID();
 			}
 
 			ImGui.Separator();
-			if (ImGui.Button("Add Spawn"))
+			if (Gui.Button("Add Spawn"))
 				_asset.SpawnClips.Add(new TimelineSpawnClip { SpawnRole = "Spawn" + _asset.SpawnClips.Count, Time = _scrub, Duration = 1f });
 		}
 

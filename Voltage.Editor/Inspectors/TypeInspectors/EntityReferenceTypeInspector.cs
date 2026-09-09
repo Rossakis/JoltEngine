@@ -55,7 +55,7 @@ public class EntityReferenceTypeInspector : AbstractTypeInspector
 		ImGui.PushStyleColor(ImGuiCol.Button, buttonColor);
 		ImGui.PushStyleColor(ImGuiCol.ButtonHovered, buttonColor with { W = 1f });
 
-		ImGui.Button($"{label}##entref_{_scopeId}", new Num.Vector2(-1, 0));
+		Gui.Button($"{label}##entref_{_scopeId}", new Num.Vector2(-1, 0));
 		if (ImGui.IsItemHovered())
 		{
 			// Single click highlights the referenced entity in the scene graph; double click
@@ -86,12 +86,12 @@ public class EntityReferenceTypeInspector : AbstractTypeInspector
 		}
 
 		// Right-click: clear
-		if (current != null && ImGui.BeginPopupContextItem($"entref_ctx_{_scopeId}"))
+		if (current != null && Gui.BeginPopupContextItem($"entref_ctx_{_scopeId}"))
 		{
-			if (ImGui.Selectable("Clear"))
+			if (Gui.Selectable("Clear"))
 				SetValueWithUndo(null, $"Clear {_name}");
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		if (_showPicker)
@@ -145,7 +145,7 @@ public class EntityReferenceTypeInspector : AbstractTypeInspector
 		ImGui.SetNextWindowSize(new Num.Vector2(400, 450), ImGuiCond.Appearing);
 
 		bool open = true;
-		if (!ImGui.BeginPopupModal($"entref_picker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
+		if (!Gui.BeginPopupModal($"entref_picker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
 			return;
 
 		// Shared hierarchy picker — identical search + scene-tree UI as list-element Entity/Transform slots.
@@ -165,6 +165,6 @@ public class EntityReferenceTypeInspector : AbstractTypeInspector
 		if (VoltageEditorUtils.CenteredButton("Cancel", 0.5f))
 			ImGui.CloseCurrentPopup();
 
-		ImGui.EndPopup();
+		Gui.EndPopup();
 	}
 }

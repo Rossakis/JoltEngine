@@ -33,7 +33,7 @@ public class ComponentReferenceTypeInspector : AbstractTypeInspector
 		ImGui.PushStyleColor(ImGuiCol.Button, buttonColor);
 		ImGui.PushStyleColor(ImGuiCol.ButtonHovered, buttonColor with { W = 1f });
 
-		ImGui.Button($"{label}##compref_{_scopeId}", new Num.Vector2(-1, 0));
+		Gui.Button($"{label}##compref_{_scopeId}", new Num.Vector2(-1, 0));
 		if (ImGui.IsItemHovered())
 		{
 			// Single click highlights the referenced component's entity; double click opens the picker.
@@ -94,12 +94,12 @@ public class ComponentReferenceTypeInspector : AbstractTypeInspector
 		}
 
 		// Clear with right-click
-		if (current != null && ImGui.BeginPopupContextItem($"compref_ctx_{_scopeId}"))
+		if (current != null && Gui.BeginPopupContextItem($"compref_ctx_{_scopeId}"))
 		{
-			if (ImGui.Selectable("Clear"))
+			if (Gui.Selectable("Clear"))
 				SetValueWithUndo(null, $"Clear {_name}");
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		if (_showPicker)
@@ -119,17 +119,17 @@ public class ComponentReferenceTypeInspector : AbstractTypeInspector
 		ImGui.SetNextWindowSize(new Num.Vector2(400, 450), ImGuiCond.Appearing);
 
 		bool open = true;
-		if (!ImGui.BeginPopupModal($"compref_picker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
+		if (!Gui.BeginPopupModal($"compref_picker_{_scopeId}", ref open, ImGuiWindowFlags.NoResize))
 			return;
 
 		ImGuiSafe.TextColoredSafe(new Num.Vector4(0.3f, 0.8f, 1f, 1f), $"Select {fieldType.Name}");
 		ImGui.Separator();
 
 		ImGui.SetNextItemWidth(-1);
-		ImGui.InputTextWithHint("##refsearch", "Search...", ref _pickerSearch, 128);
+		Gui.InputTextWithHint("##refsearch", "Search...", ref _pickerSearch, 128);
 		ImGui.Separator();
 
-		if (ImGui.Selectable($"  None ({fieldType.Name})", current == null))
+		if (Gui.Selectable($"  None ({fieldType.Name})", current == null))
 		{
 			SetValueWithUndo(null, $"Clear {_name}");
 			ImGui.CloseCurrentPopup();
@@ -157,7 +157,7 @@ public class ComponentReferenceTypeInspector : AbstractTypeInspector
 							continue;
 
 						ImGui.PushID((int)entity.Id * 1000 + c);
-						if (ImGui.Selectable($"  {entity.Name}  /  {comp}", comp == current))
+						if (Gui.Selectable($"  {entity.Name}  /  {comp}", comp == current))
 						{
 							SetValueWithUndo(comp, $"Assign {_name} = {comp}");
 							ImGui.CloseCurrentPopup();
@@ -182,7 +182,7 @@ public class ComponentReferenceTypeInspector : AbstractTypeInspector
 		if (VoltageEditorUtils.CenteredButton("Cancel", 0.5f))
 			ImGui.CloseCurrentPopup();
 
-		ImGui.EndPopup();
+		Gui.EndPopup();
 	}
 
 	private void DrawComponentTreeNode(Entity entity, Component current, Type fieldType)
@@ -196,9 +196,9 @@ public class ComponentReferenceTypeInspector : AbstractTypeInspector
 		ImGui.PushID((int)entity.Id);
 
 		bool nodeOpen = hasChildren
-			? ImGui.TreeNodeEx(entity.Name,
+			? Gui.TreeNodeEx(entity.Name,
 				ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.SpanAvailWidth)
-			: ImGui.TreeNodeEx(entity.Name,
+			: Gui.TreeNodeEx(entity.Name,
 				ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.NoTreePushOnOpen
 				| ImGuiTreeNodeFlags.SpanAvailWidth);
 
@@ -212,7 +212,7 @@ public class ComponentReferenceTypeInspector : AbstractTypeInspector
 
 				ImGui.PushID(c);
 				ImGui.Indent();
-				if (ImGui.Selectable($"{entity.Name}  /  {comp}", comp == current))
+				if (Gui.Selectable($"{entity.Name}  /  {comp}", comp == current))
 				{
 					SetValueWithUndo(comp, $"Assign {_name} = {comp}");
 					ImGui.CloseCurrentPopup();

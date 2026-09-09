@@ -209,7 +209,7 @@ namespace Voltage.Editor.Plugins
 		{
 			foreach (var item in items.Where(i => i.PathSegments.Length == depth + 1))
 			{
-				if (ImGui.MenuItem(item.PathSegments[depth]))
+				if (Gui.MenuItem(item.PathSegments[depth]))
 				{
 					try
 					{
@@ -225,10 +225,10 @@ namespace Voltage.Editor.Plugins
 			foreach (var group in items.Where(i => i.PathSegments.Length > depth + 1)
 				         .GroupBy(i => i.PathSegments[depth], StringComparer.Ordinal))
 			{
-				if (ImGui.BeginMenu(group.Key))
+				if (Gui.BeginMenu(group.Key))
 				{
 					DrawMenuLevel(group.ToList(), depth + 1);
-					ImGui.EndMenu();
+					Gui.EndMenu();
 				}
 			}
 		}

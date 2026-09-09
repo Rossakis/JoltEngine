@@ -58,7 +58,7 @@ namespace Voltage.Editor.Utils
 		{
 			ImGui.AlignTextToFramePadding();
 
-			var wasClicked = ImGui.Button(buttonText);
+			var wasClicked = Gui.Button(buttonText);
 			ImGui.SameLine(0,
 				ImGui.GetWindowWidth() * 0.65f - ImGui.GetItemRectSize().X + ImGui.GetStyle().ItemInnerSpacing.X);
 			ImGuiSafe.TextSafe(label);
@@ -81,7 +81,7 @@ namespace Voltage.Editor.Utils
 			var origCursorPos = ImGui.GetCursorPos();
 			var widgetSize = new Num.Vector2(ImGui.GetContentRegionAvail().X,
                 widgetCustomHeight > 0 ? widgetCustomHeight : GetDefaultWidgetHeight());
-			ImGui.InvisibleButton("##disabled", widgetSize);
+			Gui.InvisibleButton("##disabled", widgetSize);
 			ImGui.SetCursorPos(origCursorPos);
 		}
 
@@ -94,7 +94,7 @@ namespace Voltage.Editor.Utils
 		{
 			var buttonWidth = ImGui.GetContentRegionAvail().X * percentWidth;
 			ImGui.SetCursorPosX(xIndent + (ImGui.GetContentRegionAvail().X - buttonWidth) / 2f);
-			return ImGui.Button(label, new System.Numerics.Vector2(buttonWidth, GetDefaultWidgetHeight()));
+			return Gui.Button(label, new System.Numerics.Vector2(buttonWidth, GetDefaultWidgetHeight()));
 		}
 
 		/// <summary>
@@ -109,7 +109,7 @@ namespace Voltage.Editor.Utils
 			// Fall back to a checkbox if the icons never got bound, so the control is never missing.
 			if (icon == IntPtr.Zero)
 			{
-				var toggled = ImGui.Checkbox(string.IsNullOrEmpty(label) ? $"##{id}" : $"{label}##{id}", ref visible);
+				var toggled = Gui.Checkbox(string.IsNullOrEmpty(label) ? $"##{id}" : $"{label}##{id}", ref visible);
 				if (tooltip != null && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
 					ImGui.SetTooltip(tooltip);
 
@@ -127,7 +127,7 @@ namespace Voltage.Editor.Utils
 			ImGui.PushStyleColor(ImGuiCol.Button, new Num.Vector4(0f, 0f, 0f, 0f));
 			ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, new Num.Vector2(2f, 2f));
 
-			var clicked = ImGui.ImageButton($"##eye_{id}", icon, new Num.Vector2(size, size),
+			var clicked = Gui.ImageButton($"##eye_{id}", icon, new Num.Vector2(size, size),
 				Num.Vector2.Zero, Num.Vector2.One, new Num.Vector4(0f, 0f, 0f, 0f), tint);
 
 			ImGui.PopStyleVar();
@@ -200,7 +200,7 @@ namespace Voltage.Editor.Utils
 		{
 			var result = false;
 			var junkBool = true;
-			if (ImGui.BeginPopupModal(name, ref junkBool, ImGuiWindowFlags.AlwaysAutoResize))
+			if (Gui.BeginPopupModal(name, ref junkBool, ImGuiWindowFlags.AlwaysAutoResize))
 			{
 				result = false;
 
@@ -209,20 +209,20 @@ namespace Voltage.Editor.Utils
 				ImGui.Separator();
 				SmallVerticalSpace();
 
-				if (ImGui.Button(cxlButton, new Num.Vector2(120, 0)))
+				if (Gui.Button(cxlButton, new Num.Vector2(120, 0)))
 				{
 					ImGui.CloseCurrentPopup();
 				}
 
 				ImGui.SetItemDefaultFocus();
 				ImGui.SameLine();
-				if (ImGui.Button(okButton, new Num.Vector2(120, 0)))
+				if (Gui.Button(okButton, new Num.Vector2(120, 0)))
 				{
 					result = true;
 					ImGui.CloseCurrentPopup();
 				}
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 
 			return result;

@@ -31,7 +31,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			ImGui.TextUnformatted("Background Color");
 			ImGui.SameLine();
 
-			if (ImGui.ColorEdit4("##atlasbg", ref color,
+			if (Gui.ColorEdit4("##atlasbg", ref color,
 				    ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.NoLabel |
 				    ImGuiColorEditFlags.AlphaBar | ImGuiColorEditFlags.AlphaPreview))
 			{
@@ -47,7 +47,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			}
 
 			ImGui.SameLine();
-			if (ImGui.SmallButton("Reset bg"))
+			if (Gui.SmallButton("Reset bg"))
 				_packed.Value = Default;
 		}
 

@@ -24,16 +24,16 @@ namespace Voltage.Editor.Windows
 				return;
 
 			ImGui.SetNextWindowSize(new Num.Vector2(360, 220), ImGuiCond.FirstUseEver);
-			if (!ImGui.Begin("Audio Profiler ###AudioProfiler", ref IsOpen))
+			if (!Gui.Begin("Audio Profiler ###AudioProfiler", ref IsOpen))
 			{
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
 			if (Core.Audio == null)
 			{
 				ImGui.TextColored(Red, "Audio manager not initialized.");
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
@@ -45,7 +45,7 @@ namespace Voltage.Editor.Windows
 				ImGui.TextColored(Muted, "DSP profiling (mix load, voices, underruns) is only available on the");
 				ImGui.TextColored(Muted, "software mixing backend. Set AudioManager.PreferSoftwareBackend");
 				ImGui.TextColored(Muted, "(see Voltage.Editor/Program.cs) to enable it.");
-				ImGui.End();
+				Gui.End();
 				return;
 			}
 
@@ -81,7 +81,7 @@ namespace Voltage.Editor.Windows
 			ImGui.TextWrapped("Underruns > 0 = audible glitches. Sustained load > ~50% risks them.");
 			ImGui.PopStyleColor();
 
-			ImGui.End();
+			Gui.End();
 		}
 
 		/// <summary>Shows which audio backend is active and whether it's actually producing sound.</summary>

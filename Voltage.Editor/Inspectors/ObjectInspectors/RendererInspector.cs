@@ -29,20 +29,20 @@ public class RendererInspector
 	public void Draw()
 	{
 		ImGui.PushID(_scopeId);
-		var isOpen = ImGui.CollapsingHeader(_name);
+		var isOpen = Gui.CollapsingHeader(_name);
 
 		VoltageEditorUtils.ShowContextMenuTooltip();
 
-		if (ImGui.BeginPopupContextItem())
+		if (Gui.BeginPopupContextItem())
 		{
-			if (ImGui.Selectable("Remove Renderer"))
+			if (Gui.Selectable("Remove Renderer"))
 			{
 				isOpen = false;
 				Core.Scene.RemoveRenderer(_renderer);
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 
 		if (isOpen)
@@ -51,10 +51,10 @@ public class RendererInspector
 
 			_materialInspector.Draw();
 
-			ImGui.Checkbox("shouldDebugRender", ref Renderer.ShouldDebugRender);
+			Gui.Checkbox("shouldDebugRender", ref Renderer.ShouldDebugRender);
 
 			var value = Renderer.RenderTargetClearColor.ToNumerics();
-			if (ImGui.ColorEdit4("renderTargetClearColor", ref value))
+			if (Gui.ColorEdit4("renderTargetClearColor", ref value))
 				Renderer.RenderTargetClearColor = value.ToXNAColor();
 
 			if (Renderer.Camera != null)
@@ -64,11 +64,11 @@ public class RendererInspector
 			ImGui.PushStyleVar(ImGuiStyleVar.Alpha, ImGui.GetStyle().Alpha * 0.5f);
 			VoltageEditorUtils.DisableNextWidget();
 			var tempBool = Renderer.WantsToRenderToSceneRenderTarget;
-			ImGui.Checkbox("wantsToRenderToSceneRenderTarget", ref tempBool);
+			Gui.Checkbox("wantsToRenderToSceneRenderTarget", ref tempBool);
 
 			VoltageEditorUtils.DisableNextWidget();
 			tempBool = Renderer.WantsToRenderAfterPostProcessors;
-			ImGui.Checkbox("wantsToRenderAfterPostProcessors", ref tempBool);
+			Gui.Checkbox("wantsToRenderAfterPostProcessors", ref tempBool);
 			ImGui.PopStyleVar();
 
 			ImGui.Unindent();

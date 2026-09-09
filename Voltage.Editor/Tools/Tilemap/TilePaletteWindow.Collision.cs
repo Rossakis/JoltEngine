@@ -24,7 +24,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			if (active)
 				ImGui.PushStyleColor(ImGuiCol.Button, new Num.Vector4(0.85f, 0.35f, 0.2f, 1f));
 
-			if (ImGui.Button(label))
+			if (Gui.Button(label))
 				tool.EditMode = mode;
 
 			if (active)
@@ -68,7 +68,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			}
 
 			var isTrigger = map.IsTrigger;
-			if (ImGui.Checkbox("Is trigger", ref isTrigger))
+			if (Gui.Checkbox("Is trigger", ref isTrigger))
 			{
 				map.IsTrigger = isTrigger;
 				map.RebuildColliders();
@@ -79,7 +79,7 @@ namespace Voltage.Editor.Tools.Tilemap
 				ImGui.SetTooltip("Triggers fire overlap events but do not block movement.");
 
 			var autoBuild = map.AutoBuildColliders;
-			if (ImGui.Checkbox("Build colliders on start", ref autoBuild))
+			if (Gui.Checkbox("Build colliders on start", ref autoBuild))
 			{
 				map.AutoBuildColliders = autoBuild;
 				EditorChangeTracker.MarkChanged(map.Entity, "Tilemap auto-build colliders");
@@ -89,7 +89,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			ImGui.Separator();
 			ImGui.TextUnformatted("Generate");
 
-			if (ImGui.Button("Solid from all tiles"))
+			if (Gui.Button("Solid from all tiles"))
 			{
 				var added = map.GenerateCollisionFromTiles(onlyTilesetSolidFlagged: false);
 				map.RebuildColliders();
@@ -101,7 +101,7 @@ namespace Voltage.Editor.Tools.Tilemap
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Solid from flagged tiles"))
+			if (Gui.Button("Solid from flagged tiles"))
 			{
 				var added = map.GenerateCollisionFromTiles(onlyTilesetSolidFlagged: true);
 				map.RebuildColliders();
@@ -111,12 +111,12 @@ namespace Voltage.Editor.Tools.Tilemap
 			if (ImGui.IsItemHovered())
 				ImGui.SetTooltip("Mark only cells whose tile is flagged Solid in the tileset (set the flag in the Tileset Editor).");
 
-			if (ImGui.Button("Rebuild colliders"))
+			if (Gui.Button("Rebuild colliders"))
 				map.RebuildColliders();
 
 			ImGui.SameLine();
 
-			if (ImGui.Button("Clear collision"))
+			if (Gui.Button("Clear collision"))
 			{
 				map.ClearCollision();
 				map.RebuildColliders();
@@ -148,7 +148,7 @@ namespace Voltage.Editor.Tools.Tilemap
 			}
 
 			ImGui.SetNextItemWidth(180f);
-			if (ImGui.Combo(label, ref current, names.ToArray(), names.Count))
+			if (Gui.Combo(label, ref current, names.ToArray(), names.Count))
 			{
 				layerBit = bits[current];
 				return true;
@@ -165,12 +165,12 @@ namespace Voltage.Editor.Tools.Tilemap
 
 			var changed = false;
 
-			if (ImGui.TreeNode($"{label}: {DescribeMask(mask, names, bits)}"))
+			if (Gui.TreeNode($"{label}: {DescribeMask(mask, names, bits)}"))
 			{
 				for (var i = 0; i < names.Count; i++)
 				{
 					var isChecked = mask == Physics.AllLayers || (mask & bits[i]) != 0;
-					if (ImGui.Checkbox(names[i], ref isChecked))
+					if (Gui.Checkbox(names[i], ref isChecked))
 					{
 						// Materialise "all layers" (-1) into concrete bits before clearing one, or the unset
 						// would leave every other layer still implicitly set.

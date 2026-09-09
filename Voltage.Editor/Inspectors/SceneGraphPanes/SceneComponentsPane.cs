@@ -84,7 +84,7 @@ public class SceneComponentsPane
 				ImGui.PushStyleColor(ImGuiCol.Text, new Num.Vector4(0.2f, 1.0f, 0.2f, 1.0f));
 
 			// Flat selectable row — no inline inspector, click opens the dedicated window
-			if (ImGui.Selectable(sc.Name ?? sc.GetType().Name, isSelected))
+			if (Gui.Selectable(sc.Name ?? sc.GetType().Name, isSelected))
 			{
 				SelectedSceneComponent = sc;
 				_imGuiManager.OpenSceneComponentInspector(sc);
@@ -103,9 +103,9 @@ public class SceneComponentsPane
 			}
 
 			// Right-click context menu
-			if (ImGui.BeginPopupContextItem("sc_ctx"))
+			if (Gui.BeginPopupContextItem("sc_ctx"))
 			{
-				if (sc.IsSerialized && ImGui.Selectable($"Remove {sc.GetType().Name}"))
+				if (sc.IsSerialized && Gui.Selectable($"Remove {sc.GetType().Name}"))
 				{
 					EditorChangeTracker.PushUndo(
 						new SceneComponentRemovedUndoAction(Core.Scene, sc,
@@ -116,12 +116,12 @@ public class SceneComponentsPane
 					Core.Scene.RemoveSceneComponent(sc);
 					if (SelectedSceneComponent == sc)
 						SelectedSceneComponent = null;
-					ImGui.EndPopup();
+					Gui.EndPopup();
 					ImGui.PopID();
 					return; // list just changed — stop drawing this frame
 				}
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 
 			ImGui.PopID();
@@ -141,12 +141,12 @@ public class SceneComponentsPane
 		ImGui.SetNextWindowSize(new Num.Vector2(400, 500), ImGuiCond.Appearing);
 
 		bool open = true;
-		if (ImGui.BeginPopupModal("add-scene-component-popup", ref open, ImGuiWindowFlags.NoResize))
+		if (Gui.BeginPopupModal("add-scene-component-popup", ref open, ImGuiWindowFlags.NoResize))
 		{
 			ImGui.Text("Add Scene Component");
 			ImGui.Separator();
 			ImGui.Text("Search:");
-			ImGui.InputText("##SCFilter", ref _filterText, 50);
+			Gui.InputText("##SCFilter", ref _filterText, 50);
 
 			VoltageEditorUtils.SmallVerticalSpace();
 
@@ -158,7 +158,7 @@ public class SceneComponentsPane
 			{
 				foreach (var type in types)
 				{
-					if (ImGui.Selectable(type.Name))
+					if (Gui.Selectable(type.Name))
 					{
 						AddSceneComponentToScene(type);
 						ImGui.CloseCurrentPopup();
@@ -179,13 +179,13 @@ public class SceneComponentsPane
 
 			var bw = 80f;
 			ImGui.SetCursorPosX((ImGui.GetWindowSize().X - bw) * 0.5f);
-			if (ImGui.Button("Cancel", new Num.Vector2(bw, 0)))
+			if (Gui.Button("Cancel", new Num.Vector2(bw, 0)))
 			{
 				_filterText = "";
 				ImGui.CloseCurrentPopup();
 			}
 
-			ImGui.EndPopup();
+			Gui.EndPopup();
 		}
 	}
 

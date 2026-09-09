@@ -82,7 +82,7 @@ namespace Voltage.Editor.FilePickers
 			ImGui.SetNextWindowSize(new Num.Vector2(640, 520), ImGuiCond.Appearing);
 
 			var open = true;
-			if (ImGui.BeginPopupModal(_popupId, ref open, ImGuiWindowFlags.NoResize))
+			if (Gui.BeginPopupModal(_popupId, ref open, ImGuiWindowFlags.NoResize))
 			{
 				_imguiPopupWasVisible = true;
 
@@ -97,7 +97,7 @@ namespace Voltage.Editor.FilePickers
 					ImGui.CloseCurrentPopup();
 				}
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 			else if (_imguiPopupWasVisible)
 			{

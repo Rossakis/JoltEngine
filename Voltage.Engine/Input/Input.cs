@@ -31,6 +31,7 @@ namespace Voltage
 		static int _maxSupportedGamePads;
 
 		private static double _lastLeftClickTime = -1;
+		private static bool _leftEdgeTracked;
 		private static bool _doubleLeftMouseButtonPressed = false;
 		private const double DoubleClickThreshold = 0.3; // seconds
 
@@ -105,21 +106,10 @@ namespace Voltage
 				_currentMouseState.Y - _lastPolledMousePos.Y);
 			_lastPolledMousePos = new Point(_currentMouseState.X, _currentMouseState.Y);
 
-			// Double-click detection
 			_doubleLeftMouseButtonPressed = false;
+			_leftEdgeTracked = false;
 			if (LeftMouseButtonPressed)
-			{
-				double currentTime = Time.TotalTime;
-				if (_lastLeftClickTime > 0 && (currentTime - _lastLeftClickTime) <= DoubleClickThreshold)
-				{
-					_doubleLeftMouseButtonPressed = true;
-					_lastLeftClickTime = -1; // reset to avoid triple-click
-				}
-				else
-				{
-					_lastLeftClickTime = currentTime;
-				}
-			}
+				RegisterLeftPress();
 
 			for (var i = 0; i < _maxSupportedGamePads; i++)
 				GamePads[i].Update();
@@ -128,10 +118,43 @@ namespace Voltage
 				_virtualInputs.Buffer[i].Update();
 		}
 
+		/// <summary>Feeds the double-click detector one left press; synthetic input calls it on a virtual edge, and a frame counts at most one press.</summary>
+		public static void RegisterLeftPress()
+		{
+			if (_leftEdgeTracked)
+				return;
+
+			_leftEdgeTracked = true;
+			double currentTime = Time.TotalTime;
+			if (_lastLeftClickTime > 0 && (currentTime - _lastLeftClickTime) <= DoubleClickThreshold)
+			{
+				_doubleLeftMouseButtonPressed = true;
+				_lastLeftClickTime = -1; // reset to avoid triple-click
+			}
+			else
+			{
+				_lastLeftClickTime = currentTime;
+			}
+		}
+
 		/// <summary>
 		/// Returns true only the frame a quick double left mouse button click occurs.
 		/// </summary>
 		public static bool DoubleLeftMouseButtonPressed => _doubleLeftMouseButtonPressed;
+
+		/// <summary>Synthetic-input hook: replaces the physical delta for this frame; ignored by the next Update.</summary>
+		public static void SetMousePositionDelta(Point delta)
+		{
+			_mousePositionDelta = delta;
+		}
+
+		/// <summary>Re-anchors the physical delta at the cursor's current position so the next Update reads zero movement.</summary>
+		public static void ResyncMousePosition()
+		{
+			var mouse = Mouse.GetState();
+			_lastPolledMousePos = new Point(mouse.X, mouse.Y);
+			_mousePositionDelta = Point.Zero;
+		}
 
 		/// <summary>
 		/// this takes into account the SceneResolutionPolicy and returns the value scaled to the RenderTargets coordinates

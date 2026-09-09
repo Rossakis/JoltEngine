@@ -90,7 +90,7 @@ namespace Voltage.Editor.FilePickers
 					if (di.Parent != null && (!DontAllowTraverselBeyondRootFolder || CurrentFolder != RootFolder))
 					{
 						ImGui.PushStyleColor(ImGuiCol.Text, Color.Yellow.PackedValue);
-						if (ImGui.Selectable("../", false, ImGuiSelectableFlags.DontClosePopups))
+						if (Gui.Selectable("../", false, ImGuiSelectableFlags.DontClosePopups))
 							CurrentFolder = di.Parent.FullName;
 						
 						ImGui.PopStyleColor();
@@ -103,7 +103,7 @@ namespace Voltage.Editor.FilePickers
 						{
 							var name = Path.GetFileName(fse);
 							ImGui.PushStyleColor(ImGuiCol.Text, Color.Yellow.PackedValue);
-							if (ImGui.Selectable(name + "/", false, ImGuiSelectableFlags.DontClosePopups))
+							if (Gui.Selectable(name + "/", false, ImGuiSelectableFlags.DontClosePopups))
 								CurrentFolder = fse;
 							ImGui.PopStyleColor();
 						}
@@ -111,7 +111,7 @@ namespace Voltage.Editor.FilePickers
 						{
 							var name = Path.GetFileName(fse);
 							bool isSelected = SelectedFile == fse;
-							if (ImGui.Selectable(name, isSelected, ImGuiSelectableFlags.DontClosePopups))
+							if (Gui.Selectable(name, isSelected, ImGuiSelectableFlags.DontClosePopups))
 								SelectedFile = fse;
 
 							if (ImGui.IsMouseDoubleClicked(0))
@@ -126,7 +126,7 @@ namespace Voltage.Editor.FilePickers
 			ImGui.EndChildFrame();
 
 
-			if (ImGui.Button("Cancel"))
+			if (Gui.Button("Cancel"))
 			{
 				result = false;
 				RemoveFilePicker(this);
@@ -136,7 +136,7 @@ namespace Voltage.Editor.FilePickers
 			if (OnlyAllowFolders)
 			{
 				ImGui.SameLine();
-				if (ImGui.Button("Open"))
+				if (Gui.Button("Open"))
 				{
 					result = true;
 					SelectedFile = CurrentFolder;
@@ -146,7 +146,7 @@ namespace Voltage.Editor.FilePickers
 			else if (SelectedFile != null)
 			{
 				ImGui.SameLine();
-				if (ImGui.Button("Open"))
+				if (Gui.Button("Open"))
 				{
 					result = true;
 					ImGui.CloseCurrentPopup();
@@ -217,7 +217,7 @@ namespace Voltage.Editor.FilePickers
 					if (di.Parent != null && (!picker.DontAllowTraverselBeyondRootFolder || picker.CurrentFolder != picker.RootFolder))
 					{
 						ImGui.PushStyleColor(ImGuiCol.Text, Color.Yellow.PackedValue);
-						if (ImGui.Selectable("../", false, ImGuiSelectableFlags.DontClosePopups))
+						if (Gui.Selectable("../", false, ImGuiSelectableFlags.DontClosePopups))
 							picker.CurrentFolder = di.Parent.FullName;
 						ImGui.PopStyleColor();
 					}
@@ -229,7 +229,7 @@ namespace Voltage.Editor.FilePickers
 						{
 							var name = Path.GetFileName(fse);
 							ImGui.PushStyleColor(ImGuiCol.Text, Color.Yellow.PackedValue);
-							if (ImGui.Selectable(name + "/", false, ImGuiSelectableFlags.DontClosePopups))
+							if (Gui.Selectable(name + "/", false, ImGuiSelectableFlags.DontClosePopups))
 								picker.CurrentFolder = fse;
 							ImGui.PopStyleColor();
 						}
@@ -237,7 +237,7 @@ namespace Voltage.Editor.FilePickers
 						{
 							var name = Path.GetFileName(fse);
 							bool isSelected = picker.SelectedFile == fse;
-							if (ImGui.Selectable(name, isSelected, ImGuiSelectableFlags.DontClosePopups))
+							if (Gui.Selectable(name, isSelected, ImGuiSelectableFlags.DontClosePopups))
 								picker.SelectedFile = fse;
 						}
 					}

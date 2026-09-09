@@ -3,6 +3,7 @@ using System.Linq;
 using Voltage.Editor.Undo.Core;
 using Voltage.Editor.Undo.SceneComponentActions;
 using static Voltage.Editor.Gateway.GatewayValues;
+using Voltage.Gateway;
 
 namespace Voltage.Editor.Gateway.Commands;
 
@@ -11,7 +12,7 @@ internal static class SceneComponentCommands
 {
 	public static void Register(GatewayCommandTable table)
 	{
-		table.Add("scenecomponent.types", "Scene component types that can be added. params: filter (substring)", (args, _) =>
+		table.Add("scenecomponent.types", "Scene component types that can be added.", (args, _) =>
 		{
 			var filter = args.String("filter");
 			return ConcreteTypes(typeof(SceneComponent))
@@ -19,12 +20,12 @@ internal static class SceneComponentCommands
 				.Select(t => new { name = t.Name, fullName = t.FullName, assembly = t.Assembly.GetName().Name })
 				.OrderBy(t => t.fullName, StringComparer.Ordinal)
 				.ToList();
-		});
+		}, P.Str("filter", "Substring of the full type name")).ReadOnly();
 
 		table.Add("scenecomponent.list", "Scene components on the open scene.", (_, _) =>
-			All().Select(c => new { type = c.GetType().FullName, enabled = c.Enabled, serialized = c.IsSerialized }).ToList());
+			All().Select(c => new { type = c.GetType().FullName, enabled = c.Enabled, serialized = c.IsSerialized }).ToList()).ReadOnly();
 
-		table.Add("scenecomponent.add", "Add a scene component by type name (undoable); each type may exist once per scene. params: type", (args, _) =>
+		table.Add("scenecomponent.add", "Add a scene component by type name (undoable); each type may exist once per scene.", (args, _) =>
 		{
 			var scene = RequireScene();
 			var type = ResolveType(typeof(SceneComponent), args.Require("type"));
@@ -48,9 +49,9 @@ internal static class SceneComponentCommands
 
 			EditorChangeTracker.PushUndo(new SceneComponentAddedUndoAction(scene, instance), scene, $"Add SceneComponent {type.Name}");
 			return new { component = Detail(instance), warning };
-		});
+		}, TypeParam);
 
-		table.Add("scenecomponent.remove", "Remove a scene component by type name (undoable). params: type", (args, _) =>
+		table.Add("scenecomponent.remove", "Remove a scene component by type name (undoable).", (args, _) =>
 		{
 			var scene = RequireScene();
 			var component = Find(args.Require("type"));
@@ -58,21 +59,22 @@ internal static class SceneComponentCommands
 			EditorChangeTracker.PushUndo(new SceneComponentRemovedUndoAction(scene, component, description), scene, description);
 			scene.RemoveSceneComponent(component);
 			return new { removed = true, type = component.GetType().FullName };
-		});
+		}, TypeParam).Destructive();
 
-		table.Add("scenecomponent.get", "Public fields and properties of a scene component. params: type", (args, _) => Detail(Find(args.Require("type"))));
+		table.Add("scenecomponent.get", "Public fields and properties of a scene component.", (args, _) => Detail(Find(args.Require("type"))), TypeParam).ReadOnly();
 
-		table.Add("scenecomponent.set", "Set a public field or property of a scene component (undoable). params: type, member, value", (args, _) =>
+		table.Add("scenecomponent.set", "Set a public field or property of a scene component (undoable).", (args, _) =>
 		{
 			var component = Find(args.Require("type"));
 			var memberName = args.Require("member");
 			var value = args.RequireProperty("value");
 			var result = Set(component, memberName, value, undo: true, $"Set {component.GetType().Name}.{memberName}");
 			return new { member = memberName, value = result };
-		});
+		}, TypeParam, P.Str("member", "Field or property name; dotted paths reach nested members", required: true), P.Any("value", "Value in the shared language: number, string, boolean, enum name, {x,y} vector, {r,g,b,a} colour, asset path or GUID for asset and prefab references, entity key for entity references, Entity/Type for component references", required: true));
 	}
 
-	private static Scene RequireScene() => Core.Scene ?? throw new GatewayException("no scene loaded");
+	private static readonly GatewayParam TypeParam = P.Str("type", "Scene component type name or full name", required: true);
+
 
 	private static SceneComponent[] All()
 	{

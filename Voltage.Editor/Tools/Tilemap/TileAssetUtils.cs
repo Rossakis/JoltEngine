@@ -57,7 +57,7 @@ namespace Voltage.Editor.Tools.Tilemap
 				: "(None)";
 
 			ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(0.25f, 0.30f, 0.38f, 1f));
-			if (ImGui.Button($"{display}{id}", new System.Numerics.Vector2(-1f, 0f)))
+			if (Gui.Button($"{display}{id}", new System.Numerics.Vector2(-1f, 0f)))
 				ImGui.OpenPopup($"pick{id}");
 			ImGui.PopStyleColor();
 
@@ -91,9 +91,9 @@ namespace Voltage.Editor.Tools.Tilemap
 					? $"{reference.AssetPath}\nRight-click to clear."
 					: "Click to pick, or drag an asset here from the Asset Browser.");
 
-			if (ImGui.BeginPopup($"pick{id}"))
+			if (Gui.BeginPopup($"pick{id}"))
 			{
-				if (ImGui.MenuItem("(None)"))
+				if (Gui.MenuItem("(None)"))
 				{
 					reference = default;
 					changed = true;
@@ -103,7 +103,7 @@ namespace Voltage.Editor.Tools.Tilemap
 
 				foreach (var item in FindAssets(extensions))
 				{
-					if (!ImGui.MenuItem(item.FileName))
+					if (!Gui.MenuItem(item.FileName))
 						continue;
 
 					var db = AssetDatabase.Instance;
@@ -114,7 +114,7 @@ namespace Voltage.Editor.Tools.Tilemap
 					}
 				}
 
-				ImGui.EndPopup();
+				Gui.EndPopup();
 			}
 
 			return changed;
