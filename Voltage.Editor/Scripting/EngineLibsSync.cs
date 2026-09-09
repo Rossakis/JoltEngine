@@ -5,7 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using Voltage.Editor.DebugUtils;
+using Voltage.Editor.Utils;
 
 namespace Voltage.Editor.Scripting
 {
@@ -150,6 +152,7 @@ namespace Voltage.Editor.Scripting
 			SyncSourceGeneratorDll(engineLibsPath);
 			CopyAdditionalManagedDeps(engineLibsPath);
 			SyncTrimmerRoots(projectPath);
+			SyncMonoGamePackageVersion(projectPath);
 
 			if (synced > 0)
 				EditorDebug.Log($"Synced {synced} engine DLL(s) to: {engineLibsPath}", "EngineLibsSync");
@@ -157,6 +160,32 @@ namespace Voltage.Editor.Scripting
 				EditorDebug.Log("EngineLibs already up to date.", "EngineLibsSync");
 
 			return synced;
+		}
+
+		private static readonly Regex MonoGamePackageVersion =
+			new(@"(<PackageReference\s+Include=""MonoGame\.[^""]+""\s+Version="")([^""]+)("")", RegexOptions.Compiled);
+
+		/// <summary>Points the game project's MonoGame packages at the version the editor runs, so a synced engine DLL and the game's own reference never disagree.</summary>
+		public static void SyncMonoGamePackageVersion(string projectPath)
+		{
+			var version = MonoGameVersionResolver.GetVersion();
+			foreach (var csproj in Directory.GetFiles(projectPath, "*.csproj"))
+			{
+				try
+				{
+					var text = File.ReadAllText(csproj);
+					var updated = MonoGamePackageVersion.Replace(text, m => m.Groups[2].Value == version ? m.Value : m.Groups[1].Value + version + m.Groups[3].Value);
+					if (updated == text)
+						continue;
+
+					File.WriteAllText(csproj, updated);
+					EditorDebug.Log($"Updated MonoGame package references in {Path.GetFileName(csproj)} to {version}.", "EngineLibsSync");
+				}
+				catch (Exception ex)
+				{
+					EditorDebug.Warn($"Could not update MonoGame version in {Path.GetFileName(csproj)}: {ex.Message}", "EngineLibsSync");
+				}
+			}
 		}
 
 		#endregion

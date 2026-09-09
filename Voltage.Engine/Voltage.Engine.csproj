@@ -58,7 +58,7 @@
 	</ItemGroup>		
 
 	<ItemGroup>
-		<PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5-preview.1" />
+		<PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
 		<PackageReference Include="System.Drawing.Common" Version="9.0.5" />
 		<!-- Audio decoders for .ogg (NVorbis) and .mp3 (NLayer), decoded to PCM SoundEffects -->
 		<PackageReference Include="NVorbis" Version="0.10.5" />

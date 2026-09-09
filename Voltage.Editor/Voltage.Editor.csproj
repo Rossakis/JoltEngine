@@ -140,8 +140,8 @@
 
 	<ItemGroup>
 		<PackageReference Include="ImGui.NET" Version="1.89.5" />
-		<PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.5-preview.1" />
-		<PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5-preview.1" />
+		<PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.5.1" />
+		<PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" />
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
 	</ItemGroup>
 
@@ -265,7 +265,7 @@
 	     but these are bypassed during publish. This target fills that gap. -->
 	<Target Name="CopyMonoGameNativeLibsToPublish" AfterTargets="ComputeFilesToPublish">
 		<PropertyGroup>
-			<MonoGameRuntimes>$(NuGetPackageRoot)monogame.framework.desktopgl\3.8.5-preview.1\runtimes\</MonoGameRuntimes>
+			<MonoGameRuntimes>$(NuGetPackageRoot)monogame.framework.desktopgl\3.8.5.1\runtimes\</MonoGameRuntimes>
 		</PropertyGroup>
 
 		<ItemGroup Condition="$(RuntimeIdentifier.StartsWith('win'))">

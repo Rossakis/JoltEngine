@@ -56,7 +56,7 @@ namespace Voltage.Editor.ProjectFile
 			}
 
 			// Fallback  keep in sync with Voltage.Editor.csproj manually if this is ever reached
-			const string fallback = "3.8.5-preview.1";
+			const string fallback = "3.8.5.1";
 			EditorDebug.Warn($"Using fallback MonoGame version: {fallback}", "ProjectStructure");
 			return fallback;
 		}

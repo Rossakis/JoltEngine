@@ -61,7 +61,7 @@ public static class MonoGameVersionResolver
 			EditorDebug.Warn($"Could not detect MonoGame version: {ex.Message}", "MonoGameVersion");
 		}
 
-		const string fallback = "3.8.5-preview.1";
+		const string fallback = "3.8.5.1";
 		EditorDebug.Warn($"Using fallback MonoGame version: {fallback}", "MonoGameVersion");
 		_cachedVersion = fallback;
 		return _cachedVersion;
