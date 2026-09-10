@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<RootNamespace>Voltage.Pipeline</RootNamespace>
+		<Nullable>disable</Nullable>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<Configurations>Debug;Release;Editor-Debug;Editor-Release</Configurations>
+		<GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="MonoGame.Framework.Content.Pipeline" Version="3.8.5.1" />
+		<!-- Compile-time only: mgcb supplies its own MonoGame.Framework at build time. -->
+		<PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5.1" ExcludeAssets="runtime;native;contentFiles;build;buildTransitive;analyzers" />
+	</ItemGroup>
+
+	<!-- The Aseprite parser and binary format are the engine's own sources, so one parser serves both sides. -->
+	<ItemGroup>
+		<Compile Include="..\Voltage.Engine\Assets\Aseprite\*.cs" Exclude="..\Voltage.Engine\Assets\Aseprite\*.Graphics.cs;..\Voltage.Engine\Assets\Aseprite\AsepriteToSpriteAtlasOptions.cs;..\Voltage.Engine\Assets\Aseprite\AsepriteFileReader.cs" Link="Shared\Aseprite\%(Filename)%(Extension)" />
+		<Compile Include="..\Voltage.Engine\Assets\Aseprite\Loader\AsepriteFileLoader.cs" Link="Shared\Aseprite\AsepriteFileLoader.cs" />
+	</ItemGroup>
+
+</Project>

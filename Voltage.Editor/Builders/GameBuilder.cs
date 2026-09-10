@@ -46,7 +46,7 @@ public static class GameBuilder
 	/// </summary>
 	/// <param name="project">The game project to build</param>
 	/// <param name="platform">Target platform to publish for</param>
-	/// <param name="compileAssets">If true, assets would be compiled via MGCB (not yet implemented). If false, assets are copied raw.</param>
+	/// <param name="compileAssets">Compile the Content folder with MGCB before copying; see AssetBuildService.</param>
 	/// <param name="debugBuild">If true, publishes in Debug configuration; otherwise Release.</param>
 	/// <param name="useLinuxCompatContainer">If true, Linux AOT publishes are run inside an old-glibc
 	/// container so the binary runs on stock SteamOS / older distros. Ignored for non-Linux targets.</param>
@@ -164,10 +164,24 @@ public static class GameBuilder
 
 			cancellationToken.ThrowIfCancellationRequested();
 
-			// 4) Copy project assets (Content folder) + plugin-declared runtime content
-			// (e.g. an FMOD plugin's default banks), independent of whether the project has Content.
+			// 4) Compile the Content folder with MGCB when asked, then copy the raw files the contract keeps.
+			AssetBuildReport assetReport = null;
+			if (compileAssets)
+			{
+				OnBuildStepStarted?.Invoke("Compiling assets with MGCB...");
+				assetReport = await AssetBuildService.RunAsync(project, AssetBuildSettingsStore.Get(), Path.Combine(buildDir, "Content"), platform.RuntimeIdentifier, false, false, cancellationToken);
+				OnBuildStepCompleted?.Invoke("Compile assets", assetReport.Success);
+				if (!assetReport.Success)
+				{
+					OnBuildFinished?.Invoke(false, "Asset build failed. Check the Asset Build window or console for errors.");
+					return false;
+				}
+			}
+
+			cancellationToken.ThrowIfCancellationRequested();
+
 			OnBuildStepStarted?.Invoke("Copying project assets...");
-			bool assetsSuccess = CopyProjectAssets(project, buildDir, compileAssets);
+			bool assetsSuccess = CopyProjectAssets(project, buildDir, assetReport);
 			assetsSuccess &= Plugins.PluginSync.CopyPluginContentToBuild(buildDir);
 			OnBuildStepCompleted?.Invoke("Copy project assets", assetsSuccess);
 
@@ -597,11 +611,8 @@ public static class GameBuilder
 		}
 	}
 
-	/// <summary>
-	/// Copies the project's Content folder (assets) to the build output.
-	/// If compileAssets is false, files are copied as-is. If true, MGCB compilation would be used (not yet implemented).
-	/// </summary>
-	private static bool CopyProjectAssets(IGameProject project, string buildDir, bool compileAssets)
+	/// <summary>Copies the Content folder; after an asset build only the raw files the contract keeps, and compiled sources unless stripped.</summary>
+	private static bool CopyProjectAssets(IGameProject project, string buildDir, AssetBuildReport assetReport)
 	{
 		try
 		{
@@ -614,7 +625,15 @@ public static class GameBuilder
 			}
 
 			var contentDest = Path.Combine(buildDir, "Content");
-			CopyDirectoryRecursive(contentSrc, contentDest);
+			if (assetReport != null)
+			{
+				var plan = new AssetBuildPlan { OutputDir = contentDest };
+				lock (assetReport.Lock)
+					plan.Items = assetReport.Items.ToList();
+				AssetBuildService.CopyRaw(project, plan, AssetBuildSettingsStore.Get().StripSources, assetReport);
+			}
+			else
+				CopyDirectoryRecursive(contentSrc, contentDest);
 
 			var copiedFiles = Directory.Exists(contentDest)
 				? Directory.GetFiles(contentDest, "*.*", SearchOption.AllDirectories)

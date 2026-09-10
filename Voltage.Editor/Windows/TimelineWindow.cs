@@ -183,6 +183,24 @@ namespace Voltage.Editor.Windows
 			_scrub = 0f;
 		}
 
+		/// <summary>Rereads the working copy when an outside edit (the gateway) changed the file being shown.</summary>
+		internal void ReloadFromDisk(string path)
+		{
+			var current = _director?.Timeline.ResolvePath();
+			if (string.IsNullOrEmpty(current) || !string.Equals(Path.GetFullPath(current), Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase))
+				return;
+			try
+			{
+				_asset = TimelineAssetIO.Load(path);
+				_director.SetAsset(_asset);
+				_status = $"Reloaded {Path.GetFileName(path)}.";
+			}
+			catch (Exception ex)
+			{
+				_status = $"Reload failed: {ex.Message}";
+			}
+		}
+
 		private static TimelineAsset LoadOrNull(TimelineDirector director)
 		{
 			if (director.Asset != null)

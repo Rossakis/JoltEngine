@@ -58,6 +58,8 @@ public sealed class EditorGatewayDispatcher : GatewayDispatcher
 		AudioCommands.Register(Commands);
 		AssetCommands.Register(Commands);
 		EditorPromptCommands.Register(Commands);
+		AssetBuildCommands.Register(Commands);
+		ScriptCommands.Register(Commands);
 	}
 
 	/// <summary>A startup prompt that --no-prompts kept closed: warns in the log and tells subscribed agents what they would have been asked.</summary>

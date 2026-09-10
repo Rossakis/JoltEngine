@@ -68,9 +68,9 @@ internal static class SceneComponentCommands
 			var component = Find(args.Require("type"));
 			var memberName = args.Require("member");
 			var value = args.RequireProperty("value");
-			var result = Set(component, memberName, value, undo: true, $"Set {component.GetType().Name}.{memberName}");
+			var result = Set(component, memberName, value, undo: true, $"Set {component.GetType().Name}.{memberName}", args.Bool("remove"));
 			return new { member = memberName, value = result };
-		}, TypeParam, P.Str("member", "Field or property name; dotted paths reach nested members", required: true), P.Any("value", "Value in the shared language: number, string, boolean, enum name, {x,y} vector, {r,g,b,a} colour, asset path or GUID for asset and prefab references, entity key for entity references, Entity/Type for component references", required: true));
+		}, TypeParam, P.Str("member", "Field or property name; dotted paths reach nested members, Items[2] a list element, Items[+] appends", required: true), P.Any("value", "Value in the shared language: number, string, boolean, enum name, {x,y} vector, {r,g,b,a} or #RRGGBB colour, asset path or GUID for asset and prefab references, entity key for entity references, Entity/Type for component references, or a JSON array for a whole list", required: true), P.Bool("remove", "Remove the indexed list element instead of setting it", false));
 	}
 
 	private static readonly GatewayParam TypeParam = P.Str("type", "Scene component type name or full name", required: true);

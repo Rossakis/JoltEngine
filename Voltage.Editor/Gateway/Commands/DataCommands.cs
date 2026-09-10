@@ -29,10 +29,10 @@ internal static class DataCommands
 			var memberName = args.Require("member");
 			var value = args.RequireProperty("value");
 
-			var result = Set(asset, memberName, value, undo: false, null);
+			var result = Set(asset, memberName, value, undo: false, null, args.Bool("remove"));
 			DataAssetIO.Save(asset, path);
 			return new { member = memberName, value = result, path };
-		}, AssetParam, P.Str("member", "Field or property name; dotted paths reach nested members", required: true), P.Any("value", "Value in the shared language: number, string, boolean, enum name, {x,y} vector, {r,g,b,a} colour, asset path or GUID for asset and prefab references, entity key for entity references, Entity/Type for component references", required: true));
+		}, AssetParam, P.Str("member", "Field or property name; dotted paths reach nested members, Items[2] a list element, Items[+] appends", required: true), P.Any("value", "Value in the shared language: number, string, boolean, enum name, {x,y} vector, {r,g,b,a} or #RRGGBB colour, asset path or GUID for asset and prefab references, entity key for entity references, Entity/Type for component references, or a JSON array for a whole list", required: true), P.Bool("remove", "Remove the indexed list element instead of setting it", false));
 
 		table.Add("data.create", "Create a data asset file of a registered type.", (args, ctx) =>
 		{

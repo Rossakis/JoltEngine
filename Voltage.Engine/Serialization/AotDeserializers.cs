@@ -231,10 +231,34 @@ namespace Voltage.Serialization
 					case "Rendering": data.Rendering = r.ReadObject(ReadRenderingSettings); break;
 					case "Entities": data.Entities = r.ReadObject(ReadEntitySettings); break;
 					case "ContentDirectory": data.ContentDirectory = r.ReadString(); break;
+					case "AssetBuild": data.AssetBuild = r.ReadObject(ReadAssetBuildSettings); break;
 					default: r.SkipValue(); break;
 				}
 			}
 			return data;
+		}
+
+		private static ProjectSettings.AssetBuildSettings ReadAssetBuildSettings(JsonTokenReader r)
+		{
+			var s = new ProjectSettings.AssetBuildSettings();
+			if (!r.BeginObject()) return s;
+			while (r.ReadNextKey(out var key))
+			{
+				switch (key)
+				{
+					case "Enabled": s.Enabled = r.ReadBool(); break;
+					case "Platform": s.Platform = r.ReadString(); break;
+					case "Compress": s.Compress = r.ReadBool(); break;
+					case "PremultiplyAlpha": s.PremultiplyAlpha = r.ReadBool(); break;
+					case "TextureFormat": s.TextureFormat = r.ReadString(); break;
+					case "CompileAudio": s.CompileAudio = r.ReadBool(); break;
+					case "StripSources": s.StripSources = r.ReadBool(); break;
+					case "Include": s.Include = r.ReadList(rd => rd.ReadString()); break;
+					case "Exclude": s.Exclude = r.ReadList(rd => rd.ReadString()); break;
+					default: r.SkipValue(); break;
+				}
+			}
+			return s;
 		}
 
 		private static ProjectSettings.DisplaySettings ReadDisplaySettings(JsonTokenReader r)

@@ -1252,6 +1252,8 @@ public partial class ImGuiManager
 				ImGui.EndDisabled();
 			}
 
+			DrawAssetBuildMenu(hasProject);
+
 			if (!hasProject)
 			{
 				ImGui.EndDisabled();
@@ -1261,6 +1263,40 @@ public partial class ImGuiManager
 
 			Gui.EndMenu();
 		}
+	}
+
+	private void DrawAssetBuildMenu(bool hasProject)
+	{
+		if (!Gui.BeginMenu("Asset Build"))
+			return;
+
+		var settings = Builders.AssetBuildSettingsStore.Get();
+		var enabled = settings.Enabled;
+		if (Gui.MenuItem("Compile assets on build", "", ref enabled, hasProject))
+		{
+			settings.Enabled = enabled;
+			try { Builders.AssetBuildSettingsStore.Save(_projectManager.CurrentProject); }
+			catch (System.Exception ex) { Debug.Error($"Failed to save the asset build setting: {ex.Message}"); }
+		}
+
+		var busy = Builders.AssetBuildService.IsRunning;
+		if (Gui.MenuItem("Build assets now", "", false, hasProject && !busy))
+			_assetBuildReportWindow.BuildNow();
+		if (Gui.MenuItem("Clean asset build", "", false, hasProject && !busy))
+			Builders.AssetBuildService.Clean(_projectManager.CurrentProject, settings.Platform);
+		if (Gui.MenuItem("Settings", "", false, hasProject))
+			_assetBuildSettingsWindow.Open();
+		if (Gui.MenuItem("Show last report", "", false, Builders.AssetBuildService.LastReport != null))
+			_assetBuildReportWindow.Show();
+
+		var output = hasProject ? Builders.AssetBuildSettingsStore.DefaultOutputDirectory(_projectManager.CurrentProject, settings.Platform) : null;
+		if (Gui.MenuItem("Open output folder", "", false, output != null && System.IO.Directory.Exists(output)))
+		{
+			try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(output) { UseShellExecute = true }); }
+			catch (System.Exception ex) { Debug.Error($"Could not open {output}: {ex.Message}"); }
+		}
+
+		Gui.EndMenu();
 	}
 
 	private void DrawPluginsMenu()

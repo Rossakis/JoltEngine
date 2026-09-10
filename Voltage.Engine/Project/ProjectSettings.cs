@@ -35,6 +35,7 @@ namespace Voltage.Project
 		public RenderingSettings Rendering;
 		public EntitySettings Entities;
 		public string ContentDirectory;
+		public AssetBuildSettings AssetBuild;
 
 		[DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(ProjectSettings))]
 		[DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(DisplaySettings))]
@@ -43,6 +44,7 @@ namespace Voltage.Project
 		[DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(PhysicsSettings))]
 		[DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(RenderingSettings))]
 		[DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(EntitySettings))]
+		[DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(AssetBuildSettings))]
 		[DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(string))]
 		public ProjectSettings()
 		{
@@ -54,6 +56,26 @@ namespace Voltage.Project
 			Rendering = new RenderingSettings();
 			Entities = new EntitySettings();
 			ContentDirectory = "Content";
+			AssetBuild = new AssetBuildSettings();
+		}
+
+		/// <summary>How a game build compiles the Content folder with MGCB; off by default and ignored by the editor.</summary>
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+		public class AssetBuildSettings
+		{
+			public bool Enabled = false;
+			public string Platform = "DesktopGL";
+			public bool Compress = true;
+			public bool PremultiplyAlpha = false;
+			public string TextureFormat = "Color";
+			public bool CompileAudio = false;
+			public bool StripSources = false;
+
+			[DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(List<string>))]
+			public List<string> Include = new() { "**/*" };
+
+			[DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(List<string>))]
+			public List<string> Exclude = new() { "**/Voltage/**", "**/*.fx", "**/*.mgfxo" };
 		}
 
 		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]

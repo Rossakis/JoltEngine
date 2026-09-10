@@ -370,26 +370,22 @@ public class ProjectManager : GlobalManager
 		return $"{_projectPathKeyPrefix}{fileNameNoExt}";
 	}
 	
-	/// <summary>
-	/// Resolves the project path for the given .voltage file.
-	/// Uses local machine settings if available; otherwise falls back to the .voltage file's directory
-	/// and saves that path locally for future use.
-	/// </summary>
+	/// <summary>The .voltage file's own folder wins when it holds a project, so a copy or clone opens itself; the stored path only covers a file kept elsewhere.</summary>
 	private static string ResolveAndCacheProjectPath(string voltageFilePath)
 	{
 		var key = GetLocalPathKey(voltageFilePath);
 		var stored = EditorSettingsLoader.LoadSetting(key, "");
-		var voltageDir = Path.GetDirectoryName(voltageFilePath)!;
+		var voltageDir = Path.GetDirectoryName(Path.GetFullPath(voltageFilePath))!;
 
-		if (!string.IsNullOrWhiteSpace(stored) && Directory.Exists(stored))
+		var ownFolderIsProject = File.Exists(Path.Combine(voltageDir, "ProjectSettings.json")) || Directory.Exists(Path.Combine(voltageDir, "Scripts"));
+		if (!ownFolderIsProject && !string.IsNullOrWhiteSpace(stored) && Directory.Exists(stored))
 		{
 			Debug.Log($"Loaded local project path for key '{key}': {stored}");
 			return stored;
 		}
 
-		// No local data yet (first time on this machine) - derive from .voltage location
-		Debug.Log($"No local project path found for '{key}', defaulting to: {voltageDir}");
-		EditorSettingsLoader.SaveSetting(key, voltageDir);
+		if (!string.Equals(stored, voltageDir, StringComparison.OrdinalIgnoreCase))
+			EditorSettingsLoader.SaveSetting(key, voltageDir);
 		return voltageDir;
 	}
 

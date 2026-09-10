@@ -27,7 +27,6 @@ public class GameBuildWindow
 	private bool _isBuilding = false;
 
 	// Persistent user preferences
-	private readonly PersistentBool _compileAssets = new("GameBuild.CompileAssets", false);
 	private readonly PersistentBool _debugBuild = new("GameBuild.DebugBuild", false);
 	private readonly PersistentBool _linuxCompatContainer = new("GameBuild.LinuxCompatContainer", true);
 	private readonly PersistentBool _nativeAot = new("GameBuild.NativeAot", true);
@@ -290,27 +289,17 @@ public class GameBuildWindow
 
 			VoltageEditorUtils.SmallVerticalSpace();
 
-			// Compile Assets option
-			var compileAssetsValue = _compileAssets.Value;
-			if (compileAssetsValue)
-				ImGui.BeginDisabled();
-
+			var assetBuild = AssetBuildSettingsStore.Get();
+			var compileAssetsValue = assetBuild.Enabled;
 			if (Gui.Checkbox("Compile Assets with MGCB", ref compileAssetsValue))
 			{
-				// Force back to false since it's not implemented
-				_compileAssets.Value = false;
+				assetBuild.Enabled = compileAssetsValue;
+				try { AssetBuildSettingsStore.Save(ProjectManager.Instance.CurrentProject); }
+				catch (Exception ex) { Debug.Error($"Failed to save the asset build setting: {ex.Message}", "GameBuildWindow"); }
 			}
-
-			if (compileAssetsValue)
-				ImGui.EndDisabled();
 
 			if (ImGui.IsItemHovered())
-			{
-				ImGui.SetTooltip("Not yet implemented. Assets will be copied as-is to the build output.");
-			}
-
-			ImGui.SameLine();
-			ImGui.TextColored(new Num.Vector4(1.0f, 0.6f, 0.2f, 1.0f), "(Not Available)");
+				ImGui.SetTooltip("Compiles textures, Aseprite files and fonts to .xnb with MGCB; configure it under Build > Asset Build.");
 
 			VoltageEditorUtils.SmallVerticalSpace();
 
@@ -635,7 +624,7 @@ public class GameBuildWindow
 		{
 			try
 			{
-				bool success = await GameBuilder.BuildGameAsync(project, platform, _compileAssets.Value, debugBuild, _linuxCompatContainer.Value, _nativeAot.Value, token);
+				bool success = await GameBuilder.BuildGameAsync(project, platform, AssetBuildSettingsStore.Get().Enabled, debugBuild, _linuxCompatContainer.Value, _nativeAot.Value, token);
 
 				if (success && runAfterBuild)
 				{

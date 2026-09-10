@@ -261,15 +261,26 @@ namespace Voltage.Cinematics
 				Finish();
 		}
 
-		/// <summary>
-		/// Reports everything this timeline references that will not resolve, in one pass at <see cref="Play"/>.
-		/// </summary>
+		/// <summary>Logs what <see cref="Validate"/> finds, once per distinct problem set, at <see cref="Play"/>.</summary>
 		private void ValidateOnPlay()
 		{
-			if (_asset == null)
+			var problems = Validate();
+			if (problems.Count == 0)
 				return;
 
+			WarnOnce($"validate:{_asset.GetHashCode()}:{problems.Count}",
+				$"[TimelineDirector] '{Entity?.Name}' has {problems.Count} unresolved timeline reference(s):" +
+				Environment.NewLine + "  - " + string.Join(Environment.NewLine + "  - ", problems));
+		}
+
+		/// <summary>Everything this timeline references that will not resolve with the current bindings; empty when it would play cleanly.</summary>
+		public List<string> Validate()
+		{
 			var problems = new List<string>();
+			EnsureAsset();
+			if (_asset == null)
+				return problems;
+			ResolveBindings();
 
 			foreach (var role in _asset.Roles)
 			{
@@ -317,12 +328,7 @@ namespace Voltage.Cinematics
 			if (contentEnd > _asset.Duration + 0.001f)
 				problems.Add($"content runs to {contentEnd:0.00}s but Length is {_asset.Duration:0.00}s — the rest never plays.");
 
-			if (problems.Count == 0)
-				return;
-
-			WarnOnce($"validate:{_asset.GetHashCode()}:{problems.Count}",
-				$"[TimelineDirector] '{Entity?.Name}' has {problems.Count} unresolved timeline reference(s):" +
-				Environment.NewLine + "  - " + string.Join(Environment.NewLine + "  - ", problems));
+			return problems;
 		}
 
 		/// <summary>

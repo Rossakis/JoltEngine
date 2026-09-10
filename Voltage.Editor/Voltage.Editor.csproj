@@ -155,7 +155,19 @@
 	    gets copied to the editor's output directory so EngineLibsSync can deploy it to game projects.
 	  -->
 	  <ProjectReference Include="..\Voltage.SourceGenerators\Voltage.SourceGenerators\Voltage.SourceGenerators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	  <!-- Built alongside the editor and shipped in Pipeline\ for the asset build's mgcb /reference; never loaded by the editor itself. -->
+	  <ProjectReference Include="..\Voltage.Pipeline\Voltage.Pipeline.csproj" ReferenceOutputAssembly="false" Private="false" />
 	</ItemGroup>
+
+	<Target Name="CopyPipelineDllToOutput" AfterTargets="Build">
+		<PropertyGroup>
+			<_PipelineBin>$(MSBuildThisFileDirectory)..\Voltage.Pipeline\bin\$(Configuration)\net8.0\</_PipelineBin>
+		</PropertyGroup>
+		<Copy SourceFiles="$(_PipelineBin)Voltage.Pipeline.dll"
+		      DestinationFolder="$(OutputPath)Pipeline\"
+		      SkipUnchangedFiles="true"
+		      Condition="Exists('$(_PipelineBin)Voltage.Pipeline.dll')" />
+	</Target>
 
 	<!-- Copy the generator DLL from its build output into the editor root bin directory.
 	     The Analyzer reference above only copies to analyzers\dotnet\cs\ — not the bin root.

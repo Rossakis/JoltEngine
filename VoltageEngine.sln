@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Voltage.Cli", "Voltage.Cli\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Voltage.Editor.Tests", "Voltage.Editor.Tests\Voltage.Editor.Tests.csproj", "{7D2B1F0E-5C7A-4E7B-9C1D-3A9E6F2B8C41}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Voltage.Pipeline", "Voltage.Pipeline\Voltage.Pipeline.csproj", "{B7C4F2A1-6D3E-4F8A-9B2C-1E5D7A9F3C60}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Editor-Debug|Any CPU = Editor-Debug|Any CPU
@@ -44,6 +46,10 @@ Global
 		{7D2B1F0E-5C7A-4E7B-9C1D-3A9E6F2B8C41}.Editor-Debug|Any CPU.Build.0 = Editor-Debug|Any CPU
 		{7D2B1F0E-5C7A-4E7B-9C1D-3A9E6F2B8C41}.Editor-Release|Any CPU.ActiveCfg = Editor-Release|Any CPU
 		{7D2B1F0E-5C7A-4E7B-9C1D-3A9E6F2B8C41}.Editor-Release|Any CPU.Build.0 = Editor-Release|Any CPU
+		{B7C4F2A1-6D3E-4F8A-9B2C-1E5D7A9F3C60}.Editor-Debug|Any CPU.ActiveCfg = Editor-Debug|Any CPU
+		{B7C4F2A1-6D3E-4F8A-9B2C-1E5D7A9F3C60}.Editor-Debug|Any CPU.Build.0 = Editor-Debug|Any CPU
+		{B7C4F2A1-6D3E-4F8A-9B2C-1E5D7A9F3C60}.Editor-Release|Any CPU.ActiveCfg = Editor-Release|Any CPU
+		{B7C4F2A1-6D3E-4F8A-9B2C-1E5D7A9F3C60}.Editor-Release|Any CPU.Build.0 = Editor-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

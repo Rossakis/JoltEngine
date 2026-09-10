@@ -1451,6 +1451,7 @@ public class AssetBrowserWindow : IDisposable
 
     private void DrawCreateAssetMenuItems(string targetFolder)
     {
+        DrawNewScriptMenu(targetFolder);
         foreach (var format in AssetFileRegistry.All.OrderBy(f => f.DisplayName, StringComparer.OrdinalIgnoreCase))
         {
             var options = format.CreateOptions;
@@ -1478,6 +1479,38 @@ public class AssetBrowserWindow : IDisposable
 
             Gui.EndMenu();
         }
+    }
+
+    // Scripts have no asset format; the templates that back script.create serve the Scripts folder here.
+    private void DrawNewScriptMenu(string targetFolder)
+    {
+        var project = ProjectManager.Instance?.CurrentProject;
+        var scripts = project?.ScriptsFolder;
+        if (string.IsNullOrEmpty(scripts) || string.IsNullOrEmpty(targetFolder))
+            return;
+        var root = Path.GetFullPath(scripts).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        var target = Path.GetFullPath(targetFolder).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        if (!target.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (!Gui.BeginMenu("New Script"))
+            return;
+        foreach (var kind in Scripting.ScriptTemplates.Kinds)
+        {
+            if (!Gui.MenuItem(kind.Label))
+                continue;
+            var id = kind.Id;
+            BeginCreateAsset(targetFolder, kind.Label, kind.DefaultName, ".cs", path =>
+            {
+                var segments = Path.GetRelativePath(scripts, Path.GetDirectoryName(path) ?? scripts)
+                    .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                    .Where(s => s != ".");
+                var className = Scripting.ScriptTemplates.Identifier(Path.GetFileNameWithoutExtension(path));
+                var file = Path.Combine(Path.GetDirectoryName(path) ?? scripts, className + ".cs");
+                File.WriteAllText(file, Scripting.ScriptTemplates.Render(id, className, Scripting.ScriptTemplates.Namespace(project.ProjectName, segments)), new System.Text.UTF8Encoding(false));
+            });
+        }
+        Gui.EndMenu();
     }
 
     // Arms the create-asset popup for the given target folder, seeding a default name.

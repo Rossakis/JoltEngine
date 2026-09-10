@@ -49,48 +49,52 @@ internal static class PlayScriptCommands
 			return PlayState();
 		});
 
-		table.Add("scripts.compile", "Compile the project's scripts; answers with diagnostics.", (args, ctx) =>
-		{
-			var manager = ctx.ImGui().ScriptManager ?? throw new GatewayException("no project with a scripts folder is loaded");
-
-			// The watcher does nothing at all for an empty scripts folder, so the completion event would never come.
-			var scriptsFolder = ProjectFile.ProjectManager.Instance.GetScriptsFolder();
-			if (string.IsNullOrEmpty(scriptsFolder) || !Directory.Exists(scriptsFolder) || !Directory.EnumerateFiles(scriptsFolder, "*.cs", SearchOption.AllDirectories).Any())
-				return new { success = true, errors = new System.Collections.Generic.List<string>(), assembly = (string)null, componentTypes = new System.Collections.Generic.List<string>(), note = "no script files to compile" };
-
-			var tcs = new TaskCompletionSource<object>();
-			Action<CompilationResult, bool> onDone = null;
-			onDone = (result, _) =>
-			{
-				manager.OnCompilationComplete -= onDone;
-				tcs.TrySetResult(new
-				{
-					success = result.Success,
-					errors = result.Errors ?? new System.Collections.Generic.List<string>(),
-					assembly = result.Assembly?.GetName().Name,
-					componentTypes = result.Success ? manager.GetScriptComponentTypes().Select(t => t.FullName).ToList() : null
-				});
-			};
-			manager.OnCompilationComplete += onDone;
-
-			try
-			{
-				manager.CompileScripts(args.Bool("reloadScene"));
-			}
-			catch (Exception ex)
-			{
-				manager.OnCompilationComplete -= onDone;
-				throw new GatewayException($"compile failed to start: {ex.Message}");
-			}
-
-			return GatewayTasks.WithTimeout(tcs, CompileTimeout, () => manager.OnCompilationComplete -= onDone, "compilation timed out");
-		}, P.Bool("reloadScene", "Reload the scene after a successful compile", false));
+		table.Add("scripts.compile", "Compile the project's scripts; answers with diagnostics.", (args, ctx) => CompileAsync(ctx, args.Bool("reloadScene")),
+			P.Bool("reloadScene", "Reload the scene after a successful compile", false));
 
 		table.Add("scripts.types", "Component types defined by the compiled scripts.", (_, ctx) =>
 		{
 			var manager = ctx.ImGui().ScriptManager ?? throw new GatewayException("no project with a scripts folder is loaded");
 			return manager.GetScriptComponentTypes().Select(t => t.FullName).OrderBy(n => n).ToList();
 		}).ReadOnly();
+	}
+
+	/// <summary>Compiles the project's scripts and completes with the diagnostics; shared by every command that edits scripts.</summary>
+	internal static Task<object> CompileAsync(GatewayContext ctx, bool reloadScene)
+	{
+		var manager = ctx.ImGui().ScriptManager ?? throw new GatewayException("no project with a scripts folder is loaded");
+
+		// The watcher does nothing at all for an empty scripts folder, so the completion event would never come.
+		var scriptsFolder = ProjectFile.ProjectManager.Instance.GetScriptsFolder();
+		if (string.IsNullOrEmpty(scriptsFolder) || !Directory.Exists(scriptsFolder) || !Directory.EnumerateFiles(scriptsFolder, "*.cs", SearchOption.AllDirectories).Any())
+			return Task.FromResult<object>(new { success = true, errors = new System.Collections.Generic.List<string>(), assembly = (string)null, componentTypes = new System.Collections.Generic.List<string>(), note = "no script files to compile" });
+
+		var tcs = new TaskCompletionSource<object>();
+		Action<CompilationResult, bool> onDone = null;
+		onDone = (result, _) =>
+		{
+			manager.OnCompilationComplete -= onDone;
+			tcs.TrySetResult(new
+			{
+				success = result.Success,
+				errors = result.Errors ?? new System.Collections.Generic.List<string>(),
+				assembly = result.Assembly?.GetName().Name,
+				componentTypes = result.Success ? manager.GetScriptComponentTypes().Select(t => t.FullName).ToList() : null
+			});
+		};
+		manager.OnCompilationComplete += onDone;
+
+		try
+		{
+			manager.CompileScripts(reloadScene);
+		}
+		catch (Exception ex)
+		{
+			manager.OnCompilationComplete -= onDone;
+			throw new GatewayException($"compile failed to start: {ex.Message}");
+		}
+
+		return GatewayTasks.WithTimeout(tcs, CompileTimeout, () => manager.OnCompilationComplete -= onDone, "compilation timed out");
 	}
 
 	private static object PlayState() => new

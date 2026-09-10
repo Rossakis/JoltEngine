@@ -50,6 +50,15 @@ namespace Voltage.Textures
 		}
 #endif
 
+		/// <summary>Premultiplies an already-loaded texture in place, for compiled assets that were built straight.</summary>
+		public static void PremultiplyAlpha(Texture2D texture)
+		{
+			var pixels = new byte[texture.Width * texture.Height * 4];
+			texture.GetData(pixels);
+			PremultiplyAlpha(pixels);
+			texture.SetData(pixels);
+		}
+
 		static unsafe void PremultiplyAlpha(byte[] pixels)
 		{
 			fixed (byte* b = &pixels[0])

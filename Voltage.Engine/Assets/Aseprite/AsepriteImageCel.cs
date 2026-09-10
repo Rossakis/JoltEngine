@@ -1,14 +1,11 @@
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Audio;
-using Microsoft.Xna.Framework.Graphics;
-using Voltage.Textures;
 
 namespace Voltage.Aseprite
 {
 	/// <summary>
 	/// Represents a single cel in a frame in Aseprite that contains image data.
 	/// </summary>
-	public sealed class AsepriteImageCel : AsepriteCel
+	public sealed partial class AsepriteImageCel : AsepriteCel
 	{
 		/// <summary>
 		/// The width, in pixels, of this cel.
@@ -32,20 +29,6 @@ namespace Voltage.Aseprite
 			Width = width;
 			Height = height;
 			Pixels = pixels;
-		}
-
-		/// <summary>
-		/// Translates the pixel data of this cel into a new sprite instance.
-		/// </summary>
-		/// <returns>
-		/// A new instance of the <see cref="Sprite"/> class initialized with a texture generated from the pixel data
-		/// of this cel.
-		/// </returns>
-		public Sprite ToSprite()
-		{
-			Texture2D texture = new Texture2D(Core.GraphicsDevice, Width, Height);
-			texture.SetData<Color>(Pixels);
-			return new Sprite(texture);
 		}
 	}
 }

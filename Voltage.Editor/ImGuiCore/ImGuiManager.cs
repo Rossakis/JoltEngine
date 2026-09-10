@@ -196,6 +196,8 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 	// Game build window
 	private GameBuildWindow _gameBuildWindow;
+	private AssetBuildSettingsWindow _assetBuildSettingsWindow;
+	private AssetBuildReportWindow _assetBuildReportWindow;
 
 	// Engine effects check
 	private bool _hasCheckedEngineEffects = false;
@@ -215,6 +217,8 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 	private AssetBrowserWindow _assetBrowserWindow = new();
 	private PluginManagerWindow _pluginManagerWindow = new();
 	private TimelineWindow _timelineWindow = new();
+
+	internal TimelineWindow TimelineWindow => _timelineWindow;
 	private AudioProfilerWindow _audioProfilerWindow = new();
 	private PerformanceProfilerWindow _performanceProfilerWindow = new();
 
@@ -398,6 +402,8 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 
 		_effectsCompileProgressWindow = new EffectsCompileProgressWindow();
 		_gameBuildWindow = new GameBuildWindow();
+		_assetBuildSettingsWindow = new AssetBuildSettingsWindow();
+		_assetBuildReportWindow = new AssetBuildReportWindow();
 		_SerializationManager = SerializationManager.Instance;
 
 		Core.EmitterWithPending.AddObserver(CoreEvents.Exiting, OnAppExitSaveChanges);
@@ -496,6 +502,8 @@ public partial class ImGuiManager : GlobalManager, IFinalRenderDelegate, IDispos
 		DrawEntityInspectors();
 		_effectsCompileProgressWindow.Draw();
 		_gameBuildWindow.Draw();
+		_assetBuildSettingsWindow.Draw();
+		_assetBuildReportWindow.Draw();
 		_projectCreatorWindow.Draw();
 		_sceneCreator.Draw();
 		_projectSettingsWindow.Draw();

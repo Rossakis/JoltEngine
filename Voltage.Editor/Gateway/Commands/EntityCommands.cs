@@ -251,9 +251,9 @@ internal static class EntityCommands
 			var memberName = args.Require("member");
 			var value = args.RequireProperty("value");
 
-			var result = Set(component, memberName, value, undo: true, $"Set {component.GetType().Name}.{memberName} on {component.Entity?.Name}");
+			var result = Set(component, memberName, value, undo: true, $"Set {component.GetType().Name}.{memberName} on {component.Entity?.Name}", args.Bool("remove"));
 			return new { member = memberName, value = result };
-		}, P.Str("entity", "Entity id, GUID or name", required: true), P.Str("type", "Component type name or full name", required: true), P.Str("member", "Field or property name; dotted paths reach nested members", required: true), P.Any("value", "New value in the shared value language: number, string, bool, enum name, {x,y}, {r,g,b,a}, asset path, entity key or Entity/Type", required: true));
+		}, P.Str("entity", "Entity id, GUID or name", required: true), P.Str("type", "Component type name or full name", required: true), P.Str("member", "Field or property name; dotted paths reach nested members, Clips[2] a list element, Clips[+] appends", required: true), P.Any("value", "New value in the shared value language: number, string, bool, enum name, {x,y}, {r,g,b,a} or #RRGGBB, asset path, entity key, Entity/Type, or a JSON array for a whole list", required: true), P.Bool("remove", "Remove the indexed list element instead of setting it", false));
 	}
 
 

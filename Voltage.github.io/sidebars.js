@@ -19,6 +19,7 @@ const sidebars = {
         'editor/scenes-and-prefabs',
         'editor/asset-browser',
         'editor/hot-reload',
+        'editor/asset-build',
       ],
     },
     {

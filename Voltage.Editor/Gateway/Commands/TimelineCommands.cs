@@ -8,7 +8,9 @@ using System.Text.Json;
 using Voltage.Cinematics;
 using Voltage.Editor.Assets;
 using Voltage.Editor.ProjectFile;
+using Voltage.Editor.Undo.Core;
 using Voltage.Gateway;
+using Voltage.Serialization;
 using Voltage.Sprites;
 using static Voltage.Editor.Gateway.GatewayValues;
 
@@ -238,16 +240,22 @@ internal static class TimelineCommands
 		{
 			var animator = Animator(args);
 			var name = args.Require("name");
+			var loop = SpriteAnimator.LoopMode.Loop;
+			var loopText = args.String("loop");
+			if (loopText != null)
+			{
+				if (bool.TryParse(loopText, out var loopFlag))
+					loop = loopFlag ? SpriteAnimator.LoopMode.Loop : SpriteAnimator.LoopMode.Once;
+				else if (!Enum.TryParse(loopText, true, out loop))
+					throw new GatewayException($"unknown loop mode '{loopText}'; use true, false or one of {string.Join(", ", Enum.GetNames(typeof(SpriteAnimator.LoopMode)))}");
+			}
 			if (!animator.Animations.ContainsKey(name))
 				throw new GatewayException($"no animation '{name}'; see animation.list");
-			var loop = SpriteAnimator.LoopMode.Loop;
-			if (args.Has("loop") && !Enum.TryParse(args.Require("loop"), true, out loop))
-				throw new GatewayException($"unknown loop mode '{args.Require("loop")}'");
 			animator.Play(name, loop, args.Int("frame"));
 			if (args.Has("speed"))
 				animator.Speed = args.Float("speed");
 			return new { playing = animator.CurrentAnimationName, state = animator.AnimationState.ToString(), loop = animator.CurrentLoopMode.ToString() };
-		}, P.Str("entity", required: true), P.Str("name", "Animation name", required: true), P.Enum("loop", "Loop mode", Enum.GetNames(typeof(SpriteAnimator.LoopMode)), "Loop"), P.Int("frame", "Start frame", 0), P.Float("speed", "Playback speed multiplier"));
+		}, P.Str("entity", required: true), P.Str("name", "Animation name", required: true), P.Str("loop", "Loop mode name, or true (Loop) / false (Once)", "Loop"), P.Int("frame", "Start frame", 0), P.Float("speed", "Playback speed multiplier"));
 
 		table.Add("animation.stop", "Stop, pause or resume the SpriteAnimator on an entity.", (args, _) =>
 		{
@@ -260,6 +268,65 @@ internal static class TimelineCommands
 			}
 			return new { current = animator.CurrentAnimationName, state = animator.AnimationState.ToString() };
 		}, P.Str("entity", required: true), P.Enum("action", "stop, pause or resume", new[] { "stop", "pause", "resume" }, "stop"));
+
+		table.Add("timeline.events", "[TimelineEvent] methods the compiled scripts registered, with their parameters where the component type is known.", (_, _) =>
+			TimelineDispatch.RegisteredMethods().OrderBy(m => m.ComponentId, StringComparer.Ordinal).ThenBy(m => m.Method, StringComparer.Ordinal).Select(m => DescribeEvent(m.ComponentId, m.Method)).ToList()).ReadOnly();
+
+		table.Add("timeline.properties", "[TimelineProperty] members a property track can animate.", (_, _) =>
+			TimelinePropertyRegistry.Registered().OrderBy(p => p.ComponentId, StringComparer.Ordinal).ThenBy(p => p.Property, StringComparer.Ordinal)
+				.Select(p => new { componentId = p.ComponentId, property = p.Property, kind = p.Kind.ToString() }).ToList()).ReadOnly();
+
+		table.Add("timeline.eases", "EaseType names timeline.key.add accepts.", (_, _) => Enum.GetNames(typeof(Voltage.Utils.Tweens.Easing.EaseType)).ToList()).ReadOnly();
+
+		table.Add("timeline.marker.list", "Markers of a timeline asset in time order.", (args, _) =>
+		{
+			var path = ResolveTimeline(args.Require("asset"));
+			var asset = TimelineAssetIO.Load(path) ?? throw new GatewayException($"could not read {path}");
+			return asset.Markers.Where(m => m != null).OrderBy(m => m.Time).Select(m => new { m.Name, m.Time }).ToList();
+		}, P.Str("asset", "Timeline GUID, path or file name", required: true)).ReadOnly();
+
+		table.Add("timeline.validate", "Problems a director would report at play; with entity, its bindings count too.", (args, _) =>
+		{
+			if (args.Has("entity"))
+			{
+				var director = Director(args);
+				return new { entity = director.Entity?.Name, problems = director.Validate() };
+			}
+			var path = ResolveTimeline(args.Require("asset"));
+			var asset = TimelineAssetIO.Load(path) ?? throw new GatewayException($"could not read {path}");
+			return new { path, problems = ValidateAsset(asset) };
+		}, P.Str("asset", "Timeline GUID, path or file name"), P.Str("entity", "Entity with a TimelineDirector; validates its asset with its bindings")).ReadOnly();
+
+		table.Add("timeline.bind", "Bind a role on an entity's TimelineDirector to a target entity (undoable).", (args, _) =>
+		{
+			var director = Director(args);
+			var role = args.Require("role");
+			var target = args.Require("target");
+			var index = director.Bindings.FindIndex(b => b?.Role == role);
+			var description = $"Bind {role} on {director.Entity?.Name}";
+			if (index < 0)
+				Set(director, "Bindings[+]", JsonSerializer.SerializeToElement(new { Role = role, Entity = target }), true, description);
+			else
+				Set(director, $"Bindings[{index}].Entity", JsonSerializer.SerializeToElement(target), true, description);
+			return DirectorState(director);
+		}, P.Str("entity", "Entity with a TimelineDirector", required: true), P.Str("role", "Role name on the asset", required: true), P.Str("target", "Entity id, GUID or name to bind", required: true));
+
+		table.Add("timeline.unbind", "Remove a role binding from an entity's TimelineDirector (undoable).", (args, _) =>
+		{
+			var director = Director(args);
+			var role = args.Require("role");
+			var index = director.Bindings.FindIndex(b => b?.Role == role);
+			if (index < 0)
+				throw new GatewayException($"no binding for role '{role}'");
+			Set(director, $"Bindings[{index}]", default, true, $"Unbind {role} on {director.Entity?.Name}", remove: true);
+			return DirectorState(director);
+		}, P.Str("entity", "Entity with a TimelineDirector", required: true), P.Str("role", "Role name", required: true)).Destructive();
+	}
+
+	private static TimelineDirector Director(GatewayArgs args)
+	{
+		var entity = ResolveEntity(args.Require("entity"));
+		return entity.GetComponent<TimelineDirector>() ?? throw new GatewayException($"{entity.Name} has no TimelineDirector");
 	}
 
 
@@ -283,15 +350,118 @@ internal static class TimelineCommands
 		return item.AbsolutePath;
 	}
 
-	/// <summary>Load, mutate, save, and refresh any director already bound to the file.</summary>
+	/// <summary>Load, mutate, save; the file edit lands in the undo history and every director or window showing the file rereads it.</summary>
 	private static object Edit(GatewayArgs args, Action<TimelineAsset> mutate)
 	{
 		var path = ResolveTimeline(args.Require("asset"));
+		var before = File.ReadAllText(path);
 		var asset = TimelineAssetIO.Load(path) ?? throw new GatewayException($"could not read {path}");
 		mutate(asset);
 		TimelineAssetIO.Save(asset, path);
-		TimelineNestedTrack.ClearCache();
+		var after = File.ReadAllText(path);
+		if (after != before)
+			EditorChangeTracker.PushUndo(new TimelineFileUndoAction(path, before, after), null, null);
+		Refresh(path);
 		return Summary(asset, path);
+	}
+
+	/// <summary>Directors bound to the file and an open Timeline window keep a loaded copy; hand them the new one.</summary>
+	private static void Refresh(string path)
+	{
+		TimelineNestedTrack.ClearCache();
+		EditorGatewayDispatcher.Current?.ImGuiManager.TimelineWindow.ReloadFromDisk(path);
+		var scene = Core.Scene;
+		if (scene == null)
+			return;
+		foreach (var entity in scene.Entities)
+			foreach (var director in entity.GetComponents<TimelineDirector>())
+			{
+				if (director.Asset == null)
+					continue;
+				var bound = director.Timeline.ResolvePath();
+				if (!string.IsNullOrEmpty(bound) && string.Equals(Path.GetFullPath(bound), Path.GetFullPath(path), StringComparison.OrdinalIgnoreCase))
+					director.SetAsset(TimelineAssetIO.Load(path));
+			}
+	}
+
+	/// <summary>Swaps the whole file between its before and after text.</summary>
+	private sealed class TimelineFileUndoAction : EditorChangeTracker.IEditorAction
+	{
+		private readonly string _path, _before, _after;
+
+		public TimelineFileUndoAction(string path, string before, string after)
+		{
+			_path = path;
+			_before = before;
+			_after = after;
+		}
+
+		public string Description => $"Edit {Path.GetFileName(_path)}";
+
+		public void Undo() => Write(_before, _after);
+
+		public void Redo() => Write(_after, _before);
+
+		private void Write(string text, string expected)
+		{
+			// Another editor of the file since this step gets overwritten; say so rather than fail the undo.
+			if (File.Exists(_path) && File.ReadAllText(_path) != expected)
+				Debug.Warn($"[Timeline] {Path.GetFileName(_path)} changed since this edit; undo replaces those changes");
+			File.WriteAllText(_path, text, new System.Text.UTF8Encoding(false));
+			Refresh(_path);
+		}
+	}
+
+	private static object DescribeEvent(string componentId, string method)
+	{
+		if (!ComponentIdRegistry.TryGetType(componentId, out var type))
+			return new { componentId, method, component = (string)null, displayName = (string)null, parameters = (List<object>)null };
+		var info = type.GetMethod(method, BindingFlags.Public | BindingFlags.Instance);
+		return new
+		{
+			componentId,
+			method,
+			component = type.FullName,
+			displayName = info?.GetCustomAttribute<TimelineEventAttribute>()?.DisplayName,
+			parameters = info?.GetParameters().Select(p => (object)new { name = p.Name, type = p.ParameterType.Name }).ToList()
+		};
+	}
+
+	/// <summary>Asset-only checks that need no director: roles, prefabs, registered event methods and properties, track roles and length.</summary>
+	private static List<string> ValidateAsset(TimelineAsset asset)
+	{
+		var problems = new List<string>();
+		var roles = asset.Roles.Where(r => r != null && !string.IsNullOrEmpty(r.Name)).ToDictionary(r => r.Name, r => r.ExpectedComponentId);
+		foreach (var role in roles.Keys)
+			if (asset.SpawnClips.All(s => s?.SpawnRole != role))
+				problems.Add($"role '{role}' needs a director binding or a spawn clip.");
+		foreach (var spawn in asset.SpawnClips)
+			if (spawn != null && !spawn.Prefab.IsValid)
+				problems.Add($"spawn '{spawn.SpawnRole}' has no prefab assigned.");
+		foreach (var e in asset.Events)
+		{
+			if (e == null)
+				continue;
+			if (!string.IsNullOrEmpty(e.TargetRole) && !roles.ContainsKey(e.TargetRole))
+				problems.Add($"event '{e.Name}' targets unknown role '{e.TargetRole}'.");
+			else if (!string.IsNullOrEmpty(e.TargetRole) && roles[e.TargetRole] is { Length: > 0 } id)
+				foreach (var m in new[] { e.BeginMethod, e.EndMethod })
+					if (!string.IsNullOrEmpty(m) && !TimelineDispatch.IsRegistered(id, m))
+						problems.Add($"event '{e.Name}' calls {id}.{m}, which no [TimelineEvent] registered; see timeline.events.");
+		}
+		foreach (var track in asset.ParameterTracks)
+		{
+			if (track == null)
+				continue;
+			if (!string.IsNullOrEmpty(track.TargetRole) && !roles.ContainsKey(track.TargetRole))
+				problems.Add($"{TimelineTrackRegistry.IdFor(track.GetType())} track targets unknown role '{track.TargetRole}'.");
+			if (track is TimelinePropertyTrack p && !string.IsNullOrEmpty(p.TargetComponentId) && !string.IsNullOrEmpty(p.Property) && !TimelinePropertyRegistry.TryGetKind(p.TargetComponentId, p.Property, out _))
+				problems.Add($"property track {p.TargetComponentId}.{p.Property} has no [TimelineProperty] registration; see timeline.properties.");
+		}
+		var contentEnd = asset.ContentEndTime();
+		if (contentEnd > asset.Duration + 0.001f)
+			problems.Add($"content runs to {contentEnd:0.00}s but Length is {asset.Duration:0.00}s.");
+		return problems;
 	}
 
 	private static TimelineParameterTrack Track(TimelineAsset asset, int index) => asset.ParameterTracks[Index(index, asset.ParameterTracks.Count, "track")];

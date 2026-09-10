@@ -24,6 +24,8 @@ public sealed class EditorSession
 
 	public static string DataDirectory { get; private set; }
 
+	public static string EditorExe { get; private set; }
+
 	public static JsonElement Call(string method, object parameters = null)
 	{
 		var element = parameters == null ? (JsonElement?)null : JsonSerializer.SerializeToElement(parameters);
@@ -56,6 +58,7 @@ public sealed class EditorSession
 	public void Start()
 	{
 		var exe = FindEditor();
+		EditorExe = exe;
 		_root = Path.Combine(Path.GetTempPath(), "voltage-gateway-tests", Guid.NewGuid().ToString("N"));
 		DataDirectory = Path.Combine(_root, "data");
 		Directory.CreateDirectory(DataDirectory);

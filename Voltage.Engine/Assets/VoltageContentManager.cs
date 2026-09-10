@@ -65,14 +65,24 @@ public class VoltageContentManager : ContentManager
 	public VoltageContentManager(IServiceProvider serviceProvider, string rootDirectory) : base(serviceProvider,
 		rootDirectory)
 	{
+		UseCompiledRoot();
 	}
 
 	public VoltageContentManager(IServiceProvider serviceProvider) : base(serviceProvider)
 	{
+		UseCompiledRoot();
 	}
 
 	public VoltageContentManager() : base(((Game)Core._instance).Services, ((Game)Core._instance).Content.RootDirectory)
 	{
+		UseCompiledRoot();
+	}
+
+	/// <summary>Compiled assets live under Content; the root is fixed here, once, so the legacy extension-less .xnb path never moves mid-session.</summary>
+	private void UseCompiledRoot()
+	{
+		if (string.IsNullOrEmpty(RootDirectory) && Voltage.Assets.CompiledContentIndex.Count > 0)
+			RootDirectory = "Content";
 	}
 
 	#region Strongly Typed Loaders
@@ -91,6 +101,15 @@ public class VoltageContentManager : ContentManager
 		if (LoadedAssets.TryGetValue(name, out var asset))
 			if (asset is Texture2D tex)
 				return tex;
+
+		if (TryLoadCompiled<Texture2D>(name, out var compiled))
+		{
+			if (premultiplyAlpha)
+				TextureUtils.PremultiplyAlpha(compiled);
+			compiled.Name = name;
+			LoadedAssets[name] = compiled;
+			return compiled;
+		}
 
 		using (var stream = File.OpenRead(ResolveContentPath(name)))
 		{
@@ -121,6 +140,12 @@ public class VoltageContentManager : ContentManager
 		if (LoadedAssets.TryGetValue(name, out var asset))
 			if (asset is SoundEffect cached)
 				return cached;
+
+		if (TryLoadCompiled<SoundEffect>(name, out var compiled))
+		{
+			LoadedAssets[name] = compiled;
+			return compiled;
+		}
 
 		var path = ResolveContentPath(name);
 
@@ -214,6 +239,15 @@ public class VoltageContentManager : ContentManager
 			if (asset is BitmapFont bmFont)
 				return bmFont;
 
+		if (TryLoadCompiled<BitmapFont>(name, out var compiled))
+		{
+			if (premultiplyAlpha)
+				foreach (var page in compiled.Textures)
+					TextureUtils.PremultiplyAlpha(page);
+			LoadedAssets[name] = compiled;
+			return compiled;
+		}
+
 		var font = BitmapFontLoader.LoadFontFromFile(name, premultiplyAlpha);
 
 		LoadedAssets.Add(name, font);
@@ -235,6 +269,12 @@ public class VoltageContentManager : ContentManager
 		if (LoadedAssets.TryGetValue(name, out var asset))
 			if (asset is AsepriteFile aseFile)
 				return aseFile;
+
+		if (TryLoadCompiled<AsepriteFile>(name, out var compiled))
+		{
+			LoadedAssets[name] = compiled;
+			return compiled;
+		}
 
 		var asepriteFile = AsepriteFileLoader.Load(ResolveContentPath(name));
 		LoadedAssets.Add(name, asepriteFile);
@@ -434,9 +474,9 @@ public class VoltageContentManager : ContentManager
 	{
 		private static readonly Dictionary<Type, Func<VoltageContentManager, string, string, bool, object>> Map = new()
 		{
-			// Dual-format: raw source file when present, else the compiled .xnb (chosen by rawExists).
-			[typeof(Texture2D)]   = static (c, path, name, raw) => c.LoadTexture(raw ? path : name),
-			[typeof(SoundEffect)] = static (c, path, name, raw) => c.LoadSoundEffect(raw ? path : name),
+			// Dual-format: the source path when it exists or an asset build compiled it, else a legacy .xnb name.
+			[typeof(Texture2D)]   = static (c, path, name, raw) => c.LoadTexture(raw || IsCompiled(path) ? path : name),
+			[typeof(SoundEffect)] = static (c, path, name, raw) => c.LoadSoundEffect(raw || IsCompiled(path) ? path : name),
 
 			// Raw-only parsers: always stream the resolved source file.
 			[typeof(SpriteAtlas)]                      = static (c, path, name, raw) => c.LoadSpriteAtlas(path),
@@ -452,6 +492,8 @@ public class VoltageContentManager : ContentManager
 		private static readonly Func<VoltageContentManager, string, string, bool, object> DataAssetLoader =
 			static (c, path, name, raw) => Voltage.Data.DataAssetCache.GetByPath(path);
 
+		private static bool IsCompiled(string path) => Voltage.Assets.CompiledContentIndex.TryGetAssetName(path, out _);
+
 		// Human-readable list of AssetReference-loadable types, surfaced in diagnostics.
 		public static readonly string SupportedTypeNames =
 			string.Join(", ", Map.Keys.Select(t => t == typeof(string) ? "string (JSON)" : t.Name))
@@ -463,6 +505,41 @@ public class VoltageContentManager : ContentManager
 				return loader;
 
 			return typeof(Voltage.Data.DataAsset).IsAssignableFrom(t) ? DataAssetLoader : null;
+		}
+	}
+
+	#endregion
+
+	#region Compiled Content
+
+	private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> CompiledFailures = new(StringComparer.OrdinalIgnoreCase);
+
+	static VoltageContentManager()
+	{
+		Voltage.Assets.CompiledContentIndex.OnReset += CompiledFailures.Clear;
+	}
+
+	/// <summary>Loads the .xnb an asset build compiled for this source path; false when none exists or it fails, so the raw file is used instead.</summary>
+	private bool TryLoadCompiled<T>(string name, out T asset) where T : class
+	{
+		asset = null;
+		if (!Voltage.Assets.CompiledContentIndex.TryGetAssetName(name, out var assetName))
+			return false;
+
+		try
+		{
+			asset = Load<T>(assetName);
+			// The caller caches under the source path; drop the pipeline's own key so eviction and reload see one entry.
+			LoadedAssets.Remove(assetName);
+			LoadedAssets.Remove(assetName.Replace('\\', '/'));
+			return asset != null;
+		}
+		catch (Exception ex)
+		{
+			if (CompiledFailures.TryAdd(name, 0))
+				Debug.Warn($"[Content] compiled asset '{assetName}' for '{name}' failed to load, using the source file: {ex.Message}");
+			asset = null;
+			return false;
 		}
 	}
 
