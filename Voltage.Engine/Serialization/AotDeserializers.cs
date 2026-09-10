@@ -252,13 +252,34 @@ namespace Voltage.Serialization
 					case "PremultiplyAlpha": s.PremultiplyAlpha = r.ReadBool(); break;
 					case "TextureFormat": s.TextureFormat = r.ReadString(); break;
 					case "CompileAudio": s.CompileAudio = r.ReadBool(); break;
-					case "StripSources": s.StripSources = r.ReadBool(); break;
 					case "Include": s.Include = r.ReadList(rd => rd.ReadString()); break;
 					case "Exclude": s.Exclude = r.ReadList(rd => rd.ReadString()); break;
+					case "Rules": s.Rules = r.ReadList(rd => rd.ReadObject(ReadAssetBuildRule)); break;
 					default: r.SkipValue(); break;
 				}
 			}
 			return s;
+		}
+
+		private static ProjectSettings.AssetBuildRule ReadAssetBuildRule(JsonTokenReader r)
+		{
+			var rule = new ProjectSettings.AssetBuildRule();
+			if (!r.BeginObject()) return rule;
+			while (r.ReadNextKey(out var key))
+			{
+				switch (key)
+				{
+					case "Name": rule.Name = r.ReadString(); break;
+					case "Extensions": rule.Extensions = r.ReadList(rd => rd.ReadString()); break;
+					case "Action": rule.Action = r.ReadString(); break;
+					case "Importer": rule.Importer = r.ReadString(); break;
+					case "Processor": rule.Processor = r.ReadString(); break;
+					case "Parameters": rule.Parameters = r.ReadList(rd => rd.ReadString()); break;
+					case "Assembly": rule.Assembly = r.ReadString(); break;
+					default: r.SkipValue(); break;
+				}
+			}
+			return rule;
 		}
 
 		private static ProjectSettings.DisplaySettings ReadDisplaySettings(JsonTokenReader r)

@@ -1286,6 +1286,8 @@ public partial class ImGuiManager
 			Builders.AssetBuildService.Clean(_projectManager.CurrentProject, settings.Platform);
 		if (Gui.MenuItem("Settings", "", false, hasProject))
 			_assetBuildSettingsWindow.Open();
+		if (Gui.MenuItem("New pipeline extension", "", false, hasProject))
+			_assetBuildSettingsWindow.OpenScaffold();
 		if (Gui.MenuItem("Show last report", "", false, Builders.AssetBuildService.LastReport != null))
 			_assetBuildReportWindow.Show();
 

@@ -81,6 +81,10 @@ public static class MgcbRunner
 	public static int RunMgcb(IGameProject project, string mgcbPath, Action<string> stdout, Action<string> stderr, CancellationToken cancel) =>
 		Run(project.ProjectPath, new[] { "mgcb", "/@:" + mgcbPath }, stdout, stderr, cancel);
 
+	/// <summary>Runs any dotnet command with fixed arguments, for extension project builds.</summary>
+	public static int RunDotnet(string workingDirectory, string[] arguments, Action<string> stdout, Action<string> stderr, CancellationToken cancel) =>
+		Run(workingDirectory, arguments, stdout, stderr, cancel);
+
 	private static int Run(string workingDirectory, string[] arguments, Action<string> stdout, Action<string> stderr, CancellationToken cancel)
 	{
 		var startInfo = new ProcessStartInfo("dotnet")

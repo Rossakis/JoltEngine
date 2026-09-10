@@ -69,13 +69,35 @@ namespace Voltage.Project
 			public bool PremultiplyAlpha = false;
 			public string TextureFormat = "Color";
 			public bool CompileAudio = false;
-			public bool StripSources = false;
 
 			[DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(List<string>))]
 			public List<string> Include = new() { "**/*" };
 
 			[DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(List<string>))]
 			public List<string> Exclude = new() { "**/Voltage/**", "**/*.fx", "**/*.mgfxo" };
+
+			[DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(List<AssetBuildRule>))]
+			[DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(AssetBuildRule))]
+			public List<AssetBuildRule> Rules = new();
+		}
+
+		/// <summary>Routes files with the listed extensions through an importer and processor, or copies or skips them; project rules override the built-in table.</summary>
+		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+		public class AssetBuildRule
+		{
+			public string Name = "";
+
+			[DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(List<string>))]
+			public List<string> Extensions = new();
+
+			public string Action = "compile";
+			public string Importer = "";
+			public string Processor = "";
+
+			[DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(List<string>))]
+			public List<string> Parameters = new();
+
+			public string Assembly = "";
 		}
 
 		[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]

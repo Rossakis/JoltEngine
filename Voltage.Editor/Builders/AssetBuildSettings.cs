@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using Voltage.Editor.ProjectFile;
 using Voltage.Project;
 
@@ -36,9 +37,20 @@ public static class AssetBuildSettingsStore
 		return known ?? throw new ArgumentException($"unknown MGCB platform '{p}'; use one of {string.Join(", ", Platforms)}");
 	}
 
-	/// <summary>Where "Build assets now" writes: &lt;project&gt;/Build/Assets/&lt;platform&gt;.</summary>
+	/// <summary>Where "Build assets now" writes: &lt;project&gt;/bin/AssetBuild/&lt;platform&gt;, under the ignored bin folder beside game builds.</summary>
 	public static string DefaultOutputDirectory(IGameProject project, string platform) =>
-		Path.Combine(project.ProjectPath, "Build", "Assets", MgcbPlatform(platform));
+		Path.Combine(project.ProjectPath, "bin", "AssetBuild", MgcbPlatform(platform));
+
+	/// <summary>True when no standalone output exists or a Content file is newer than its index.</summary>
+	public static bool IsOutputStale(IGameProject project, string platform)
+	{
+		var index = Path.Combine(DefaultOutputDirectory(project, platform), AssetBuildPipeline.IndexFileName);
+		if (!File.Exists(index))
+			return true;
+		var built = File.GetLastWriteTimeUtc(index);
+		return Directory.Exists(project.ContentsFolder)
+			&& Directory.EnumerateFiles(project.ContentsFolder, "*", SearchOption.AllDirectories).Any(f => File.GetLastWriteTimeUtc(f) > built);
+	}
 
 	public static string IntermediateDirectory(IGameProject project, string platform) =>
 		Path.Combine(project.ProjectPath, "obj", "AssetBuild", MgcbPlatform(platform));

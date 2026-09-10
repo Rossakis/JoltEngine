@@ -15,7 +15,7 @@ public sealed class AssetBuildReportWindow
 	private CancellationTokenSource _cancel;
 	private string _filter = "";
 
-	/// <summary>Starts a standalone asset build into the project's Build/Assets folder and shows it.</summary>
+	/// <summary>Starts a standalone asset build into the project's bin/AssetBuild folder and shows it.</summary>
 	public void BuildNow()
 	{
 		var project = ProjectManager.Instance.CurrentProject;

@@ -13,7 +13,8 @@ internal enum AssetBuildAction
 {
 	Compile,
 	Copy,
-	Skip
+	Skip,
+	Fail
 }
 
 /// <summary>One Content file and what the build does with it.</summary>
@@ -45,6 +46,9 @@ internal sealed class AssetBuildPlan
 	public bool PipelineAvailable;
 	public bool Compress;
 
+	/// <summary>Rule assemblies, absolute and deduplicated, referenced after Voltage.Pipeline.</summary>
+	public List<string> References = new();
+
 	public IEnumerable<AssetBuildItem> Compiled => Items.Where(i => i.Action == AssetBuildAction.Compile);
 }
 
@@ -67,7 +71,8 @@ internal static class AssetBuildPipeline
 			Platform = platform,
 			OutputDir = Path.GetFullPath(outputDir),
 			IntermediateDir = Path.Combine(AssetBuildSettingsStore.IntermediateDirectory(project, platform), "obj"),
-			MgcbPath = Path.Combine(project.ProjectPath, "obj", "AssetBuild", platform + ".mgcb"),
+			// Not .mgcb: the game's MonoGame builder task globs **/*.mgcb and would run this file again during publish.
+			MgcbPath = Path.Combine(project.ProjectPath, "obj", "AssetBuild", platform + ".rsp"),
 			PipelineDll = PipelineDllPath,
 			PipelineAvailable = File.Exists(PipelineDllPath),
 			Compress = settings.Compress
@@ -81,6 +86,7 @@ internal static class AssetBuildPipeline
 		var exclude = (settings.Exclude ?? new List<string>()).Where(g => !string.IsNullOrWhiteSpace(g)).Select(GlobToRegex).ToList();
 		var projectRoot = Path.GetFullPath(project.ProjectPath);
 		var usedNames = new Dictionary<string, AssetBuildItem>(StringComparer.OrdinalIgnoreCase);
+		var rules = AssetBuildRules.Resolve(settings);
 
 		foreach (var file in Directory.EnumerateFiles(contentRoot, "*", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
 		{
@@ -114,7 +120,10 @@ internal static class AssetBuildPipeline
 				continue;
 			}
 
-			Classify(item, relativeToContent, settings, plan);
+			if (rules.TryGetValue(Path.GetExtension(file).ToLowerInvariant(), out var rule))
+				ApplyRule(item, rule, project, plan);
+			else
+				Classify(item, relativeToContent, settings, plan);
 			if (item.Action != AssetBuildAction.Compile)
 				continue;
 
@@ -129,6 +138,48 @@ internal static class AssetBuildPipeline
 		}
 
 		return plan;
+	}
+
+	/// <summary>A rule wins over the built-in table for its extensions; a missing rule assembly fails its files instead of copying them.</summary>
+	private static void ApplyRule(AssetBuildItem item, ProjectSettings.AssetBuildRule rule, IGameProject project, AssetBuildPlan plan)
+	{
+		item.Reason = "rule " + rule.Name;
+		var problem = AssetBuildRuleValidation.Validate(rule, project.ProjectPath, out var assembly);
+		if (problem != null)
+		{
+			item.Action = AssetBuildAction.Fail;
+			item.Error = $"rule {rule.Name}: {problem}";
+			return;
+		}
+
+		switch (AssetBuildRuleValidation.ActionOf(rule))
+		{
+			case "copy":
+				Copy(item, item.Reason);
+				return;
+			case "skip":
+				Skip(item, item.Reason);
+				return;
+		}
+
+		if (assembly != null)
+		{
+			if (!plan.References.Contains(assembly, StringComparer.OrdinalIgnoreCase))
+				plan.References.Add(assembly);
+			if (!File.Exists(assembly) && AssetBuildRules.FindExtensionProject(project, assembly) == null)
+			{
+				item.Action = AssetBuildAction.Fail;
+				item.Error = $"rule {rule.Name}: assembly not found: {assembly}";
+				return;
+			}
+		}
+
+		Compile(item, rule.Importer.Trim(), rule.Processor.Trim());
+		foreach (var parameter in rule.Parameters)
+		{
+			var eq = parameter.IndexOf('=');
+			item.Parameters.Add(new(parameter.Substring(0, eq).Trim(), parameter.Substring(eq + 1).Trim()));
+		}
 	}
 
 	private static void Classify(AssetBuildItem item, string relativeToContent, ProjectSettings.AssetBuildSettings settings, AssetBuildPlan plan)
@@ -211,6 +262,13 @@ internal static class AssetBuildPipeline
 		item.Reason = reason;
 	}
 
+	/// <summary>The extensions a rule applies to, normalised to lower-case with a leading dot.</summary>
+	public static IEnumerable<string> NormalisedExtensions(ProjectSettings.AssetBuildRule rule) =>
+		(rule.Extensions ?? new List<string>())
+			.Select(e => e?.Trim().ToLowerInvariant())
+			.Where(e => !string.IsNullOrEmpty(e))
+			.Select(e => e.StartsWith('.') ? e : "." + e);
+
 	private static bool IsResponseSafe(string path)
 	{
 		if (path.IndexOfAny(new[] { ';', '\r', '\n' }) >= 0)
@@ -240,6 +298,8 @@ internal static class AssetBuildPipeline
 			sb.AppendLine("/compress");
 		if (plan.PipelineAvailable)
 			sb.AppendLine($"/reference:{plan.PipelineDll}");
+		foreach (var reference in plan.References.Where(File.Exists))
+			sb.AppendLine($"/reference:{reference}");
 		sb.AppendLine();
 
 		foreach (var item in plan.Compiled)

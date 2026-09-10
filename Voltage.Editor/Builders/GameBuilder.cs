@@ -630,7 +630,7 @@ public static class GameBuilder
 				var plan = new AssetBuildPlan { OutputDir = contentDest };
 				lock (assetReport.Lock)
 					plan.Items = assetReport.Items.ToList();
-				AssetBuildService.CopyRaw(project, plan, AssetBuildSettingsStore.Get().StripSources, assetReport);
+				AssetBuildService.CopyRaw(project, plan, assetReport);
 			}
 			else
 				CopyDirectoryRecursive(contentSrc, contentDest);

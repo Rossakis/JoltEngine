@@ -65,7 +65,7 @@ internal static class AssetBuildService
 
 	public static AssetBuildReport LastReport { get; private set; }
 
-	/// <summary>Compiles into <paramref name="outputDir"/>; with <paramref name="copyRaw"/> the folder also gets every raw file the contract keeps.</summary>
+	/// <summary>Compiles into <paramref name="outputDir"/>; a standalone run (<paramref name="copyRaw"/>) starts from an empty folder and also copies every raw file the contract keeps.</summary>
 	public static Task<AssetBuildReport> RunAsync(IGameProject project, ProjectSettings.AssetBuildSettings settings, string outputDir, string platformOverride, bool clean, bool copyRaw, CancellationToken cancel)
 	{
 		if (project == null)
@@ -132,22 +132,30 @@ internal static class AssetBuildService
 			report.MgcbPath = plan.MgcbPath;
 			report.Items = plan.Items;
 			foreach (var item in plan.Items)
-				item.Outcome = item.Action == AssetBuildAction.Skip ? "skipped" : "pending";
+				item.Outcome = item.Action == AssetBuildAction.Skip ? "skipped" : item.Action == AssetBuildAction.Fail ? "failed" : "pending";
 		}
 		if (!plan.PipelineAvailable)
 			Warn(report, $"Voltage.Pipeline.dll not found at {plan.PipelineDll}; Aseprite and .fnt files are copied instead of compiled");
 
-		if (clean)
+		// A standalone output is rebuilt from nothing every time, so renamed or deleted sources leave nothing behind; a game build's folder was emptied by the publish.
+		if (copyRaw && Directory.Exists(plan.OutputDir))
 		{
-			Info(report, "cleaning " + plan.OutputDir);
-			if (Directory.Exists(plan.OutputDir)) Directory.Delete(plan.OutputDir, true);
-			if (Directory.Exists(plan.IntermediateDir)) Directory.Delete(plan.IntermediateDir, true);
+			Info(report, "emptying " + plan.OutputDir);
+			Directory.Delete(plan.OutputDir, true);
+		}
+		if (clean && Directory.Exists(plan.IntermediateDir))
+		{
+			Info(report, "cleaning " + plan.IntermediateDir);
+			Directory.Delete(plan.IntermediateDir, true);
 		}
 		Directory.CreateDirectory(plan.OutputDir);
 		cancel.ThrowIfCancellationRequested();
 
 		if (plan.Compiled.Any())
 		{
+			SetStatus(report, "building extensions");
+			BuildExtensions(project, plan, report, cancel);
+
 			SetStatus(report, "restoring dotnet-mgcb");
 			if (!MgcbRunner.EnsureTool(project, line => Info(report, line), cancel))
 				throw new InvalidOperationException("dotnet tool restore failed; is NuGet reachable?");
@@ -176,6 +184,8 @@ internal static class AssetBuildService
 		else
 			Info(report, "nothing to compile; every file is copied or skipped");
 
+		if (copyRaw)
+			PruneStaleOutputs(plan, report);
 		SetStatus(report, "writing index");
 		var index = AssetBuildPipeline.WriteIndex(plan);
 		lock (report.Lock) report.IndexPath = index;
@@ -183,7 +193,7 @@ internal static class AssetBuildService
 		if (copyRaw)
 		{
 			SetStatus(report, "copying raw files");
-			CopyRaw(project, plan, settings.StripSources, report);
+			CopyRaw(project, plan, report);
 		}
 		else
 		{
@@ -199,26 +209,72 @@ internal static class AssetBuildService
 		}
 	}
 
-	/// <summary>Copies the files the contract keeps raw; compiled sources come along unless stripped.</summary>
-	public static void CopyRaw(IGameProject project, AssetBuildPlan plan, bool stripSources, AssetBuildReport report)
+	/// <summary>Copies the files the contract keeps raw; a compiled source never ships beside its .xnb.</summary>
+	public static void CopyRaw(IGameProject project, AssetBuildPlan plan, AssetBuildReport report)
 	{
 		var contentRoot = project.ContentsFolder;
+		var stripped = 0;
 		foreach (var item in plan.Items)
 		{
-			if (item.Action == AssetBuildAction.Skip)
+			if (item.Action == AssetBuildAction.Skip || item.Action == AssetBuildAction.Fail)
 				continue;
 			var dest = Path.Combine(plan.OutputDir, Path.GetRelativePath(contentRoot, item.SourcePath));
-			if (item.Action == AssetBuildAction.Compile && stripSources && item.Outcome == "compiled")
+			if (item.Action == AssetBuildAction.Compile && item.Outcome == "compiled")
 			{
-				// dotnet publish copies Content/** on its own, so a stripped source must be removed, not just not copied.
+				// dotnet publish copies Content/** on its own, so a compiled source must be removed, not just not copied.
 				if (File.Exists(dest))
+				{
 					File.Delete(dest);
+					stripped++;
+				}
 				continue;
 			}
 			Directory.CreateDirectory(Path.GetDirectoryName(dest) ?? ".");
 			File.Copy(item.SourcePath, dest, true);
 			if (item.Action == AssetBuildAction.Copy)
 				lock (report.Lock) item.Outcome = "copied";
+		}
+		if (stripped > 0)
+			Info(report, $"stripped {stripped} raw sources");
+	}
+
+	/// <summary>Deletes .xnb files the plan did not produce, so a renamed or removed source cannot linger as a compiled orphan.</summary>
+	/// <summary>Standalone outputs only: a game build's Content folder also holds engine and plugin content this plan never produced.</summary>
+	private static void PruneStaleOutputs(AssetBuildPlan plan, AssetBuildReport report)
+	{
+		if (!Directory.Exists(plan.OutputDir))
+			return;
+		var expected = new HashSet<string>(plan.Compiled.Select(i => Path.GetFullPath(i.OutputXnb(plan.OutputDir))), StringComparer.OrdinalIgnoreCase);
+		var engineContent = Path.Combine(Path.GetFullPath(plan.OutputDir), "Voltage") + Path.DirectorySeparatorChar;
+		var pruned = 0;
+		foreach (var xnb in Directory.EnumerateFiles(plan.OutputDir, "*.xnb", SearchOption.AllDirectories).ToList())
+		{
+			var full = Path.GetFullPath(xnb);
+			if (expected.Contains(full) || full.StartsWith(engineContent, StringComparison.OrdinalIgnoreCase))
+				continue;
+			File.Delete(xnb);
+			pruned++;
+		}
+		if (pruned > 0)
+			Info(report, $"pruned {pruned} stale .xnb files");
+	}
+
+	/// <summary>Rebuilds every rule assembly that lives in a one-csproj folder when its sources are newer than the DLL.</summary>
+	private static void BuildExtensions(IGameProject project, AssetBuildPlan plan, AssetBuildReport report, CancellationToken cancel)
+	{
+		foreach (var reference in plan.References)
+		{
+			var csproj = AssetBuildRules.FindExtensionProject(project, reference);
+			if (csproj == null || !AssetBuildRules.IsStale(reference, csproj))
+				continue;
+
+			var name = Path.GetFileNameWithoutExtension(csproj);
+			Info(report, $"building extension {name}");
+			// The scaffolded csproj references Voltage.Pipeline through this property instead of an absolute editor path.
+			var pipelineDir = Path.GetDirectoryName(AssetBuildPipeline.PipelineDllPath) + Path.DirectorySeparatorChar;
+			var code = MgcbRunner.RunDotnet(Path.GetDirectoryName(csproj), new[] { "build", csproj, "-c", "Release", "--nologo", $"-p:VoltagePipelineDir={pipelineDir}" }, line => Info(report, line), line => Info(report, line), cancel);
+			if (code != 0 || !File.Exists(reference))
+				throw new InvalidOperationException($"extension {name} failed to build (exit code {code}); see the report log");
 		}
 	}
 

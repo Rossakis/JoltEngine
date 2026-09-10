@@ -30,6 +30,57 @@ public class AssetBuildTests
 	}
 
 	[Test]
+	public void Rules_round_trip_and_override_the_built_in_table()
+	{
+		var set = Call("assetbuild.rule.set", new { name = "CopyPng", extensions = new[] { ".png" }, action = "copy" });
+		Assert.That(set.GetProperty("created").GetBoolean(), Is.True);
+		var rules = Call("assetbuild.rules").GetProperty("project").EnumerateArray().ToList();
+		Assert.That(rules.Any(r => r.GetProperty("name").GetString() == "CopyPng" && r.GetProperty("action").GetString() == "copy"), Is.True);
+
+		var file = Path.Combine(Path.GetDirectoryName(ProjectFile)!, "ProjectSettings.json");
+		Assert.That(File.ReadAllText(file), Does.Contain("\"CopyPng\""));
+
+		Assert.That(Call("assetbuild.rule.remove", new { name = "CopyPng" }).GetProperty("removed").GetString(), Is.EqualTo("CopyPng"));
+		Assert.That(Call("assetbuild.rules").GetProperty("project").GetArrayLength(), Is.EqualTo(0));
+	}
+
+	[Test]
+	public void Rules_outside_the_project_or_with_line_breaks_are_refused_everywhere()
+	{
+		Assert.That(Assert.Throws<CliException>(() => Call("assetbuild.rule.set", new { name = "Evil", extensions = new[] { ".x" }, action = "compile", importer = "A", processor = "B", assembly = "../evil.dll" }))!.Message,
+			Does.Contain("inside the project"));
+		Assert.That(Assert.Throws<CliException>(() => Call("assetbuild.rule.set", new { name = "Evil", extensions = new[] { ".x" }, action = "compile", importer = "A", processor = "B", parameters = new[] { "Key=a\n/reference:evil" } }))!.Message,
+			Does.Contain("Key=Value"));
+
+		// A hand-edited settings file bypasses the gateway, so the plan itself must fail the rule's files.
+		var png = Path.Combine(Path.GetDirectoryName(EditorExe)!, "DefaultContent", "Fonts", "VoltageDefaultBMFont.png");
+		if (!File.Exists(png))
+			Assert.Ignore($"sample texture not found at {png}");
+		Call("asset.import", new { source = png, destination = "Textures", name = "Evil.png", overwrite = true });
+
+		var file = Path.Combine(Path.GetDirectoryName(ProjectFile)!, "ProjectSettings.json");
+		var json = File.ReadAllText(file);
+		var evil = "\"Rules\": [{\"Name\":\"Evil\",\"Extensions\":[\".png\"],\"Action\":\"compile\",\"Importer\":\"A\",\"Processor\":\"B\",\"Parameters\":[],\"Assembly\":\"../evil.dll\"}]";
+		Assert.That(json, Does.Contain("\"Rules\""), "the settings file has no Rules entry to replace");
+		var start = json.IndexOf("\"Rules\"", StringComparison.Ordinal);
+		var end = json.IndexOf(']', start) + 1;
+		File.WriteAllText(file, json.Substring(0, start) + evil + json.Substring(end));
+		try
+		{
+			Call("project.load", new { path = ProjectFile });
+			var report = Call("assetbuild.run", new { copyRaw = false });
+			var item = report.GetProperty("items").EnumerateArray().First(i => i.GetProperty("path").GetString()!.EndsWith("Textures/Evil.png", StringComparison.OrdinalIgnoreCase));
+			Assert.That(item.GetProperty("outcome").GetString(), Is.EqualTo("failed"));
+			Assert.That(item.GetProperty("error").GetString(), Does.Contain("inside the project"));
+			Assert.That(report.GetProperty("mgcb").GetString() == null || !File.Exists(report.GetProperty("mgcb").GetString()!) || !File.ReadAllText(report.GetProperty("mgcb").GetString()!).Contains("evil.dll"), Is.True, "the response file references the outside assembly");
+		}
+		finally
+		{
+			Call("assetbuild.rule.remove", new { name = "Evil" });
+		}
+	}
+
+	[Test]
 	public void Run_compiles_an_imported_png_and_writes_the_index()
 	{
 		var png = Path.Combine(Path.GetDirectoryName(EditorExe)!, "DefaultContent", "Fonts", "VoltageDefaultBMFont.png");

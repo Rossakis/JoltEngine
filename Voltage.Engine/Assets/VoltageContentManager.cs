@@ -465,8 +465,30 @@ public class VoltageContentManager : ContentManager
 	// lookup, no reflection, and no boxing for these reference-type assets.
 	private static class TypedAssetLoader<T>
 	{
-		public static readonly Func<VoltageContentManager, string, string, bool, object> Loader =
-			AssetLoaderTable.Resolve(typeof(T));
+		private static readonly Func<VoltageContentManager, string, string, bool, object> BuiltIn = AssetLoaderTable.BuiltIn(typeof(T));
+
+		/// <summary>Built-in types stay a static read; other types see a loader registered after their first use.</summary>
+		public static Func<VoltageContentManager, string, string, bool, object> Loader =>
+			BuiltIn ?? (CustomLoaders.TryGetValue(typeof(T), out var custom) ? custom : AssetLoaderTable.Fallback(typeof(T)));
+	}
+
+	private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, Func<VoltageContentManager, string, string, bool, object>> CustomLoaders = new();
+
+	/// <summary>Teaches LoadByType and AssetReference fields to load a custom raw file type; a compiled .xnb still wins when the asset build produced one.</summary>
+	public static void RegisterLoader<T>(Func<VoltageContentManager, string, T> loader) where T : class
+	{
+		if (loader == null)
+			throw new ArgumentNullException(nameof(loader));
+		CustomLoaders[typeof(T)] = (c, path, name, raw) =>
+		{
+			if (c.LoadedAssets.TryGetValue(path, out var cached) && cached is T hit)
+				return hit;
+			if (!c.TryLoadCompiled<T>(path, out var asset))
+				asset = loader(c, path);
+			if (asset != null)
+				c.LoadedAssets[path] = asset;
+			return asset;
+		};
 	}
 
 	// Single source of truth for "engine asset type -> loader". Add a line to support a new type.
@@ -499,13 +521,14 @@ public class VoltageContentManager : ContentManager
 			string.Join(", ", Map.Keys.Select(t => t == typeof(string) ? "string (JSON)" : t.Name))
 			+ ", and any DataAsset subclass";
 
-		public static Func<VoltageContentManager, string, string, bool, object> Resolve(Type t)
-		{
-			if (Map.TryGetValue(t, out var loader))
-				return loader;
+		public static Func<VoltageContentManager, string, string, bool, object> BuiltIn(Type t) =>
+			Map.TryGetValue(t, out var loader) ? loader : null;
 
-			return typeof(Voltage.Data.DataAsset).IsAssignableFrom(t) ? DataAssetLoader : null;
-		}
+		public static Func<VoltageContentManager, string, string, bool, object> Fallback(Type t) =>
+			typeof(Voltage.Data.DataAsset).IsAssignableFrom(t) ? DataAssetLoader : null;
+
+		public static Func<VoltageContentManager, string, string, bool, object> Resolve(Type t) =>
+			BuiltIn(t) ?? (CustomLoaders.TryGetValue(t, out var custom) ? custom : Fallback(t));
 	}
 
 	#endregion

@@ -204,6 +204,11 @@ namespace Voltage.Editor.ProjectFile
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove=""Pipeline\**"" />
+    <None Remove=""Pipeline\**"" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include=""Content\**\*.*"">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

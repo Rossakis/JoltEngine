@@ -291,7 +291,7 @@ public class GameBuildWindow
 
 			var assetBuild = AssetBuildSettingsStore.Get();
 			var compileAssetsValue = assetBuild.Enabled;
-			if (Gui.Checkbox("Compile Assets with MGCB", ref compileAssetsValue))
+			if (Gui.Checkbox("Compile assets on build", ref compileAssetsValue))
 			{
 				assetBuild.Enabled = compileAssetsValue;
 				try { AssetBuildSettingsStore.Save(ProjectManager.Instance.CurrentProject); }
