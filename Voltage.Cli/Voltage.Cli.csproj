@@ -9,6 +9,7 @@
 		<ImplicitUsings>disable</ImplicitUsings>
 		<InvariantGlobalization>true</InvariantGlobalization>
 		<RollForward>LatestMajor</RollForward>
+		<Version>0.2.1</Version>
 		<Configurations>Editor-Debug;Editor-Release</Configurations>
 	</PropertyGroup>
 
@@ -20,5 +21,13 @@
 	<PropertyGroup Condition="'$(Configuration)' == 'Editor-Release'">
 		<Optimize>true</Optimize>
 	</PropertyGroup>
+
+	<!-- .mcp.json runs this copy, so a long-lived MCP server never locks the build output; a locked copy only delays the refresh. -->
+	<Target Name="CopyForMcp" AfterTargets="Build" Condition="'$(Configuration)' == 'Editor-Debug'">
+		<ItemGroup>
+			<McpFiles Include="$(OutDir)**\*" />
+		</ItemGroup>
+		<Copy SourceFiles="@(McpFiles)" DestinationFiles="@(McpFiles->'$(MSBuildProjectDirectory)\bin\mcp\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" ContinueOnError="true" Retries="0" />
+	</Target>
 
 </Project>

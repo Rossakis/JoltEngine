@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -100,8 +101,8 @@ public sealed record GatewayInfo(int Port, string Token, int Pid, DateTime Start
 		}
 	}
 
-	/// <summary>Launches the editor recorded in gateway.json (or the given exe) and waits until its gateway answers.</summary>
-	public static GatewayInfo Start(string infoPath, string exeOverride, string projectPath, TimeSpan wait)
+	/// <summary>Launches the editor recorded in gateway.json (or the given exe) with the recorded arguments plus <paramref name="extraArgs"/>, and waits until its gateway answers.</summary>
+	public static GatewayInfo Start(string infoPath, string exeOverride, string projectPath, TimeSpan wait, IReadOnlyList<string> extraArgs = null)
 	{
 		GatewayInfo previous = null;
 		try { previous = Read(infoPath); } catch (CliException) { }
@@ -113,10 +114,38 @@ public sealed record GatewayInfo(int Port, string Token, int Pid, DateTime Start
 		if (string.IsNullOrWhiteSpace(exe) || !File.Exists(exe))
 			throw new CliException("no editor executable is known yet; pass --exe <path to Voltage.Editor> the first time");
 
-		var arguments = !string.IsNullOrEmpty(projectPath)
+		var arguments = new List<string>(!string.IsNullOrEmpty(projectPath)
 			? new[] { Path.GetFullPath(projectPath) }
-			: previous?.Args ?? Array.Empty<string>();
-		return Launch(exe, arguments, infoPath, wait, "editor");
+			: previous?.Args ?? Array.Empty<string>());
+		if (extraArgs != null)
+			MergeFlags(arguments, extraArgs);
+		// The info file must land where this CLI reads it, or the launch is never seen.
+		if (!string.Equals(Path.GetFullPath(infoPath), DefaultInfoPath(), StringComparison.OrdinalIgnoreCase))
+			MergeFlags(arguments, new[] { "--gateway-info", Path.GetFullPath(infoPath) });
+		return Launch(exe, arguments.ToArray(), infoPath, wait, "editor");
+	}
+
+	private static readonly string[] ValueFlags = { "--gateway-port", "--gateway-info" };
+
+	/// <summary>Appends flags, replacing any earlier occurrence (and its value) so a relaunch does not stack duplicates.</summary>
+	private static void MergeFlags(List<string> arguments, IReadOnlyList<string> extra)
+	{
+		for (var i = 0; i < extra.Count; i++)
+		{
+			var flag = extra[i];
+			var takesValue = ValueFlags.Contains(flag, StringComparer.OrdinalIgnoreCase);
+			for (var j = arguments.Count - 1; j >= 0; j--)
+			{
+				if (!string.Equals(arguments[j], flag, StringComparison.OrdinalIgnoreCase))
+					continue;
+				arguments.RemoveAt(j);
+				if (takesValue && j < arguments.Count)
+					arguments.RemoveAt(j);
+			}
+			arguments.Add(flag);
+			if (takesValue && i + 1 < extra.Count)
+				arguments.Add(extra[++i]);
+		}
 	}
 
 	/// <summary>Launches a built game with its gateway on and waits until it answers.</summary>

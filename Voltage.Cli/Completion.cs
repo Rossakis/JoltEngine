@@ -9,21 +9,23 @@ namespace Voltage.Cli;
 /// <summary>Shell completion: the scripts call back into 'voltage __complete', which answers from the live command list or its cache.</summary>
 public static class Completion
 {
-	public static readonly string[] Subcommands = { "help", "logs", "watch", "pipe", "json", "mcp", "start", "doctor", "run", "record", "completion" };
+	public static readonly string[] Subcommands = { "help", "logs", "watch", "pipe", "json", "mcp", "start", "stop", "restart", "doctor", "run", "record", "completion" };
 
 	private static readonly string[] GlobalOptions = { "--config", "--port", "--token", "--timeout", "--compact", "--table", "--field", "--game" };
 
 	private static readonly Dictionary<string, string[]> SubcommandOptions = new()
 	{
-		["logs"] = new[] { "--follow", "--level", "--count" },
+		["logs"] = new[] { "--follow", "--level", "--count", "--grep", "--since" },
 		["watch"] = new[] { "--logs", "--filter", "--json" },
-		["start"] = new[] { "--exe", "--wait", "--game" },
+		["start"] = new[] { "--exe", "--wait", "--game", "--headless", "--safe", "--no-prompts", "--gateway-port" },
+		["stop"] = new[] { "--wait", "--game" },
+		["restart"] = new[] { "--rebuild", "--wait", "--game", "--headless", "--safe", "--no-prompts", "--gateway-port" },
 		["doctor"] = new[] { "--json" },
 		["run"] = new[] { "--batch", "--continue" },
 		["record"] = new[] { "--no-mouse", "--no-keyboard", "--no-text" },
 	};
 
-	private static readonly string[] OptionsWithValue = { "--config", "--port", "--token", "--timeout", "--field", "--level", "--count", "--filter", "--exe", "--wait" };
+	private static readonly string[] OptionsWithValue = { "--config", "--port", "--token", "--timeout", "--field", "--level", "--count", "--filter", "--exe", "--wait", "--grep", "--since", "--gateway-port" };
 
 	private static readonly TimeSpan CacheMaxAge = TimeSpan.FromSeconds(30);
 

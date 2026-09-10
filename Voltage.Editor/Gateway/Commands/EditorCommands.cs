@@ -139,6 +139,7 @@ internal static class EditorCommands
 			entityCount = Core.Scene?.Entities.Count ?? 0,
 			clients = ctx.Server?.ClientCount ?? 0,
 			safe = ctx.Dispatcher.Options.Safe,
+			version = VoltageVersion.Engine,
 			headless = EditorRunMode.Headless,
 			noPrompts = EditorRunMode.NoPrompts,
 			suppressedPrompts = EditorGatewayDispatcher.SuppressedPrompts

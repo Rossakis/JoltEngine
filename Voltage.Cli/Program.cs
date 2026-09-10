@@ -56,6 +56,20 @@ public static class Program
 
 		switch (args[0])
 		{
+			case "--version":
+			case "-V":
+				return Lifecycle.Version(infoPath);
+			case "stop":
+				args.RemoveAt(0);
+				return Lifecycle.Stop(infoPath, game, TimeSpan.FromSeconds(double.Parse(TakeOption(args, "--wait") ?? "15", CultureInfo.InvariantCulture)));
+			case "restart":
+			{
+				args.RemoveAt(0);
+				var rebuild = TakeFlag(args, "--rebuild");
+				var wait = TimeSpan.FromSeconds(double.Parse(TakeOption(args, "--wait") ?? "120", CultureInfo.InvariantCulture));
+				var passthrough = Lifecycle.TakePassthrough(args, TakeOption, TakeFlag);
+				return Lifecycle.Restart(infoPath, game, rebuild, wait, args.FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal)), passthrough);
+			}
 			case "mcp":
 				return new McpServer(infoPath).Run();
 			case "doctor":
@@ -71,9 +85,10 @@ public static class Program
 				args.RemoveAt(0);
 				var exe = TakeOption(args, "--exe");
 				var wait = TimeSpan.FromSeconds(double.Parse(TakeOption(args, "--wait") ?? "120", CultureInfo.InvariantCulture));
+				var passthrough = Lifecycle.TakePassthrough(args, TakeOption, TakeFlag);
 				var started = game
 					? GatewayInfo.StartGame(infoPath, exe ?? args.FirstOrDefault(), wait)
-					: GatewayInfo.Start(infoPath, exe, args.FirstOrDefault(), wait);
+					: GatewayInfo.Start(infoPath, exe, args.FirstOrDefault(a => !a.StartsWith("--", StringComparison.Ordinal)), wait, passthrough);
 				Console.WriteLine(JsonSerializer.Serialize(new { pid = started.Pid, port = started.Port, exe = started.Exe, host = started.Host, game = started.Game, info = infoPath }, Pretty));
 				return 0;
 			}
@@ -174,6 +189,10 @@ public static class Program
 		var follow = TakeFlag(args, "--follow") || TakeFlag(args, "-f");
 		var level = TakeOption(args, "--level");
 		var count = TakeOption(args, "--count") ?? "50";
+		var grepText = TakeOption(args, "--grep");
+		var sinceText = TakeOption(args, "--since");
+		var grep = grepText == null ? null : new Regex(grepText, RegexOptions.IgnoreCase);
+		var since = sinceText == null ? (DateTime?)null : DateTime.UtcNow - TimeSpan.FromSeconds(double.Parse(sinceText, CultureInfo.InvariantCulture));
 
 		var parameters = new JsonObject { ["count"] = int.Parse(count, CultureInfo.InvariantCulture) };
 		if (level != null)
@@ -181,7 +200,8 @@ public static class Program
 
 		var tail = connection.Call("log.tail", JsonSerializer.SerializeToElement(parameters));
 		foreach (var entry in tail.EnumerateArray())
-			PrintLog(entry, level);
+			if (LogMatches(entry, grep, since))
+				PrintLog(entry, level);
 
 		if (!follow)
 			return 0;
@@ -189,7 +209,7 @@ public static class Program
 		connection.Call("log.subscribe", null);
 		connection.OnEvent = evt =>
 		{
-			if (evt.GetProperty("event").GetString() == "log")
+			if (evt.GetProperty("event").GetString() == "log" && LogMatches(evt.GetProperty("data"), grep, since))
 				PrintLog(evt.GetProperty("data"), level);
 		};
 		connection.PumpEvents();
@@ -349,6 +369,18 @@ public static class Program
 
 	private static string Serialize(JsonElement value, bool compact) => compact ? value.GetRawText() : JsonSerializer.Serialize(value, Pretty);
 
+	/// <summary>--grep matches the message or caller; --since drops entries older than the cutoff.</summary>
+	private static bool LogMatches(JsonElement entry, Regex grep, DateTime? since)
+	{
+		if (since.HasValue && entry.TryGetProperty("time", out var time) && time.TryGetDateTime(out var when) && when.ToUniversalTime() < since.Value)
+			return false;
+		if (grep == null)
+			return true;
+		var message = entry.TryGetProperty("message", out var m) ? m.GetString() ?? "" : "";
+		var caller = entry.TryGetProperty("caller", out var c) ? c.GetString() ?? "" : "";
+		return grep.IsMatch(message) || grep.IsMatch(caller);
+	}
+
 	private static void PrintLog(JsonElement entry, string levelFilter)
 	{
 		var type = entry.GetProperty("type").GetString();
@@ -392,7 +424,7 @@ usage:
   voltage <method> [key=value ...]     call a gateway method (values may be JSON)
   voltage help [method]                list methods with their flags, or describe one with its parameters
   voltage doctor [--json]              check gateway.json, the editor/game process, the port, the build and the SDK
-  voltage logs [--follow] [--level L] [--count N]
+  voltage logs [--follow] [--level L] [--count N] [--grep regex] [--since sec]
   voltage watch [--logs] [--filter scene.*] [--json]
                                        print lifecycle events (and logs) as they happen
   voltage record <script.json> [--no-mouse] [--no-keyboard] [--no-text]
@@ -402,9 +434,13 @@ usage:
   voltage json '{""method"":""..."",""params"":{...}}'
   voltage pipe                         one JSON request per stdin line, one response per stdout line
   voltage mcp                          Model Context Protocol server over stdio (claude mcp add voltage -- voltage mcp)
-  voltage start [project.voltage] [--exe <editor exe>] [--wait <sec>]
+  voltage start [project.voltage] [--exe <editor exe>] [--wait <sec>] [--headless] [--safe] [--no-prompts] [--gateway-port N]
                                        launch the editor recorded in gateway.json and wait for its gateway
   voltage start --game <game exe>      launch a built game with its gateway on and wait for it
+  voltage stop [--game] [--wait <sec>] ask the editor (or game) to quit and wait until it is gone
+  voltage restart [--rebuild] [same flags as start]
+                                       stop, optionally dotnet build the editor project next to its exe, and start again
+  voltage --version                    print the CLI version and the running host's engine version
   voltage completion bash|zsh|pwsh     print a shell completion script (methods and key= names complete live)
   voltage editor.exit force=true       ask the running editor to quit (force skips the unsaved-changes prompt)
   voltage --game app.exit              ask the running game to quit

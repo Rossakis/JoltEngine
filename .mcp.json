@@ -2,7 +2,7 @@
   "mcpServers": {
     "voltage": {
       "command": "dotnet",
-      "args": ["Voltage.Cli/bin/Editor-Debug/net8.0/voltage.dll", "mcp"]
+      "args": ["Voltage.Cli/bin/mcp/voltage.dll", "mcp"]
     }
   }
 }

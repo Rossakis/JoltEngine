@@ -48,13 +48,17 @@ voltage entity.list --table       # lists of objects as an aligned table
 voltage status --field scene.name # one value out of the result
 voltage entity.set entity=Player x=0 y=0 rotation=90
 voltage scripts.compile reloadScene=true
-voltage logs --follow --level Error
+voltage logs --follow --level Error --grep "Gateway|Exception" --since 60
 voltage watch --logs --filter scene.*   # lifecycle events (and log lines) as they happen; --json prints raw lines
 voltage run steps.json            # replay a recorded {"steps": [...]} script, or a list of {method, params} calls
 voltage pipe                      # one JSON request per stdin line; ideal for agents
-voltage start [project.voltage]   # relaunch the last editor and wait for its gateway
-voltage editor.exit force=true    # quit it again
+voltage start [project.voltage] --headless --no-prompts   # relaunch the last editor (plus launch flags) and wait for its gateway
+voltage stop                      # ask it to quit and wait until the process is gone
+voltage restart --rebuild         # stop, dotnet build the editor project next to its exe, start again
+voltage --version                 # CLI version plus the running host's engine version
 ```
+
+`start` and `restart` accept `--headless`, `--safe`, `--no-prompts` and `--gateway-port N` and pass them to the editor (`--safe` becomes `--gateway-safe`), replacing any recorded copy of the same flag; with `--config`, they also pass `--gateway-info` so the new instance writes its discovery file where this CLI reads it. `stop` sends `editor.exit force=true` (or `app.exit` with `--game`) and fails if the pid is still alive after `--wait` seconds; an instance started with `--gateway-safe` refuses exits, so stop that one from its window. `restart --rebuild` finds `Voltage.Editor.csproj` from the recorded `bin/<Configuration>/<rid>/Voltage.Editor.exe` path, builds that configuration after the old instance is gone, and only then relaunches, which is the edit, rebuild, relaunch loop an agent runs on the engine itself.
 
 Values are parsed as JSON when they look like it (`true`, `12.5`, `[1,2]`, `{"x":1}`) and as strings otherwise. `--timeout <sec>` applies to every request; `--exe <path>` tells `start` where the editor is the first time; `--config <path>` reads another discovery file (the one an editor started with `--gateway-info` wrote). `--compact` prints one line, `--table` formats lists of flat objects or objects of scalars, and `--field a.b.0` prints a single value (strings raw, everything else as JSON).
 
@@ -169,7 +173,7 @@ A modal swallows every click outside it, so an unattended agent has to notice on
 
 An unhandled exception writes `crash_<timestamp>.log` (with the tail of the editor log) to the logs folder and exits the process immediately, so no OS error dialog waits for a person. The CLI names the crash log when it finds the editor gone, and `voltage start` brings it back with the same arguments. `debug.crash confirm=true` exercises that whole path on purpose.
 
-Claude Code picks the MCP server up from `.mcp.json` in the repo root, which runs the Editor-Debug build of the CLI through `dotnet`.
+Claude Code picks the MCP server up from `.mcp.json` in the repo root, which runs the `Voltage.Cli/bin/mcp` copy of the Editor-Debug build through `dotnet`; the CLI build refreshes that copy so a running MCP server never locks the build output (a server started before a rebuild keeps the old copy until it restarts).
 
 ## Adding a method
 

@@ -37,6 +37,11 @@ jobs:
 
       - run: npm run build
 
+      # Turns Pages on with the GitHub Actions source the first time, so the deploy job does not 404.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: Voltage.github.io/build

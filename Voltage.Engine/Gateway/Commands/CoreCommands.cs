@@ -293,6 +293,7 @@ public static class CoreCommands
 		{
 			host = ctx.Dispatcher.Options.Host,
 			game = ctx.Dispatcher.Options.Name,
+			version = VoltageVersion.Engine,
 			pid = Environment.ProcessId,
 			scene = Core.Scene == null ? null : new { name = Core.Scene.Name, type = Core.Scene.GetType().Name },
 			editMode = Core.IsEditMode,
